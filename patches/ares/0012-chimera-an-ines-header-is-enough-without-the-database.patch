@@ -1,0 +1,23 @@
+diff --git a/mia/medium/famicom.cpp b/mia/medium/famicom.cpp
+index c9d16c09f..248ea8ffc 100644
+--- a/mia/medium/famicom.cpp
++++ b/mia/medium/famicom.cpp
+@@ -96,10 +96,14 @@ auto Famicom::analyze(std::vector<u8>& data) -> string {
+   }
+ 
+   string digest = Hash::SHA256(data).digest();
+-  auto foundDatabase = Medium::loadDatabase();
+-  if(!foundDatabase) return {};
+-  string manifest = Medium::manifestDatabase(digest);
+-  if(manifest) return manifest;
++  //The database is the BEST answer, not the only one: a cartridge whose board
++  //it names is described exactly, and everything else falls through to the
++  //header the file carries. Bailing out when the database is absent threw away
++  //that fallback, so a machine with no database on it - a sandbox, say - could
++  //not load a plain iNES file it was perfectly able to understand.
++  if(Medium::loadDatabase()) {
++    if(string manifest = Medium::manifestDatabase(digest)) return manifest;
++  }
+ 
+   //Check for Famicom Disk System copyright string (identifies BIOS)
+   if(data.size() == 8_KiB && Hash::SHA256({data.data() + 0xd37, 224}).digest() == "0ff60f81f193b001ecccc6a280cddba4b99830755aa658c089d566046adfb034") {

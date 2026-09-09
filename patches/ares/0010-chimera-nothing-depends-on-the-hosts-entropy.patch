@@ -1,8 +1,8 @@
 diff --git a/ares/ares/random.hpp b/ares/ares/random.hpp
-index d2dbf73f6..d446b811d 100644
+index d2dbf73f6..2f5840b1f 100644
 --- a/ares/ares/random.hpp
 +++ b/ares/ares/random.hpp
-@@ -18,8 +18,22 @@ struct Random {
+@@ -18,7 +18,24 @@ struct Random {
    }
  
    auto seed(maybe<n64> seed = nothing, maybe<n64> sequence = nothing) -> void {
@@ -17,14 +17,16 @@ index d2dbf73f6..d446b811d 100644
 +    //had to go, and each was found the same way - by a run of the same thing
 +    //twice producing two machines whose pictures agreed.
 +    if(!seed) seed = (n64)Default.seed;
-+    if(!sequence) sequence = (n64)Default.sequence;
 +    #else
      if(!seed) seed = (n64)clock();
-     if(!sequence) sequence = 0;
 +    #endif
++    //The sequence keeps upstream's default deliberately: seed(0) leaves it
++    //unspecified and relies on this, so changing it here would quietly move
++    //every machine's power-on state - which is a thing to do on purpose or not
++    //at all.
+     if(!sequence) sequence = 0;
  
      _state = 0;
-     _increment = sequence() << 1 | 1;
 diff --git a/nall/nall/random.cpp b/nall/nall/random.cpp
 index 02ef580cf..76301b812 100644
 --- a/nall/nall/random.cpp

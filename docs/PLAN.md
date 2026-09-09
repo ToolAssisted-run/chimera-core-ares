@@ -262,11 +262,16 @@ something outside this repository, rather than against ourselves.
 
 ## What is proven and what is only declared
 
-This distinction is the honest part of a sixteen-machine claim, so it gets its
-own heading.
+This distinction is the honest part of a seventeen-machine claim, so it gets its
+own heading. There are three tiers, and the middle one is new: a machine can be
+checked against a real commercial game on this developer's machine without that
+check being something the gate can carry, because the game may not be
+redistributed.
 
-**Proven**, in the sense that a real program runs on them and the gate compares
-every digest between the two flavours:
+### Proven by the gate
+
+A real program runs and the gate compares every digest between the two
+flavours, on content anybody may have:
 
 - the **Nintendo 64**, whose picture is compared pixel for pixel against a
   capture from real hardware;
@@ -275,28 +280,76 @@ every digest between the two flavours:
   gate reads the verdict off the screen rather than comparing a digest, so that
   leg cannot pass by agreeing with itself;
 - the **PlayStation**, which reaches its BIOS shell with nothing in its drive.
-  That needs no content at all, and it is still a whole machine to compare: the
-  CPU, the GPU and the sound chip all run, and the picture it settles into is
-  the console's own menu.
 
-**Declared**, in the sense that ares builds them, this core enumerates their
-ports and inputs, and the package offers them - but no cartridge has ever been
-loaded into one here: Famicom/NES, Game Boy Color, Mega Drive, Master System,
-Game Gear, SG-1000, Atari 2600, WonderSwan, WonderSwan Color, ZX Spectrum,
-MyVision, ColecoVision, MSX. What is known about them is that they build, that
-they power on, and that their declared wire format is ares' own. What is not
-known is whether they run a game correctly, what their audio sounds like, or
-whether their save data comes back. Each needs a freely distributable ROM and a
-gate leg before it should be believed.
+### Proven against a real game, off the record
 
-**Absent** because no BIOS was to hand: the Atari 5200, the Neo Geo (AES and
-MVS) and the Neo Geo Pocket. Each is a table row and a firmware declaration away
-once one turns up.
+Twelve machines have run a real commercial cartridge here with **native ==
+sandbox on every digest** - video, audio, memory and the whole serialised
+machine. The ROMs are not this repository's to carry, so the gate cannot say
+this; it is written down instead:
 
-**Not in ares at all**: the Saturn is a stub upstream (one file), so it is not a
-machine anybody could offer. The Super Famicom and the PC Engine build but crash
-when asked to power on with no cartridge, which is probably nothing more than
-that - they are absent until somebody checks.
+| machine | game | speed |
+| --- | --- | --- |
+| Nintendo 64 | Super Mario 64 | 46 fps (0.76x) |
+| Famicom / NES | AccuracyCoin | 278 fps |
+| Game Boy | A Fairy Without Wings | 324 fps |
+| Game Boy Color | Air Traffic Controller | 323 fps |
+| Game Boy Advance | Another World | 193 fps |
+| Mega Drive | Amy Rose in Sonic the Hedgehog | 192 fps |
+| Master System | Galactic Protector | 441 fps |
+| Game Gear | Frogger | 467 fps |
+| SG-1000 | Monaco GP | 823 fps |
+| Atari 2600 | Alien | 307 fps |
+| WonderSwan Color | Saint Seiya | 892 fps |
+| ColecoVision | Carnival | 881 fps |
+
+The PlayStation additionally ran a real disc (a .cue with its .bin) at 23 fps.
+
+Super Mario 64 matching byte for byte between the reference and the sandbox is
+the strongest thing anybody has asked of this core so far.
+
+### Declared, and not to be trusted yet
+
+- **MSX**: ares cannot load a cartridge for it without `Database/MSX.bml`,
+  which is ares' own data file and lives on a disk a core has not got. It is a
+  kilobyte; compiling it in is the fix, and it is not done.
+- **MyVision**: no ROM for it exists anywhere to hand, so it has never run
+  anything.
+
+### Known broken
+
+- **ZX Spectrum**. It loads a tape, draws, and its video, memory and whole
+  machine state are identical between flavours - but its **audio is not
+  reproducible natively**: three runs of the same tape gave two different audio
+  digests. It also corrupts the heap, which shows up as a crash in
+  `ZXSpectrum::Tape::unload()` when the machine is torn down. Both point the
+  same way - something in the tape path reads memory it does not own. A machine
+  whose sound changes between runs cannot carry a movie, so this one is listed
+  and disowned rather than counted.
+
+### Absent
+
+Because no BIOS was to hand: the **Atari 5200** (2KB), the **Neo Geo** (AES
+`neo-epo.bin` or MVS `sp-45.sp1`) and the **Neo Geo Pocket** (64KB). Each is a
+table row and a firmware declaration away once one turns up.
+
+The **Saturn** is a stub upstream - one file - so it is not a machine anybody
+could offer. The **Super Famicom** and **PC Engine** build but crash when asked
+to power on with no cartridge, which is probably nothing more than that; they
+are absent until somebody checks.
+
+### What a sandbox had to be taught along the way
+
+Three shims in `waterbox/guest-syscalls.cpp`, each found by a machine failing:
+
+- `mkdir`, `rmdir`, `unlink`, `rename`, `chmod`, `symlink`, `readlink`,
+  `getcwd` - a read-only, empty filesystem, which is what mia is looking at.
+- **`access`**, which musl turns into a syscall the sandbox does not answer at
+  all, so the guest trapped rather than hearing "no". It has to answer
+  *truthfully*: a flat "nothing exists" satisfied mia hunting for its databases
+  and then broke every machine that checks the cartridge it was just handed.
+  What exists in a core is what the host mounted, so the shim opens the name and
+  says whether that worked.
 
 ## Firmware
 
@@ -352,12 +405,8 @@ compared against what the controller actually reported to the machine.
 
 In rough order of what would matter first:
 
-- **Speed.** Nothing is measured, on any machine. For the Nintendo 64 the CPU
-  and RSP interpreters plus a software RDP is the slow end of every choice
-  available, and whether a real game runs at a workable rate is unknown. If it
-  does not, the questions are (in order) the RSP recompiler,
-  `Accuracy::RSP::SIMD`, and whether miniBox's executable pages can host sljit
-  safely.
+- **Speed on the Nintendo 64** - measured, and it is the real problem. See
+  below.
 - **A real game, anywhere.** Every test here is homebrew of a few kilobytes.
   Nothing has booted a commercial cartridge, so nothing is known in practice
   about save chips, the 64DD, the Transfer Pak or the Expansion Pak.
@@ -378,6 +427,49 @@ In rough order of what would matter first:
   nothing publishes it yet.
 - **Optional tooling**: no registers, no trace, no core-rendered surfaces.
   Memory domains, buses and the Nintendo 64's save-data export are done.
+
+## Speed
+
+Measured on this machine (20 cores, but the emulation is one thread), 600 frames
+per figure, native and sandboxed:
+
+| machine | native | sandbox | against real time |
+| --- | --- | --- | --- |
+| Nintendo 64 | 59 fps | 69 fps | **about 1x** |
+| Game Boy | 318 fps | 320 fps | 5.3x |
+| PlayStation | 276 fps | 275 fps | 4.6x |
+| Game Boy Advance | 228 fps | 221 fps | 3.8x |
+
+Three of the four have room to work in. **The Nintendo 64 has none**: it runs at
+roughly real time on a homebrew ROM that barely draws, which means a real game
+will not reach it, and a tool-assisted run wants to go much faster than real
+time, not slower.
+
+Two things are worth knowing about that number. The sandbox is not the problem -
+it is as fast as the reference, and on the N64 slightly faster. And **the
+renderer is not the problem either**: running with drawing off is not faster
+(53 fps against 59), so the cost is the CPU and RSP interpreters and the
+machine's own stepping, not angrylion.
+
+So the answer, when somebody gets to it, is the recompilers. miniBox does allow
+executable pages, and BizHawk ships a recompiled ares64, so it is possible;
+what it costs is the argument in "The recompilers" above, and a way to prove a
+generated-code core replays identically.
+
+### The SSE4.1 question, measured and deliberately declined
+
+ares has two implementations of the Nintendo 64's RSP vector unit: a SIMD one
+that needs SSE4.1, and a scalar fallback. Without `-msse4.1` the fallback is
+what compiles - which is neither what ares normally runs nor what BizHawk's port
+runs, and PCSX2's core already asks SSE4.1 of a machine, so the floor would not
+be new to Chimera.
+
+It was tried. It bought **no speed at all** on the content here, and it
+**changed the audio** - video and memory identical, audio and machine state
+different. So the two implementations do not agree, ares treats the scalar one
+as the accurate path (its Reference profile forces it), and there was nothing to
+buy with that difference. The flag is off, with a comment in `meson.build` saying
+why. Somebody measuring a game that actually leans on the RSP should revisit it.
 
 ## Numbers, as of the seventeen-machine build
 

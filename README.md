@@ -8,8 +8,8 @@ deterministic sandbox and packaged as a Chimera core (`core.wbx` +
 [chimera-core-dosbox-x](https://github.com/ToolAssisted-run/chimera-core-dosbox-x)
 and [chimera-core-gpgx](https://github.com/ToolAssisted-run/chimera-core-gpgx).
 
-Status: **seventeen machines declared; the Nintendo 64, the Game Boy, the Game
-Boy Advance and the PlayStation are proven end to end.**
+Status: **seventeen machines declared; four proven by the gate and twelve
+proven against real commercial games.**
 
 ares emulates about thirty systems from one codebase, which is why this
 repository is named for the emulator rather than for a console. The Nintendo 64
@@ -19,9 +19,16 @@ the machinery the rest need.
 
 | | |
 | --- | --- |
-| **Proven** (a real program runs, every digest compared) | Nintendo 64, Game Boy, Game Boy Advance, PlayStation |
-| **Declared** (builds, powers on, inputs enumerated; no game has run) | Famicom/NES, Game Boy Color, Mega Drive, Master System, Game Gear, SG-1000, Atari 2600, WonderSwan, WonderSwan Color, ZX Spectrum, MyVision, ColecoVision, MSX |
+| **Proven by the gate** (free content, every digest compared) | Nintendo 64, Game Boy, Game Boy Advance, PlayStation |
+| **Proven against a real game** (native == sandbox on a commercial cartridge, off the record - the ROM is not ours to ship) | + Famicom/NES, Game Boy Color, Mega Drive, Master System, Game Gear, SG-1000, Atari 2600, WonderSwan Color, ColecoVision |
+| **Declared, untrusted** | MSX (needs ares' own database file), MyVision (no ROM exists to hand) |
+| **Known broken** | ZX Spectrum - its audio is not reproducible even natively, and it corrupts the heap |
 | **Absent** (no BIOS was to hand) | Neo Geo, Neo Geo Pocket, Atari 5200 |
+
+Twelve machines have run a real commercial game here with the reference and the
+sandbox agreeing byte for byte - Super Mario 64 among them. The gate cannot say
+so, because those ROMs may not be redistributed; `docs/PLAN.md` writes it down
+with the speeds instead.
 
 That table is the honest shape of it, and `docs/PLAN.md` keeps it current.
 Adding a machine is a row in `waterbox/machines.h` and a regenerate; making one

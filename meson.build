@@ -183,6 +183,14 @@ core_args = core_defines + [
   # are how the emulated hardware behaves, and neither is undefined here.
   '-fno-strict-aliasing',
   '-fwrapv',
+  # NOT -msse4.1, deliberately. The Nintendo 64's RSP has a vector unit and ares
+  # has two implementations of it - a SIMD one that needs SSE4.1 and a scalar
+  # fallback - and they DO NOT AGREE: turning SSE4.1 on changes this core's
+  # audio output while leaving its video and memory alone. ares treats the
+  # scalar path as the accurate one (its Reference profile forces it), and
+  # measuring the SIMD path here found no speed to buy with that difference. So
+  # the accurate one stays until somebody measures a game that leans on the RSP.
+  # See docs/PLAN.md.
 ]
 
 subdir('waterbox')

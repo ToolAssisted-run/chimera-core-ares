@@ -9,6 +9,8 @@
  * all this core ever wanted from it.
  */
 #include <cerrno>
+#include <cstdio>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -23,6 +25,29 @@ int chmod(const char *path, mode_t mode) { errno = EROFS; return -1; }
 int symlink(const char *target, const char *linkpath) { errno = EROFS; return -1; }
 
 ssize_t readlink(const char *path, char *buf, size_t size) { errno = EINVAL; return -1; }
+
+/* What exists, in a core, is what the host mounted - so the honest answer is
+ * whether the name opens. mia asks this twice over: once hunting for its game
+ * databases (`Database/Famicom.bml` and friends), which live on a disk a core
+ * has not got, and once to check the cartridge it was just handed. Answering a
+ * flat "no" satisfies the first and breaks the second.
+ *
+ * musl's access() is a syscall the sandbox does not answer at all, so without
+ * something here the guest traps on the question rather than hearing an answer.
+ */
+int access(const char *path, int mode)
+{
+	if (path == nullptr) { errno = EFAULT; return -1; }
+	FILE *f = fopen(path, "rb");
+	if (f == nullptr) { errno = ENOENT; return -1; }
+	fclose(f);
+	/* Everything a core can see is readable and nothing is writable or
+	 * executable, which is what W_OK and X_OK are being asked about. */
+	if (mode & (W_OK | X_OK)) { errno = EACCES; return -1; }
+	return 0;
+}
+
+int faccessat(int fd, const char *path, int mode, int flags) { return access(path, mode); }
 
 char *getcwd(char *buf, size_t size)
 {
