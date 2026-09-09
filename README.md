@@ -68,10 +68,11 @@ What the machines have in common:
   unchanged - the convention mupen and BizHawk record, so an N64 run made here
   means the same as a run made there.
 
-The equivalence gate (`waterbox/run-gate.sh`) runs twenty-six legs: native
+The equivalence gate (`waterbox/run-gate.sh`) runs thirty legs: native
 against sandbox on every digest for all four proven machines, the machine
 round-tripped through a savestate before every frame, every one of the
-twenty-one rebuilt and re-enumerated against its committed declaration, input proven to
+twenty-one rebuilt and re-enumerated against its committed declaration, **each
+machine's refresh rate checked against its own clock**, input proven to
 reach the machine, the picture compared **pixel for pixel against real
 hardware**, and **jsmolka's ARM test suite read off the screen**. Its content is
 [PeterLemon/N64](https://github.com/PeterLemon/N64) (public domain),

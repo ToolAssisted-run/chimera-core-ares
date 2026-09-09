@@ -77,6 +77,27 @@ namespace machines
 		 * machine to compare and one that needs no content at all. A cartridge
 		 * console does not, and asking it to is a mistake worth refusing. */
 		bool bootsWithoutMedium;
+		/* What this machine refreshes at when ares will not say, as a rational.
+		 * Almost every machine tells ares its rate out of its own clock while it
+		 * is being built, and that is what the core reports. A few work the
+		 * number out from the frame they have just drawn - because the number of
+		 * lines in a frame is something the PROGRAM chooses - and say nothing at
+		 * all until a frame has gone by. The frontend asks once, at load, and
+		 * writes the answer into the movie, so "after the first frame" is too
+		 * late.
+		 *
+		 * Running the machine to hear the answer and putting it back was tried
+		 * and abandoned: restoring even a perfect savestate over a machine that
+		 * has only just powered on does not give the machine back, because the
+		 * serialiser synchronises the threads and power-on has not. A declared
+		 * number changes no machine at all, and the gate checks it against what
+		 * the machine actually reports once it is running.
+		 *
+		 * 0/0 means "ares will say" - which is all but three of them. The
+		 * numbers are ares' own constants divided out: an Atari 2600 is
+		 * 3579575/(228*262), a WonderSwan 3072000/(256*159). */
+		int refreshNtscNum, refreshNtscDen;
+		int refreshPalNum, refreshPalDen;
 	};
 
 	/* Ordered as a person would look for them, not as ares stores them. */
@@ -115,17 +136,24 @@ namespace machines
 			 "[Sega] SG-1000 (NTSC)", "[Sega] SG-1000 (PAL)",
 			 284, 243, 284, 192, "sg sg1000", nullptr, nullptr},
 
+			/* The Atari 2600 and the WonderSwan count the lines their program
+			 * actually drew, so they say nothing until a frame has gone by and
+			 * the frontend has already asked. Declared, and checked by the gate
+			 * against what they report once running. */
 			{"A26", "Atari 2600", "Atari 2600", "Atari 2600", ares::Atari2600::load,
 			 "[Atari] Atari 2600 (NTSC)", "[Atari] Atari 2600 (PAL)",
-			 160, 312, 292, 222, "a26 bin", nullptr, nullptr},
+			 160, 312, 292, 222, "a26 bin", nullptr, nullptr, false,
+			 27325, 456, 3546894, 71136},
 
 			{"WS", "WonderSwan", "WonderSwan", "WonderSwan", ares::WonderSwan::load,
 			 "[Bandai] WonderSwan", nullptr,
-			 224, 224, 224, 144, "ws", nullptr, nullptr},
+			 224, 224, 224, 144, "ws", nullptr, nullptr, false,
+			 4000, 53, 0, 0},
 
 			{"WSC", "WonderSwan Color", "WonderSwan Color", "WonderSwan Color", ares::WonderSwan::load,
 			 "[Bandai] WonderSwan Color", nullptr,
-			 224, 224, 224, 144, "wsc", nullptr, nullptr},
+			 224, 224, 224, 144, "wsc", nullptr, nullptr, false,
+			 4000, 53, 0, 0},
 
 			{"ZXS", "ZX Spectrum", "ZX Spectrum", "ZX Spectrum", ares::ZXSpectrum::load,
 			 "[Sinclair] ZX Spectrum", nullptr,

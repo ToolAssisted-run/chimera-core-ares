@@ -194,6 +194,56 @@ deterministic "GBA" GBA gba-arm.gba        --frames 120
 deterministic "PS1" PS1 -                  --frames 300
 
 echo
+echo "== the refresh rate is the machine's own =="
+# A core that says 60Hz for a machine that runs at 59.7275 makes a recording
+# whose sound drifts a second clear of its picture over half an hour, and a
+# movie whose length in seconds is wrong by the same amount. Nothing else in
+# the gate can see that: every digest is per frame, and a frame is a frame
+# whatever rate it is played at.
+#
+# Two machines here cannot say in time - the Atari 2600 and the WonderSwan
+# count the lines their program drew - and DECLARE their rate in machines.h
+# instead. This leg is what stops a declared number being wrong: it asks the
+# machine what it thinks once it has been running, and the declaration has to
+# agree exactly. It can only ask the machines the gate has content for, so the
+# declared two are checked by hand against a commercial cartridge; PLAN.md says
+# so and says what the numbers were.
+refresh_is() {
+	leg="$1"; id="$2"; rom="$3"; want="$4"; shift 4
+	if [ "$rom" = "-" ]; then set -- "$@"; else set -- --rom "$content/$rom" "$@"; fi
+	fw="$(firmware_for "$id")"
+	if [ -n "$fw" ]; then
+		# the gate skips a machine whose BIOS the developer has not put there,
+		# the same way every other leg does
+		if [ ! -f "$fw" ]; then echo "SKIP $leg refresh rate (no console BIOS in tests/firmware)"; return; fi
+		set -- "$@" --firmware "$fw"
+	fi
+	line="$("$native" --machine "$id" --quiet --report-refresh "$@" 2>/dev/null | grep '^refresh ')"
+	declared="$(echo "$line" | awk '{print $3}')"
+	observed="$(echo "$line" | awk '{print $5}')"
+	if [ -z "$observed" ]; then
+		say_fail "$leg refresh rate" "the core reported nothing"
+	elif [ "$observed" != "$want" ]; then
+		say_fail "$leg refresh rate" "wanted $want, got $observed"
+	elif [ "$declared" != "0/0" ] && [ "$declared" != "$observed" ]; then
+		say_fail "$leg refresh rate" "machines.h declares $declared, the machine says $observed"
+	else
+		if [ "$observed" = "60/1" ] || [ "$observed" = "50/1" ]; then
+			say_pass "$leg refresh is $observed, the nominal rate ares hints there"
+		else
+			say_pass "$leg refresh is $observed, the machine's own and not a flat 60"
+		fi
+	fi
+}
+# What each machine's own clock divides out to, and none of them is 60.
+refresh_is "GB"  GB  libbet.gb    262144/4389 --frames 120
+refresh_is "GBA" GBA gba-arm.gba  262144/4389 --frames 120
+# The Nintendo 64 is the exception, and deliberately: ares hints a flat 60 with
+# a TODO beside it, and 60 is what mupen and BizHawk record N64 movies at.
+refresh_is "N64" N64 helloworld-cpu.n64 60/1 --frames 120
+refresh_is "PS1" PS1 -            60/1 --frames 300
+
+echo
 echo "== input reaches the machine =="
 # A leg that only proved two builds agree would pass just as well with the input
 # wire cut. These prove the machine NOTICED - each distinct input has to produce

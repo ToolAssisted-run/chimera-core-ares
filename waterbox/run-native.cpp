@@ -110,7 +110,12 @@ int main(int argc, char **argv)
 	/* --report-stick: run, then say what the pad reported. Nothing else in the
 	 * run changes, so the digests stay comparable. */
 	bool reportStick = false;
-	for (int i = 1; i < argc; i++) if (!strcmp(argv[i], "--report-stick")) reportStick = true;
+	bool reportRefresh = false;
+	for (int i = 1; i < argc; i++)
+	{
+		if (!strcmp(argv[i], "--report-stick")) reportStick = true;
+		if (!strcmp(argv[i], "--report-refresh")) reportRefresh = true;
+	}
 
 	struct gate_core core = {
 		core_init, core_load_error, core_button_count, core_button_name,
@@ -121,6 +126,16 @@ int main(int argc, char **argv)
 		core_set_rendering, core_pre_frame,
 	};
 	int rc = gate_run(&core, &opts);
+	if (reportRefresh)
+	{
+		/* Read AFTER the run: a machine that works its rate out from the frame
+		 * it has just drawn has said something by now, and that is the number
+		 * the declaration in machines.h has to agree with. */
+		int dn = 0, dd = 0;
+		machine::declaredRefresh(&dn, &dd);
+		printf("refresh declared %d/%d observed %d/%d\n",
+			dn, dd, machine::vsyncNumerator(), machine::vsyncDenominator());
+	}
 	if (reportStick)
 	{
 		int x = 0, y = 0;

@@ -226,7 +226,7 @@ not.
 
 ## The gate
 
-`waterbox/run-gate.sh`, twenty-six legs, a few minutes. It runs anywhere, CI
+`waterbox/run-gate.sh`, thirty legs, a few minutes. It runs anywhere, CI
 included, because the content is free: **PeterLemon/N64** test ROMs (Unlicense)
 and **libbet** (Zlib), a real Game Boy homebrew. This core is in the "upstream
 ships something free" category of `porting-a-core.md`.
@@ -235,23 +235,28 @@ What the legs prove, in the order they matter:
 
 1. **native == sandbox**, on every digest, over nine runs across four machines
    including ones with buttons held and the stick over.
-2. **every machine is what ares says it is** - all seventeen rebuilt, their
+2. **every machine is what ares says it is** - all twenty-one rebuilt, their
    inputs re-enumerated, and the committed declaration diffed against them. A
-   runner without the console BIOSes checks the thirteen it can and says which
-   four it skipped.
+   runner without the console BIOSes checks the fourteen it can and says which
+   seven it skipped.
 3. **the machine survives a savestate**, saved and reloaded before every single
    frame, digests unchanged.
 4. **the same run twice is the same machine**, for both validated machines. This
    is the entropy leg, and it fails loudly if the seed ever comes unpinned.
-5. **input reaches the machine**: on the N64, idle, A and Start each produce a
+5. **the refresh rate is the machine's own**, not a flat 60 - and where
+   `machines.h` declares a rate for a machine that cannot say in time, the
+   declaration has to equal what the machine reports once it is running. This
+   is the one thing no digest can see: a digest is per frame, and a frame is a
+   frame whatever rate it is played back at.
+6. **input reaches the machine**: on the N64, idle, A and Start each produce a
    different machine, and so do three different stick positions; on the Game
    Boy, idle, A and Start. Without this a leg could pass with the input wire cut.
-6. **the stick is the byte**, seven positions compared against what the
+7. **the stick is the byte**, seven positions compared against what the
    controller actually reported.
-7. **the picture is the one the hardware draws**: `helloworld-cpu` compared
+8. **the picture is the one the hardware draws**: `helloworld-cpu` compared
    **pixel for pixel** - all 76800 of them, exactly - against PeterLemon's
    capture from a real console, with the video interface's filtering off.
-8. **somebody else's test suite says the CPU is right**: the Game Boy Advance
+9. **somebody else's test suite says the CPU is right**: the Game Boy Advance
    runs jsmolka's ARM tests and the gate READS THE SCREEN for the verdict
    (`waterbox/tests/read-verdict.py`). Reading a picture to run a test suite is
    roundabout, and it is the only way a test ROM has to talk - which also means
@@ -509,12 +514,61 @@ itself).
 | Game Boy, Game Boy Advance | 60/1 | 262144/4389 = 59.7275Hz |
 | Famicom | 60/1 | 311851/5189 = 60.0985Hz |
 | Mega Drive, Master System | 60/1 | 183843/3068 = 59.9228Hz |
-| Nintendo 64, Atari 2600 | 60/1 | 60/1 |
+| WonderSwan | 60/1 | 4000/53 = 75.4717Hz |
+| Atari 2600 | 60/1 | 27325/456 = 59.9232Hz |
+| Nintendo 64 | 60/1 | 60/1 |
 
 The seeds of the continued fraction are worth one line, because getting them
 wrong does not look like an error: `h(-1)=1, h(-2)=0` and `k(-1)=0, k(-2)=1`.
 With `k(-1)` set to 1 instead the first version reported 0.98Hz, which is
 nonsense the code was perfectly happy with.
+
+### The two machines that cannot say in time
+
+The rate above comes from ares, and almost every machine hands it over while it
+is being built. Two do not: the **Atari 2600** and the **WonderSwan** work their
+rate out from the frame they have just drawn, because on those machines the
+number of lines in a frame is something the *program* chooses. They say nothing
+at all until a frame has gone by - and the frontend asks once, at load, and
+writes the answer into the movie.
+
+The cost of getting it wrong is not small. A WonderSwan runs at **75.4717Hz**;
+reported as 60 it is a quarter out, which in a recording is Chimera's
+audio-driven writer dropping a fifth of the frames on the floor - a hundred and
+nineteen frames written of a hundred and fifty asked for, measured.
+
+**Running the machine to hear the answer and putting it back was tried, and it
+does not work.** Two ways:
+
+- `power()` twice is not the same machine as `power()` once. The two machines
+  this would apply to were the only two of fifteen whose digests moved, which is
+  how it was caught.
+- Restoring a savestate over a machine that has only just powered on does not
+  give the machine back either - `serialize` synchronises the threads and
+  power-on has not, so what comes back is a machine that has been synchronised.
+  Taking the state alone changes nothing (checked); it is the restore that
+  lands somewhere else.
+
+  Worth stating plainly, because it sounds worse than it is: **during a run the
+  round trip is exact**. A WonderSwan saved and reloaded before every one of 120
+  frames is byte-identical to one that was left alone. It is only the untouched
+  power-on state that a savestate cannot reproduce.
+
+So the two rates are **declared** in `waterbox/machines.h`, as the rationals
+ares' own constants divide out to - `3579575/(228*262)` and `3072000/(256*159)`
+- and the declaration is checked rather than trusted. `run-native
+--report-refresh` prints what the table declares beside what the machine says
+once it has been running, and they have to agree exactly:
+
+```
+  A26  refresh declared 27325/456 observed 27325/456
+  WSC  refresh declared 4000/53   observed 4000/53
+```
+
+The gate runs that check on every machine it has content for. It cannot run it
+on these two, because it has no Atari 2600 or WonderSwan ROM it may carry - so
+those two lines above are the record of it, taken by hand against a commercial
+cartridge, and they are what to re-run if the numbers are ever doubted.
 
 ### Four faults the Game Boy could not have found
 

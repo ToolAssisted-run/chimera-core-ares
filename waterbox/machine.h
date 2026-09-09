@@ -90,6 +90,10 @@ namespace machine
 	/* The nominal refresh, as a rational. It depends on the machine and its
 	 * region, which is why the frontend asks the core rather than reading one
 	 * number off the package. */
+	/* What the machine's table declares for machines ares will not name a rate
+	 * for in time; 0/0 for every machine that names its own. The gate compares
+	 * it against what the machine reports once it has been running. */
+	void declaredRefresh(int *numerator, int *denominator);
 	int vsyncNumerator(void);
 	int vsyncDenominator(void);
 

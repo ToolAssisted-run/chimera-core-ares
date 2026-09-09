@@ -187,7 +187,12 @@ namespace
 		 * guessed. */
 		auto refreshRateHint(double refreshRate) -> void override
 		{
-			if (refreshRate > 1.0 && refreshRate < 1000.0) g_refreshRate = refreshRate;
+			/* A television's band. The Atari 2600 counts the lines its program
+			 * actually drew, and the first frames of a cartridge are not a
+			 * picture yet - one of them hinted 4.6Hz - so a figure outside what
+			 * a screen could be is not an answer, it is a machine still waking
+			 * up. 75.5Hz for the WonderSwan is the highest anything here says. */
+			if (refreshRate > 20.0 && refreshRate < 130.0) g_refreshRate = refreshRate;
 		}
 
 		auto input(Node::Input::Input node) -> void override
@@ -531,8 +536,14 @@ namespace machine
 	static void refreshAsRational(int *numerator, int *denominator)
 	{
 		double rate = g_refreshRate;
-		if (!(rate > 1.0 && rate < 1000.0))
+		if (!(rate > 20.0 && rate < 130.0))
 		{
+			/* The machine has not said. A few cannot say in time - see
+			 * machines.h - and those declare theirs; the rest fall back to the
+			 * nominal rate for their region. */
+			int num = g_spec ? (g_pal ? g_spec->refreshPalNum : g_spec->refreshNtscNum) : 0;
+			int den = g_spec ? (g_pal ? g_spec->refreshPalDen : g_spec->refreshNtscDen) : 0;
+			if (num > 0 && den > 0) { *numerator = num; *denominator = den; return; }
 			*numerator = g_pal ? 50 : 60;
 			*denominator = 1;
 			return;
@@ -562,6 +573,12 @@ namespace machine
 		}
 		*numerator = (int)bestNum;
 		*denominator = (int)bestDen;
+	}
+
+	void declaredRefresh(int *numerator, int *denominator)
+	{
+		*numerator = g_spec ? (g_pal ? g_spec->refreshPalNum : g_spec->refreshNtscNum) : 0;
+		*denominator = g_spec ? (g_pal ? g_spec->refreshPalDen : g_spec->refreshNtscDen) : 0;
 	}
 
 	int vsyncNumerator(void) { int n, d; refreshAsRational(&n, &d); return n; }
