@@ -11,7 +11,14 @@
  * newer ares that renames or reorders a button cannot quietly renumber
  * somebody's movie - it fails the gate instead.
  *
- *   gen-machines > machines.json
+ *   gen-machines [firmware-dir] > machines.json
+ *
+ * A machine that needs a console BIOS can only be described when one is there
+ * to build it with, and nothing of the kind is in this repository. Point the
+ * tool at a directory holding a file named after each firmware id
+ * (tests/firmware/gbaBios and friends) and those machines are described too;
+ * without it they are reported as unbuilt, and the gate checks only what it
+ * could build.
  */
 #include "machines.h"
 
@@ -119,8 +126,9 @@ namespace
 	}
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
+	const char *firmwareDir = argc > 1 ? argv[1] : nullptr;
 	static GenPlatform platform;
 	ares::platform = &platform;
 
@@ -132,7 +140,18 @@ int main(void)
 	for (auto &spec : machines::all())
 	{
 		g_systemPak = mia::System::create(spec.miaSystem);
-		bool systemOk = g_systemPak && g_systemPak->load({}) == successful;
+		string firmware;
+		bool firmwareMissing = false;
+		if (spec.firmware != nullptr)
+		{
+			if (firmwareDir == nullptr) firmwareMissing = true;
+			else
+			{
+				firmware = {firmwareDir, "/", spec.firmware};
+				if (!file::exists(firmware)) firmwareMissing = true;
+			}
+		}
+		bool systemOk = !firmwareMissing && g_systemPak && g_systemPak->load(firmware) == successful;
 
 		Node::System root;
 		bool ok = systemOk && spec.load(root, spec.configNtsc ? spec.configNtsc : spec.configPal);
@@ -145,11 +164,19 @@ int main(void)
 		printf("      \"maxWidth\": %d,\n      \"maxHeight\": %d,\n", spec.maxWidth, spec.maxHeight);
 		printf("      \"virtualWidth\": %d,\n      \"virtualHeight\": %d,\n", spec.virtualWidth, spec.virtualHeight);
 		printf("      \"regions\": [\"ntsc\"%s],\n", spec.configPal ? ", \"pal\"" : "");
+		if (spec.firmware != nullptr)
+		{
+			/* Only the id: gen-config.py finds the file under tests/firmware and
+			 * hashes it, so the package pins the BIOS that was verified to work
+			 * and this file stays the same whatever path it was run with. */
+			printf("      \"firmware\": {\"id\": \"%s\"},\n", spec.firmware);
+		}
 		printf("      \"loads\": %s,\n", ok ? "true" : "false");
 		if (!ok)
 		{
 			printf("      \"why\": \"%s\"\n    }",
-				systemOk ? "ares would not build it" : "its system pak needs firmware this build does not carry");
+				firmwareMissing ? "its console BIOS was not provided to this run"
+				                : (systemOk ? "ares would not build it" : "its system pak would not load"));
 			continue;
 		}
 

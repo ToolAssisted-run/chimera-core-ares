@@ -8,8 +8,8 @@ deterministic sandbox and packaged as a Chimera core (`core.wbx` +
 [chimera-core-dosbox-x](https://github.com/ToolAssisted-run/chimera-core-dosbox-x)
 and [chimera-core-gpgx](https://github.com/ToolAssisted-run/chimera-core-gpgx).
 
-Status: **thirteen machines declared; the Nintendo 64 and the Game Boy are
-proven end to end.**
+Status: **sixteen machines declared; the Nintendo 64, the Game Boy and the Game
+Boy Advance are proven end to end.**
 
 ares emulates about thirty systems from one codebase, which is why this
 repository is named for the emulator rather than for a console. The Nintendo 64
@@ -19,9 +19,9 @@ the machinery the rest need.
 
 | | |
 | --- | --- |
-| **Proven** (a real program runs, every digest compared) | Nintendo 64, Game Boy |
-| **Declared** (builds, powers on, inputs enumerated; no game has run) | Famicom/NES, Game Boy Color, Mega Drive, Master System, Game Gear, SG-1000, Atari 2600, WonderSwan, WonderSwan Color, ZX Spectrum, MyVision |
-| **Absent** (ares needs a console BIOS this core does not declare yet) | Game Boy Advance, PlayStation, Neo Geo, Neo Geo Pocket, ColecoVision, MSX, Atari 5200 |
+| **Proven** (a real program runs, every digest compared) | Nintendo 64, Game Boy, Game Boy Advance |
+| **Declared** (builds, powers on, inputs enumerated; no game has run) | Famicom/NES, Game Boy Color, Mega Drive, Master System, Game Gear, SG-1000, Atari 2600, WonderSwan, WonderSwan Color, ZX Spectrum, MyVision, ColecoVision, MSX |
+| **Absent** (no BIOS to hand, or a bigger job) | Neo Geo, Neo Geo Pocket, Atari 5200, PlayStation |
 
 That table is the honest shape of it, and `docs/PLAN.md` keeps it current.
 Adding a machine is a row in `waterbox/machines.h` and a regenerate; making one
@@ -42,20 +42,25 @@ What the machines have in common:
   asks the emulator what each machine is made of and `gen-config.py` writes the
   declaration, so a newer ares that renames a button fails the gate rather than
   renumbering somebody's movie.
-- **No firmware to find** for any machine offered. The Nintendo 64's boot ROMs
-  travel with the core, as they do with ares itself.
+- **Firmware only where the console truly needs it.** Thirteen of the sixteen
+  need nothing but a cartridge; the Game Boy Advance, ColecoVision and MSX need
+  their console BIOS, which the user supplies and Chimera pins by hash. None of
+  it ships here.
 - **The analogue stick is the byte** the controller reports, reaching the game
   unchanged - the convention mupen and BizHawk record, so an N64 run made here
   means the same as a run made there.
 
-The equivalence gate (`waterbox/run-gate.sh`) runs eighteen legs: native
-against sandbox on every digest for both proven machines, the machine
-round-tripped through a savestate before every frame, every one of the thirteen
+The equivalence gate (`waterbox/run-gate.sh`) runs twenty-three legs: native
+against sandbox on every digest for all three proven machines, the machine
+round-tripped through a savestate before every frame, every one of the sixteen
 rebuilt and re-enumerated against its committed declaration, input proven to
-reach the machine, and the picture compared **pixel for pixel against real
-hardware**. Its content is [PeterLemon/N64](https://github.com/PeterLemon/N64)
-(public domain) and [libbet](https://github.com/pinobatch/libbet) (Zlib), so the
-whole gate runs on a public runner with nothing licensed on it.
+reach the machine, the picture compared **pixel for pixel against real
+hardware**, and **jsmolka's ARM test suite read off the screen**. Its content is
+[PeterLemon/N64](https://github.com/PeterLemon/N64) (public domain),
+[libbet](https://github.com/pinobatch/libbet) (Zlib) and
+[gba-tests](https://github.com/jsmolka/gba-tests) (MIT), so the whole gate runs
+on a public runner with nothing licensed on it - it simply skips the three
+machines whose BIOS is not there, and says so.
 
 ## Building
 

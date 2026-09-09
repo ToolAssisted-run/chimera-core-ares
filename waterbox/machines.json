@@ -374,6 +374,97 @@
       "ports": [
 
       ]
+    },
+    {
+      "id": "GBA",
+      "label": "Game Boy Advance",
+      "extensions": "gba",
+      "maxWidth": 240,
+      "maxHeight": 160,
+      "virtualWidth": 240,
+      "virtualHeight": 160,
+      "regions": ["ntsc"],
+      "firmware": {"id": "gbaBios"},
+      "loads": true,
+      "console": [{"name": "Up", "path": "Controls/Up", "axis": false}, {"name": "Down", "path": "Controls/Down", "axis": false}, {"name": "Left", "path": "Controls/Left", "axis": false}, {"name": "Right", "path": "Controls/Right", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "L", "path": "Controls/L", "axis": false}, {"name": "R", "path": "Controls/R", "axis": false}, {"name": "Select", "path": "Controls/Select", "axis": false}, {"name": "Start", "path": "Controls/Start", "axis": false}],
+      "ports": [
+
+      ]
+    },
+    {
+      "id": "CV",
+      "label": "ColecoVision",
+      "extensions": "cv col",
+      "maxWidth": 284,
+      "maxHeight": 243,
+      "virtualWidth": 284,
+      "virtualHeight": 192,
+      "regions": ["ntsc", "pal"],
+      "firmware": {"id": "cvBios"},
+      "loads": true,
+      "console": [{"name": "Reset", "path": "Controls/Reset", "axis": false}],
+      "ports": [
+        {
+          "name": "Controller Port 1",
+          "devices": [
+            {
+              "name": "Gamepad",
+              "inputs": [{"name": "Up", "path": "Controller Port 1/Gamepad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 1/Gamepad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 1/Gamepad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 1/Gamepad/Right", "axis": false}, {"name": "L", "path": "Controller Port 1/Gamepad/L", "axis": false}, {"name": "R", "path": "Controller Port 1/Gamepad/R", "axis": false}, {"name": "1", "path": "Controller Port 1/Gamepad/1", "axis": false}, {"name": "2", "path": "Controller Port 1/Gamepad/2", "axis": false}, {"name": "3", "path": "Controller Port 1/Gamepad/3", "axis": false}, {"name": "4", "path": "Controller Port 1/Gamepad/4", "axis": false}, {"name": "5", "path": "Controller Port 1/Gamepad/5", "axis": false}, {"name": "6", "path": "Controller Port 1/Gamepad/6", "axis": false}, {"name": "7", "path": "Controller Port 1/Gamepad/7", "axis": false}, {"name": "8", "path": "Controller Port 1/Gamepad/8", "axis": false}, {"name": "9", "path": "Controller Port 1/Gamepad/9", "axis": false}, {"name": "*", "path": "Controller Port 1/Gamepad/*", "axis": false}, {"name": "0", "path": "Controller Port 1/Gamepad/0", "axis": false}, {"name": "#", "path": "Controller Port 1/Gamepad/#", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Controller Port 2",
+          "devices": [
+            {
+              "name": "Gamepad",
+              "inputs": [{"name": "Up", "path": "Controller Port 2/Gamepad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 2/Gamepad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 2/Gamepad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 2/Gamepad/Right", "axis": false}, {"name": "L", "path": "Controller Port 2/Gamepad/L", "axis": false}, {"name": "R", "path": "Controller Port 2/Gamepad/R", "axis": false}, {"name": "1", "path": "Controller Port 2/Gamepad/1", "axis": false}, {"name": "2", "path": "Controller Port 2/Gamepad/2", "axis": false}, {"name": "3", "path": "Controller Port 2/Gamepad/3", "axis": false}, {"name": "4", "path": "Controller Port 2/Gamepad/4", "axis": false}, {"name": "5", "path": "Controller Port 2/Gamepad/5", "axis": false}, {"name": "6", "path": "Controller Port 2/Gamepad/6", "axis": false}, {"name": "7", "path": "Controller Port 2/Gamepad/7", "axis": false}, {"name": "8", "path": "Controller Port 2/Gamepad/8", "axis": false}, {"name": "9", "path": "Controller Port 2/Gamepad/9", "axis": false}, {"name": "*", "path": "Controller Port 2/Gamepad/*", "axis": false}, {"name": "0", "path": "Controller Port 2/Gamepad/0", "axis": false}, {"name": "#", "path": "Controller Port 2/Gamepad/#", "axis": false}]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MSX",
+      "label": "MSX",
+      "extensions": "msx rom",
+      "maxWidth": 284,
+      "maxHeight": 243,
+      "virtualWidth": 284,
+      "virtualHeight": 192,
+      "regions": ["ntsc", "pal"],
+      "firmware": {"id": "msxBios"},
+      "loads": true,
+      "console": [],
+      "ports": [
+        {
+          "name": "Keyboard",
+          "devices": [
+            {
+              "name": "Japanese",
+              "inputs": [{"name": "0 わ を", "path": "Keyboard/Japanese/0 わ を", "axis": false}, {"name": "1 ! ぬ", "path": "Keyboard/Japanese/1 ! ぬ", "axis": false}, {"name": "2 \" ふ", "path": "Keyboard/Japanese/2 \" ふ", "axis": false}, {"name": "3 # あ ぁ", "path": "Keyboard/Japanese/3 # あ ぁ", "axis": false}, {"name": "4 $ う ぅ", "path": "Keyboard/Japanese/4 $ う ぅ", "axis": false}, {"name": "5 % え ぇ", "path": "Keyboard/Japanese/5 % え ぇ", "axis": false}, {"name": "6 & お ぉ", "path": "Keyboard/Japanese/6 & お ぉ", "axis": false}, {"name": "7 ’ や ゃ", "path": "Keyboard/Japanese/7 ’ や ゃ", "axis": false}, {"name": "8 ( ゆ ゅ", "path": "Keyboard/Japanese/8 ( ゆ ゅ", "axis": false}, {"name": "9 ) よ ょ", "path": "Keyboard/Japanese/9 ) よ ょ", "axis": false}, {"name": "- = ほ", "path": "Keyboard/Japanese/- = ほ", "axis": false}, {"name": "^ ~ へ", "path": "Keyboard/Japanese/^ ~ へ", "axis": false}, {"name": "¥ | ー", "path": "Keyboard/Japanese/¥ | ー", "axis": false}, {"name": "@ ‘ \"", "path": "Keyboard/Japanese/@ ‘ \"", "axis": false}, {"name": "[ { 。", "path": "Keyboard/Japanese/[ { 。", "axis": false}, {"name": "; + れ", "path": "Keyboard/Japanese/; + れ", "axis": false}, {"name": ": * け", "path": "Keyboard/Japanese/: * け", "axis": false}, {"name": "] } む", "path": "Keyboard/Japanese/] } む", "axis": false}, {"name": ", < ね `", "path": "Keyboard/Japanese/, < ね `", "axis": false}, {"name": ". > る 。", "path": "Keyboard/Japanese/. > る 。", "axis": false}, {"name": "/ ? め .", "path": "Keyboard/Japanese// ? め .", "axis": false}, {"name": "- ろ", "path": "Keyboard/Japanese/- ろ", "axis": false}, {"name": "A ち", "path": "Keyboard/Japanese/A ち", "axis": false}, {"name": "B こ", "path": "Keyboard/Japanese/B こ", "axis": false}, {"name": "C そ", "path": "Keyboard/Japanese/C そ", "axis": false}, {"name": "D し", "path": "Keyboard/Japanese/D し", "axis": false}, {"name": "E い ぃ", "path": "Keyboard/Japanese/E い ぃ", "axis": false}, {"name": "F は", "path": "Keyboard/Japanese/F は", "axis": false}, {"name": "G き", "path": "Keyboard/Japanese/G き", "axis": false}, {"name": "H く", "path": "Keyboard/Japanese/H く", "axis": false}, {"name": "I に", "path": "Keyboard/Japanese/I に", "axis": false}, {"name": "J ま", "path": "Keyboard/Japanese/J ま", "axis": false}, {"name": "K の", "path": "Keyboard/Japanese/K の", "axis": false}, {"name": "L り", "path": "Keyboard/Japanese/L り", "axis": false}, {"name": "M も", "path": "Keyboard/Japanese/M も", "axis": false}, {"name": "N み", "path": "Keyboard/Japanese/N み", "axis": false}, {"name": "O ら", "path": "Keyboard/Japanese/O ら", "axis": false}, {"name": "P せ", "path": "Keyboard/Japanese/P せ", "axis": false}, {"name": "Q た", "path": "Keyboard/Japanese/Q た", "axis": false}, {"name": "R す", "path": "Keyboard/Japanese/R す", "axis": false}, {"name": "S と", "path": "Keyboard/Japanese/S と", "axis": false}, {"name": "T か", "path": "Keyboard/Japanese/T か", "axis": false}, {"name": "U な", "path": "Keyboard/Japanese/U な", "axis": false}, {"name": "V ひ", "path": "Keyboard/Japanese/V ひ", "axis": false}, {"name": "W て", "path": "Keyboard/Japanese/W て", "axis": false}, {"name": "X さ", "path": "Keyboard/Japanese/X さ", "axis": false}, {"name": "Y ん", "path": "Keyboard/Japanese/Y ん", "axis": false}, {"name": "Z つ っ", "path": "Keyboard/Japanese/Z つ っ", "axis": false}, {"name": "SHIFT", "path": "Keyboard/Japanese/SHIFT", "axis": false}, {"name": "CTRL", "path": "Keyboard/Japanese/CTRL", "axis": false}, {"name": "GRAPH", "path": "Keyboard/Japanese/GRAPH", "axis": false}, {"name": "CAPS", "path": "Keyboard/Japanese/CAPS", "axis": false}, {"name": "かな", "path": "Keyboard/Japanese/かな", "axis": false}, {"name": "F1 F6", "path": "Keyboard/Japanese/F1 F6", "axis": false}, {"name": "F2 F7", "path": "Keyboard/Japanese/F2 F7", "axis": false}, {"name": "F3 F8", "path": "Keyboard/Japanese/F3 F8", "axis": false}, {"name": "F4 F9", "path": "Keyboard/Japanese/F4 F9", "axis": false}, {"name": "F5 F10", "path": "Keyboard/Japanese/F5 F10", "axis": false}, {"name": "ESC", "path": "Keyboard/Japanese/ESC", "axis": false}, {"name": "TAB", "path": "Keyboard/Japanese/TAB", "axis": false}, {"name": "STOP", "path": "Keyboard/Japanese/STOP", "axis": false}, {"name": "BS", "path": "Keyboard/Japanese/BS", "axis": false}, {"name": "SELECT", "path": "Keyboard/Japanese/SELECT", "axis": false}, {"name": "RETURN", "path": "Keyboard/Japanese/RETURN", "axis": false}, {"name": "SPACE", "path": "Keyboard/Japanese/SPACE", "axis": false}, {"name": "CLS/HOME", "path": "Keyboard/Japanese/CLS/HOME", "axis": false}, {"name": "INS", "path": "Keyboard/Japanese/INS", "axis": false}, {"name": "DEL", "path": "Keyboard/Japanese/DEL", "axis": false}, {"name": "←", "path": "Keyboard/Japanese/←", "axis": false}, {"name": "↑", "path": "Keyboard/Japanese/↑", "axis": false}, {"name": "↓", "path": "Keyboard/Japanese/↓", "axis": false}, {"name": "→", "path": "Keyboard/Japanese/→", "axis": false}, {"name": "*", "path": "Keyboard/Japanese/*", "axis": false}, {"name": "+", "path": "Keyboard/Japanese/+", "axis": false}, {"name": "/", "path": "Keyboard/Japanese//", "axis": false}, {"name": "0", "path": "Keyboard/Japanese/0", "axis": false}, {"name": "1", "path": "Keyboard/Japanese/1", "axis": false}, {"name": "2", "path": "Keyboard/Japanese/2", "axis": false}, {"name": "3", "path": "Keyboard/Japanese/3", "axis": false}, {"name": "4", "path": "Keyboard/Japanese/4", "axis": false}, {"name": "5", "path": "Keyboard/Japanese/5", "axis": false}, {"name": "6", "path": "Keyboard/Japanese/6", "axis": false}, {"name": "7", "path": "Keyboard/Japanese/7", "axis": false}, {"name": "8", "path": "Keyboard/Japanese/8", "axis": false}, {"name": "9", "path": "Keyboard/Japanese/9", "axis": false}, {"name": "-", "path": "Keyboard/Japanese/-", "axis": false}, {"name": ",", "path": "Keyboard/Japanese/,", "axis": false}, {"name": ".", "path": "Keyboard/Japanese/.", "axis": false}, {"name": "", "path": "Keyboard/Japanese/", "axis": false}, {"name": "実行", "path": "Keyboard/Japanese/実行", "axis": false}, {"name": "取消", "path": "Keyboard/Japanese/取消", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Controller Port 1",
+          "devices": [
+            {
+              "name": "Gamepad",
+              "inputs": [{"name": "Up", "path": "Controller Port 1/Gamepad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 1/Gamepad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 1/Gamepad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 1/Gamepad/Right", "axis": false}, {"name": "A", "path": "Controller Port 1/Gamepad/A", "axis": false}, {"name": "B", "path": "Controller Port 1/Gamepad/B", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Controller Port 2",
+          "devices": [
+            {
+              "name": "Gamepad",
+              "inputs": [{"name": "Up", "path": "Controller Port 2/Gamepad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 2/Gamepad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 2/Gamepad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 2/Gamepad/Right", "axis": false}, {"name": "A", "path": "Controller Port 2/Gamepad/A", "axis": false}, {"name": "B", "path": "Controller Port 2/Gamepad/B", "axis": false}]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

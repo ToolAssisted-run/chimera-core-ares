@@ -24,10 +24,13 @@
 #undef NCCS
 
 #include <a26/a26.hpp>
+#include <cv/cv.hpp>
 #include <fc/fc.hpp>
+#include <gba/gba.hpp>
 #include <gb/gb.hpp>
 #include <md/md.hpp>
 #include <ms/ms.hpp>
+#include <msx/msx.hpp>
 #include <myvision/myvision.hpp>
 #include <n64/n64.hpp>
 #include <sg/sg.hpp>
@@ -61,6 +64,10 @@ namespace machines
 		 * devices on an Atari 2600 port, and declaring the union of them would
 		 * make a controller nobody could read. */
 		const char *devices;
+		/* The console BIOS ares cannot build this machine without, by the id the
+		 * package declares it under - which is also the name the frontend mounts
+		 * it as. Null for a machine that carries everything it needs. */
+		const char *firmware;
 	};
 
 	/* Ordered as a person would look for them, not as ares stores them. */
@@ -69,55 +76,74 @@ namespace machines
 		static const std::vector<Spec> specs = {
 			{"N64", "Nintendo 64", "Nintendo 64", "Nintendo 64", ares::Nintendo64::load,
 			 "[Nintendo] Nintendo 64 (NTSC)", "[Nintendo] Nintendo 64 (PAL)",
-			 640, 576, 640, 480, "n64 v64 z64", "Gamepad Mouse"},
+			 640, 576, 640, 480, "n64 v64 z64", "Gamepad Mouse", nullptr},
 
 			{"NES", "Famicom / NES", "Famicom", "Famicom", ares::Famicom::load,
 			 "[Nintendo] Famicom (NTSC-J)", "[Nintendo] Famicom (PAL)",
-			 512, 480, 293, 240, "fc nes unf unif", nullptr},
+			 512, 480, 293, 240, "fc nes unf unif", nullptr, nullptr},
 
 			{"GB", "Game Boy", "Game Boy", "Game Boy", ares::GameBoy::load,
 			 "[Nintendo] Game Boy", nullptr,
-			 160, 144, 160, 144, "gb", nullptr},
+			 160, 144, 160, 144, "gb", nullptr, nullptr},
 
 			{"GBC", "Game Boy Color", "Game Boy Color", "Game Boy Color", ares::GameBoy::load,
 			 "[Nintendo] Game Boy Color", nullptr,
-			 160, 144, 160, 144, "gbc", nullptr},
+			 160, 144, 160, 144, "gbc", nullptr, nullptr},
 
 			{"GEN", "Mega Drive / Genesis", "Mega Drive", "Mega Drive", ares::MegaDrive::load,
 			 "[Sega] Mega Drive (NTSC-U)", "[Sega] Mega Drive (PAL)",
-			 1280, 480, 292, 224, "md gen smd bin", nullptr},
+			 1280, 480, 292, 224, "md gen smd bin", nullptr, nullptr},
 
 			{"SMS", "Master System", "Master System", "Master System", ares::MasterSystem::load,
 			 "[Sega] Master System (NTSC-U)", "[Sega] Master System (PAL)",
-			 284, 243, 284, 192, "sms", nullptr},
+			 284, 243, 284, 192, "sms", nullptr, nullptr},
 
 			{"GG", "Game Gear", "Game Gear", "Game Gear", ares::MasterSystem::load,
 			 "[Sega] Game Gear (NTSC-U)", nullptr,
-			 160, 144, 160, 144, "gg", nullptr},
+			 160, 144, 160, 144, "gg", nullptr, nullptr},
 
 			{"SG", "SG-1000", "SG-1000", "SG-1000", ares::SG1000::load,
 			 "[Sega] SG-1000 (NTSC)", "[Sega] SG-1000 (PAL)",
-			 284, 243, 284, 192, "sg sg1000", nullptr},
+			 284, 243, 284, 192, "sg sg1000", nullptr, nullptr},
 
 			{"A26", "Atari 2600", "Atari 2600", "Atari 2600", ares::Atari2600::load,
 			 "[Atari] Atari 2600 (NTSC)", "[Atari] Atari 2600 (PAL)",
-			 160, 312, 292, 222, "a26 bin", nullptr},
+			 160, 312, 292, 222, "a26 bin", nullptr, nullptr},
 
 			{"WS", "WonderSwan", "WonderSwan", "WonderSwan", ares::WonderSwan::load,
 			 "[Bandai] WonderSwan", nullptr,
-			 224, 224, 224, 144, "ws", nullptr},
+			 224, 224, 224, 144, "ws", nullptr, nullptr},
 
 			{"WSC", "WonderSwan Color", "WonderSwan Color", "WonderSwan Color", ares::WonderSwan::load,
 			 "[Bandai] WonderSwan Color", nullptr,
-			 224, 224, 224, 144, "wsc", nullptr},
+			 224, 224, 224, 144, "wsc", nullptr, nullptr},
 
 			{"ZXS", "ZX Spectrum", "ZX Spectrum", "ZX Spectrum", ares::ZXSpectrum::load,
 			 "[Sinclair] ZX Spectrum", nullptr,
-			 352, 296, 352, 296, "z80 tap tzx", nullptr},
+			 352, 296, 352, 296, "z80 tap tzx", nullptr, nullptr},
 
 			{"MYV", "MyVision", "MyVision", "MyVision", ares::MyVision::load,
 			 "[Nichibutsu] MyVision", nullptr,
-			 284, 243, 284, 192, "myvision", nullptr},
+			 284, 243, 284, 192, "myvision", nullptr, nullptr},
+
+			/* ---- and the ones ares cannot build without a console BIOS ----
+			 *
+			 * The user supplies these; Chimera resolves them, remembers where
+			 * they were, and mounts each under the id named here. Nothing of the
+			 * kind ships in this package, and the machines below simply do not
+			 * appear in a project until their firmware has been found. */
+
+			{"GBA", "Game Boy Advance", "Game Boy Advance", "Game Boy Advance", ares::GameBoyAdvance::load,
+			 "[Nintendo] Game Boy Advance", nullptr,
+			 240, 160, 240, 160, "gba", nullptr, "gbaBios"},
+
+			{"CV", "ColecoVision", "ColecoVision", "ColecoVision", ares::ColecoVision::load,
+			 "[Coleco] ColecoVision (NTSC)", "[Coleco] ColecoVision (PAL)",
+			 284, 243, 284, 192, "cv col", nullptr, "cvBios"},
+
+			{"MSX", "MSX", "MSX", "MSX", ares::MSX::load,
+			 "[Microsoft] MSX (NTSC)", "[Microsoft] MSX (PAL)",
+			 284, 243, 284, 192, "msx rom", nullptr, "msxBios"},
 		};
 		return specs;
 	}

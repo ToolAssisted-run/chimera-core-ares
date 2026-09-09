@@ -118,7 +118,8 @@ static int gate_parse_opts(int argc, char **argv, int from, struct gate_opts *o)
 		}
 		/* Options the driver itself consumed; skipping them here keeps one
 		 * parser rather than two that must agree. */
-		else if (!strcmp(a, "--rom") || !strcmp(a, "--time") || !strcmp(a, "--machine")) { (void)GATE_NEXT(); }
+		else if (!strcmp(a, "--rom") || !strcmp(a, "--time") || !strcmp(a, "--machine")
+			|| !strcmp(a, "--firmware")) { (void)GATE_NEXT(); }
 		else if (!strcmp(a, "--port")) { (void)GATE_NEXT(); (void)GATE_NEXT(); }
 		else if (!strcmp(a, "--pal") || !strcmp(a, "--fast-vi") || !strcmp(a, "--rerecord")
 			|| !strcmp(a, "--report-stick")) { }

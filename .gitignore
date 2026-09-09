@@ -2,3 +2,8 @@ build/
 __pycache__/
 *.ppm
 minibox-diag.log
+
+# Console BIOSes are the user's to supply, never this repository's to carry.
+# tests/firmware/ is where a developer puts their own for the gate legs that
+# need them; nothing here is distributable and nothing here is committed.
+tests/firmware/

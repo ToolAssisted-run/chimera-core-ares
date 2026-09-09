@@ -57,6 +57,7 @@ int main(int argc, char **argv)
 	{
 		const char *a = argv[i];
 		if (!strcmp(a, "--rom") && i + 1 < argc) config.romFile = argv[++i];
+		else if (!strcmp(a, "--firmware") && i + 1 < argc) config.firmwareFile = argv[++i];
 		else if (!strcmp(a, "--machine") && i + 1 < argc) config.machine = argv[++i];
 		else if (!strcmp(a, "--pal")) config.pal = true;
 		else if (!strcmp(a, "--fast-vi")) config.fastVI = true;
@@ -79,6 +80,7 @@ int main(int argc, char **argv)
 	{
 		fprintf(stderr, "usage: run-native --rom FILE [options]\n"
 			"  --machine ID      which console (default N64); see waterbox/machines.h\n"
+			"  --firmware FILE   the console BIOS, for a machine that needs one\n"
 			"  --pal             a PAL machine, where the console has one\n"
 			"  --time N          a cartridge clock's starting Unix time\n"
 			"  --port N DEVICE   what to plug into port N, by ares' name, or none\n"

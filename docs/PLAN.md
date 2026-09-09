@@ -14,14 +14,14 @@ Chimera has never had - and the reason to start there is that N64 is the
 *hardest* of ares' systems to sandbox, so a port that works for it works for
 the rest.
 
-**Thirteen machines are declared now**: Nintendo 64, Famicom/NES, Game Boy,
+**Sixteen machines are declared now**: Nintendo 64, Famicom/NES, Game Boy,
 Game Boy Color, Mega Drive, Master System, Game Gear, SG-1000, Atari 2600,
-WonderSwan, WonderSwan Color, ZX Spectrum and MyVision. They are the ones ares
-can build without asking the user for a console BIOS. Two of them - the
-Nintendo 64 and the Game Boy - are validated end to end against real content;
-the rest are declared, built and enumerated but have never run a game here. See
-"What is proven and what is only declared" below, because the difference
-matters.
+WonderSwan, WonderSwan Color, ZX Spectrum, MyVision - which need nothing of the
+user but a cartridge - and the Game Boy Advance, ColecoVision and MSX, which
+need a console BIOS the user supplies. Three of them are validated end to end
+against real content; the rest are declared, built and enumerated but have never
+run a game here. See "What is proven and what is only declared" below, because
+the difference matters.
 
 ## The three things that had to be solved
 
@@ -210,17 +210,19 @@ not.
 
 ## The gate
 
-`waterbox/run-gate.sh`, eighteen legs, a few minutes. It runs anywhere, CI
+`waterbox/run-gate.sh`, twenty-three legs, a few minutes. It runs anywhere, CI
 included, because the content is free: **PeterLemon/N64** test ROMs (Unlicense)
 and **libbet** (Zlib), a real Game Boy homebrew. This core is in the "upstream
 ships something free" category of `porting-a-core.md`.
 
 What the legs prove, in the order they matter:
 
-1. **native == sandbox**, on every digest, over six runs across two machines
-   including ones with buttons held and the stick over.
-2. **every machine is what ares says it is** - all thirteen rebuilt, their
-   inputs re-enumerated, and the committed declaration diffed against them.
+1. **native == sandbox**, on every digest, over eight runs across three
+   machines including ones with buttons held and the stick over.
+2. **every machine is what ares says it is** - all sixteen rebuilt, their inputs
+   re-enumerated, and the committed declaration diffed against them. A runner
+   without the console BIOSes checks the thirteen it can and says which three it
+   skipped.
 3. **the machine survives a savestate**, saved and reloaded before every single
    frame, digests unchanged.
 4. **the same run twice is the same machine**, for both validated machines. This
@@ -233,38 +235,75 @@ What the legs prove, in the order they matter:
 7. **the picture is the one the hardware draws**: `helloworld-cpu` compared
    **pixel for pixel** - all 76800 of them, exactly - against PeterLemon's
    capture from a real console, with the video interface's filtering off.
+8. **somebody else's test suite says the CPU is right**: the Game Boy Advance
+   runs jsmolka's ARM tests and the gate READS THE SCREEN for the verdict
+   (`waterbox/tests/read-verdict.py`). Reading a picture to run a test suite is
+   roundabout, and it is the only way a test ROM has to talk - which also means
+   this leg cannot pass by agreeing with another run of itself, the way a digest
+   comparison can.
 
-That last one is worth more than it looks: it is an end-to-end check against
-real hardware, not against ourselves.
+Those last two are worth more than they look: they are end-to-end checks against
+something outside this repository, rather than against ourselves.
 
 ## What is proven and what is only declared
 
-This distinction is the honest part of a thirteen-machine claim, so it gets its
+This distinction is the honest part of a sixteen-machine claim, so it gets its
 own heading.
 
 **Proven**, in the sense that a real program runs on them and the gate compares
-every digest between the two flavours: the **Nintendo 64** and the **Game Boy**.
+every digest between the two flavours:
+
+- the **Nintendo 64**, whose picture is compared pixel for pixel against a
+  capture from real hardware;
+- the **Game Boy**, running a whole homebrew game;
+- the **Game Boy Advance**, which passes **jsmolka's ARM test suite** - and the
+  gate reads the verdict off the screen rather than comparing a digest, so that
+  leg cannot pass by agreeing with itself.
 
 **Declared**, in the sense that ares builds them, this core enumerates their
 ports and inputs, and the package offers them - but no cartridge has ever been
 loaded into one here: Famicom/NES, Game Boy Color, Mega Drive, Master System,
 Game Gear, SG-1000, Atari 2600, WonderSwan, WonderSwan Color, ZX Spectrum,
-MyVision. What is known about them is that they build, that they power on, and
-that their declared wire format is ares' own. What is not known is whether they
-run a game correctly, what their audio sounds like, or whether their save data
-comes back. Each needs a freely distributable ROM and a gate leg before it
-should be believed, and the machinery for that is now a two-line addition.
+MyVision, ColecoVision, MSX. What is known about them is that they build, that
+they power on, and that their declared wire format is ares' own. What is not
+known is whether they run a game correctly, what their audio sounds like, or
+whether their save data comes back. Each needs a freely distributable ROM and a
+gate leg before it should be believed.
 
-**Absent** because ares cannot build them without a console BIOS this core does
-not yet declare: Atari 5200, ColecoVision, MSX and MSX2, Neo Geo, Neo Geo
-Pocket, Game Boy Advance, PlayStation. Chimera has firmware machinery
-(`requiredWhen` in the package); wiring it up is the next obvious step, and it
-is what unlocks the systems most worth having. The Super Famicom and the PC
-Engine build but crash when asked to power on with no cartridge, which is
-probably nothing more than that - they are absent until somebody checks.
+**Absent** because no BIOS was to hand: the Atari 5200, the Neo Geo (AES and
+MVS) and the Neo Geo Pocket. Each is a table row and a firmware declaration away
+once one turns up.
+
+**Absent because it is a bigger job**: the **PlayStation**. ares can build it,
+and a BIOS is available, but it loads discs rather than cartridges - which means
+CD images, a swap list, and a slot shape this core does not have yet. It is the
+next substantial machine rather than the next easy one.
 
 **Not in ares at all**: the Saturn is a stub upstream (one file), so it is not a
-machine anybody could offer.
+machine anybody could offer. The Super Famicom and the PC Engine build but crash
+when asked to power on with no cartridge, which is probably nothing more than
+that - they are absent until somebody checks.
+
+## Firmware
+
+Three machines need a console BIOS, and none of it is in this repository.
+
+The package declares each one - id, size, SHA-1, a suggested filename and the
+condition it is needed under (`{"setting": "machine", "is": "gba"}`) - and
+Chimera resolves it, remembers where the user keeps it, and mounts it in the
+guest under that id. So the guest opens `fopen("gbaBios")` and never sees a
+path, which is the same rule everything else in a core follows.
+
+The hash is not chosen: `gen-config.py` takes it from the file under
+`tests/firmware/` that `gen-machines` actually built the machine with. The
+package therefore pins the BIOS that was *verified to work*, rather than one
+somebody believed would. `tests/firmware/` is gitignored, and the gate skips the
+legs whose BIOS is missing and says which - so a CI runner with none of them
+still checks the other thirteen machines and reports honestly that it did.
+
+The one machine that could stop needing this is the **MSX**: C-BIOS is an
+open-source MSX BIOS, and if ares runs cartridges with it then the MSX could
+move to the group that needs nothing. Untested.
 
 ## The analogue stick
 

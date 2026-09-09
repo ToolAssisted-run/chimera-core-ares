@@ -134,6 +134,32 @@
     "MyVision Controller": {
       "1": "Z, J1 B3, X1 X",
       "2": "X, J1 B1, X1 A"
+    },
+    "Game Boy Advance Controller": {
+      "Up": "Up, J1 POV1U, X1 DpadUp",
+      "Down": "Down, J1 POV1D, X1 DpadDown",
+      "Left": "Left, J1 POV1L, X1 DpadLeft",
+      "Right": "Right, J1 POV1R, X1 DpadRight",
+      "B": "Z, J1 B3, X1 X",
+      "A": "X, J1 B1, X1 A",
+      "L": "Q, J1 B5, X1 LeftShoulder",
+      "R": "W, J1 B6, X1 RightShoulder",
+      "Select": "Space, J1 B9, X1 Back",
+      "Start": "Enter, J1 B10, X1 Start"
+    },
+    "ColecoVision Controller": {
+      "P1 Up": "Up, J1 POV1U, X1 DpadUp",
+      "P1 Down": "Down, J1 POV1D, X1 DpadDown",
+      "P1 Left": "Left, J1 POV1L, X1 DpadLeft",
+      "P1 Right": "Right, J1 POV1R, X1 DpadRight",
+      "P1 L": "Q, J1 B5, X1 LeftShoulder",
+      "P1 R": "W, J1 B6, X1 RightShoulder",
+      "P1 1": "Z, J1 B3, X1 X",
+      "P1 2": "X, J1 B1, X1 A"
+    },
+    "MSX Controller": {
+      "Keyboard 1": "Z, J1 B3, X1 X",
+      "Keyboard 2": "X, J1 B1, X1 A"
     }
   },
   "AllTrollersAutoFire": {},

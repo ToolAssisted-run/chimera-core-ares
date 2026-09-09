@@ -24,6 +24,9 @@ namespace machine
 
 		/* Mounted file names, not host paths. Null means absent. */
 		const char *romFile;
+		/* The console BIOS, for a machine that needs one. Mounted under the id
+		 * waterbox/machines.h names, which is also what the package declares. */
+		const char *firmwareFile;
 
 		bool pal;
 		uint64_t initTimeUnix;   /* what a cartridge clock starts at */

@@ -37,13 +37,46 @@ say_fail() { echo "FAIL $1"; echo "     $2"; fail=$((fail + 1)); }
 # Runs the reference and the sandbox over the same machine, ROM and options, and
 # requires every digest to agree. The sandbox gets a work dir holding the ROM
 # under the name its slot map gives, and the settings a project would carry.
-compare() {
-	leg="$1"; id="$2"; rom="$3"; shift 3
+# A machine that needs a console BIOS is skipped when the developer has not put
+# one in tests/firmware/ - it is not this repository's to carry. `firmware_for`
+# echoes the file, or nothing.
+firmware_for() {
+	case "$1" in
+		GBA) echo "$root/tests/firmware/gbaBios" ;;
+		CV)  echo "$root/tests/firmware/cvBios" ;;
+		MSX) echo "$root/tests/firmware/msxBios" ;;
+	esac
+}
+
+# The arguments the reference needs, and the file the sandbox must mount.
+setup_work() {
+	id="$1"; rom="$2"
 	rm -rf "$work/w"; mkdir -p "$work/w"
 	cp "$content/$rom" "$work/w/rom"
 	printf '{"rom":["rom"]}' > "$work/w/slots"
 	printf '{"machine":"%s"}' "$(echo "$id" | tr 'A-Z' 'a-z')" > "$work/w/settings"
-	a="$("$native" --machine "$id" --rom "$work/w/rom" --quiet "$@" | tail -1)"
+	fw="$(firmware_for "$id")"
+	nativefw=""
+	if [ -n "$fw" ]; then
+		[ -f "$fw" ] || return 1
+		# mounted under the id the package declares, which is what the guest opens
+		cp "$fw" "$work/w/$(basename "$fw")"
+		nativefw="$fw"
+	fi
+	return 0
+}
+
+compare() {
+	leg="$1"; id="$2"; rom="$3"; shift 3
+	if ! setup_work "$id" "$rom"; then
+		echo "SKIP $leg (no console BIOS in tests/firmware)"
+		return
+	fi
+	if [ -n "$nativefw" ]; then
+		a="$("$native" --machine "$id" --firmware "$nativefw" --rom "$work/w/rom" --quiet "$@" | tail -1)"
+	else
+		a="$("$native" --machine "$id" --rom "$work/w/rom" --quiet "$@" | tail -1)"
+	fi
 	b="$("$runwbx" "$wbx" "$work/w" --machine "$id" --quiet "$@" | tail -1)"
 	if [ "$a" = "$b" ]; then
 		say_pass "$leg (native == sandbox)"
@@ -58,10 +91,10 @@ compare() {
 # frame. Anything of the machine living outside the arena shows up here.
 rerecord() {
 	leg="$1"; id="$2"; rom="$3"; shift 3
-	rm -rf "$work/w"; mkdir -p "$work/w"
-	cp "$content/$rom" "$work/w/rom"
-	printf '{"rom":["rom"]}' > "$work/w/slots"
-	printf '{"machine":"%s"}' "$(echo "$id" | tr 'A-Z' 'a-z')" > "$work/w/settings"
+	if ! setup_work "$id" "$rom"; then
+		echo "SKIP $leg (no console BIOS in tests/firmware)"
+		return
+	fi
 	a="$("$runwbx" "$wbx" "$work/w" --machine "$id" --quiet "$@" | tail -1)"
 	b="$("$runwbx" "$wbx" "$work/w" --machine "$id" --quiet --rerecord "$@" | tail -1)"
 	if [ "$a" = "$b" ]; then
@@ -79,6 +112,12 @@ rerecord() {
 # perfectly while the machine did not.
 deterministic() {
 	leg="$1"; id="$2"; rom="$3"; shift 3
+	fw="$(firmware_for "$id")"
+	set -- "$@"
+	if [ -n "$fw" ]; then
+		[ -f "$fw" ] || { echo "SKIP $leg (no console BIOS in tests/firmware)"; return; }
+		set -- "$@" --firmware "$fw"
+	fi
 	a="$("$native" --machine "$id" --rom "$content/$rom" --quiet "$@" | tail -1)"
 	b="$("$native" --machine "$id" --rom "$content/$rom" --quiet "$@" | tail -1)"
 	if [ "$a" = "$b" ]; then
@@ -108,17 +147,12 @@ echo "== every machine is what ares says it is =="
 # is generated from the emulator rather than typed. This leg rebuilds every
 # machine, asks ares what it is made of, and fails if the committed declaration
 # has moved - which is also how it proves all of them still build.
-"$genmachines" > "$work/machines.json"
-if diff -q "$work/machines.json" "$here/machines.json" >/dev/null 2>&1; then
-	if out="$(python3 "$here/gen-config.py" --check 2>&1)"; then
-		say_pass "the declared machines match ares"
-		echo "     $out"
-	else
-		say_fail "the declared machines match ares" "$out"
-	fi
+"$genmachines" "$root/tests/firmware" > "$work/machines.json"
+if out="$(python3 "$here/gen-config.py" --check --against "$work/machines.json" 2>&1)"; then
+	say_pass "the declared machines match ares"
+	echo "     $out"
 else
-	say_fail "the declared machines match ares" "waterbox/machines.json is out of date; run:
-       build/meson-native/waterbox/gen-machines > waterbox/machines.json && ./waterbox/gen-config.py"
+	say_fail "the declared machines match ares" "$out"
 fi
 
 echo
@@ -131,17 +165,21 @@ compare "N64 input-cpu"      N64 input-cpu.n64      --frames 200
 compare "N64 input, A held and the stick over" N64 input-cpu.n64 --frames 200 --hold "P1 Gamepad A" --stick 100 -60
 compare "GB libbet"          GB  libbet.gb          --frames 200
 compare "GB libbet, Start held" GB libbet.gb        --frames 200 --hold Start
+compare "GBA arm tests"      GBA gba-arm.gba        --frames 200
+compare "GBA arm tests, A held" GBA gba-arm.gba     --frames 200 --hold A
 
 echo
 echo "== the machine survives being saved and reloaded =="
 rerecord "N64 helloworld-cpu" N64 helloworld-cpu.n64 --frames 130
 rerecord "N64 input, A held"  N64 input-cpu.n64      --frames 200 --hold "P1 Gamepad A"
 rerecord "GB libbet"          GB  libbet.gb          --frames 200
+rerecord "GBA arm tests"      GBA gba-arm.gba        --frames 200
 
 echo
 echo "== the same run twice is the same machine =="
 deterministic "N64" N64 helloworld-cpu.n64 --frames 60
 deterministic "GB"  GB  libbet.gb          --frames 120
+deterministic "GBA" GBA gba-arm.gba        --frames 120
 
 echo
 echo "== input reaches the machine =="
@@ -215,6 +253,26 @@ if out="$(python3 "$here/tests/compare-picture.py" "$content/helloworld-cpu.png"
 	echo "     $out"
 else
 	say_fail "N64 helloworld-cpu is pixel-exact against real hardware" "$out"
+fi
+
+echo
+echo "== the CPU is right, according to somebody else's tests =="
+# jsmolka's ARM suite prints its verdict on screen. Reading a picture is a
+# roundabout way to run a test suite, and it is the only way a test ROM has to
+# talk - so the leg looks for the words rather than for a digest, which also
+# means it cannot pass by agreeing with itself.
+fw="$root/tests/firmware/gbaBios"
+if [ -f "$fw" ]; then
+	"$native" --machine GBA --firmware "$fw" --rom "$content/gba-arm.gba" --quiet \
+		--frames 300 --dump-frame 280 --dump-to "$work/gba.ppm" >/dev/null 2>&1
+	if out="$(python3 "$here/tests/read-verdict.py" "$work/gba.ppm" 2>&1)"; then
+		say_pass "GBA passes jsmolka's ARM test suite"
+		echo "     it says: $out"
+	else
+		say_fail "GBA passes jsmolka's ARM test suite" "$out"
+	fi
+else
+	echo "SKIP GBA arm test suite (no console BIOS in tests/firmware)"
 fi
 
 echo

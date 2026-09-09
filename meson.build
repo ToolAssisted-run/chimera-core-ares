@@ -73,7 +73,8 @@ ares_cpp = configure_file(
 # exception. Which of them this core actually offers is waterbox/machines.h;
 # this list is what has to compile.
 ares_systems = [
-  'a26', 'fc', 'gb', 'md', 'ms', 'myvision', 'n64', 'sg', 'spec', 'ws',
+  'a26', 'cv', 'fc', 'gb', 'gba', 'md', 'ms', 'msx', 'myvision', 'n64', 'sg',
+  'spec', 'ws',
 ]
 
 # The chips those machines are built out of. Each is one translation unit too,

@@ -274,7 +274,23 @@ namespace machine
 		 * makes each additional machine a table entry. */
 		g_systemPak = mia::System::create(g_spec->miaSystem);
 		if (!g_systemPak) return fail("ares has no such system");
-		if (g_systemPak->load({}) != successful) return fail("this machine's system pak would not load");
+		/* A machine that needs a console BIOS is handed the file it was mounted
+		 * as; one that carries its own boot code is handed nothing. */
+		string firmware;
+		if (g_spec->firmware != nullptr)
+		{
+			/* The frontend mounts a firmware under the id the package declares
+			 * it by, so the id IS the file name and nothing has to be passed.
+			 * run-native overrides it with a host path, which is the only place
+			 * a path is ever spoken. */
+			firmware = (config.firmwareFile && *config.firmwareFile) ? config.firmwareFile
+			                                                        : g_spec->firmware;
+		}
+		if (g_systemPak->load(firmware) != successful)
+		{
+			return fail(g_spec->firmware ? "the console BIOS would not load"
+			                             : "this machine's system pak would not load");
+		}
 
 		if (!config.romFile || !*config.romFile) return fail("no cartridge given");
 		g_cartridgePak = mia::Medium::create(g_spec->miaMedium);
