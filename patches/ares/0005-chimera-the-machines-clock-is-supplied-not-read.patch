@@ -1,0 +1,92 @@
+diff --git a/ares/n64/cartridge/rtc.cpp b/ares/n64/cartridge/rtc.cpp
+index 9f4ad1f36..395ed19ed 100644
+--- a/ares/n64/cartridge/rtc.cpp
++++ b/ares/n64/cartridge/rtc.cpp
+@@ -1,3 +1,5 @@
++u64 rtcEpoch = 0;
++
+ auto Cartridge::RTC::power(bool reset) -> void {
+   if(present) run(!status.bit(7));
+ }
+@@ -10,8 +12,8 @@ auto Cartridge::RTC::load() -> void {
+     present = 1;
+     n64 timestamp = ram.read<Dual>(24);
+     if(!~timestamp) {
+-      time_t t = time(0);
+-      struct tm tmm = *localtime(&t);
++      time_t t = (time_t)rtcEpoch;
++      struct tm tmm = *gmtime(&t);
+       ram.write<Byte>(16, BCD::encode(tmm.tm_sec));
+       ram.write<Byte>(17, BCD::encode(tmm.tm_min));
+       ram.write<Byte>(18, BCD::encode(tmm.tm_hour) | 0x80);
+@@ -21,7 +23,7 @@ auto Cartridge::RTC::load() -> void {
+       ram.write<Byte>(22, BCD::encode(tmm.tm_year % 100));
+       ram.write<Byte>(23, BCD::encode(tmm.tm_year / 100));
+     } else {
+-      time_t now = time(0);
++      time_t now = (time_t)rtcEpoch;
+       time_t saved = (time_t)timestamp;
+       if(now > saved) advance((int)(now - saved));
+     }
+@@ -30,7 +32,7 @@ auto Cartridge::RTC::load() -> void {
+ 
+ auto Cartridge::RTC::save() -> void {
+   if(auto fp = self.pak->write("save.rtc")) {
+-    ram.write<Dual>(24, time(0));
++    ram.write<Dual>(24, rtcEpoch);
+     ram.save(fp);
+   }
+ }
+diff --git a/ares/n64/dd/rtc.cpp b/ares/n64/dd/rtc.cpp
+index 7be363997..eecb39117 100644
+--- a/ares/n64/dd/rtc.cpp
++++ b/ares/n64/dd/rtc.cpp
+@@ -11,8 +11,8 @@ auto DD::RTC::load() -> void {
+   n64 timestamp = 0;
+   for(auto n : range(8)) timestamp.byte(n) = ram.read<Byte>(8 + n);
+   if(!~check || !~timestamp) {  //new save file
+-    time_t t = time(0);
+-    struct tm tmm = *localtime(&t);
++    time_t t = (time_t)rtcEpoch;
++    struct tm tmm = *gmtime(&t);
+     ram.write<Byte>(0, BCD::encode(tmm.tm_year % 100));
+     ram.write<Byte>(1, BCD::encode(tmm.tm_mon + 1));
+     ram.write<Byte>(2, BCD::encode(tmm.tm_mday));
+@@ -29,7 +29,7 @@ auto DD::RTC::load() -> void {
+   }
+ 
+   //update based on the amount of time that has passed since the last save
+-  time_t now = time(0);
++  time_t now = (time_t)rtcEpoch;
+   time_t saved = (time_t)timestamp;
+   if(now > saved) {
+     timestamp = now - saved;
+@@ -42,7 +42,7 @@ auto DD::RTC::reset() -> void {
+ }
+ 
+ auto DD::RTC::save() -> void {
+-  n64 timestamp = time(0);
++  n64 timestamp = rtcEpoch;
+   for(auto n : range(8)) ram.write<Byte>(8 + n, timestamp.byte(n));
+ 
+   if(auto fp = system.pak->write("time.rtc")) {
+diff --git a/ares/n64/system/system.hpp b/ares/n64/system/system.hpp
+index 1c6bda60c..144ddec5c 100644
+--- a/ares/n64/system/system.hpp
++++ b/ares/n64/system/system.hpp
+@@ -51,6 +51,15 @@ private:
+ extern System system;
+ extern Random random;
+ 
++//The machine's wall clock, in Unix seconds. A movie replayed next year must
++//produce the same machine it produced today, so the time an RTC starts from is
++//something the frontend states and a movie records - never something read off
++//the host. It advances only when the frontend says so.
++//
++//It is read as UTC for the same reason: localtime() would make the machine
++//depend on the timezone of whoever is replaying.
++extern u64 rtcEpoch;
++
+ auto Model::Nintendo64() -> bool { return system.model() == System::Model::Nintendo64; }
+ auto Model::Aleck64() -> bool { return system.model() == System::Model::Aleck64; }
+ auto Region::NTSC() -> bool { return system.region() == System::Region::NTSC; }

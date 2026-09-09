@@ -1,0 +1,36 @@
+diff --git a/ares/n64/accuracy.hpp b/ares/n64/accuracy.hpp
+index 76e56849d..b45bfa326 100644
+--- a/ares/n64/accuracy.hpp
++++ b/ares/n64/accuracy.hpp
+@@ -1,9 +1,21 @@
++//A sandboxed build has no dynamic recompiler: generated code is memory the
++//guest writes and then executes, and a movie's promise is that the same input
++//produces the same machine on every host that replays it. WANT_*_INTERPRETER
++//lets the build choose, so the host reference and the guest core can be
++//compiled from one tree and compared against each other.
++#if !defined(WANT_CPU_INTERPRETER)
++  #define WANT_CPU_INTERPRETER 0
++#endif
++#if !defined(WANT_RSP_INTERPRETER)
++  #define WANT_RSP_INTERPRETER 0
++#endif
++
+ struct Accuracy {
+   //enable all accuracy flags
+   static constexpr bool Reference = 0;
+ 
+   struct CPU {
+-    static constexpr bool Interpreter = 0 | Reference | !recompiler::generic::supported;
++    static constexpr bool Interpreter = 0 | Reference | !recompiler::generic::supported | WANT_CPU_INTERPRETER;
+     static constexpr bool Recompiler = !Interpreter;
+ 
+     //Maximum number of cycles to run the CPU without synchronization
+@@ -14,7 +26,7 @@ struct Accuracy {
+   };
+ 
+   struct RSP {
+-    static constexpr bool Interpreter = 0 | Reference | !recompiler::generic::supported;
++    static constexpr bool Interpreter = 0 | Reference | !recompiler::generic::supported | WANT_RSP_INTERPRETER;
+     static constexpr bool Recompiler = !Interpreter;
+ 
+     //VU instructions

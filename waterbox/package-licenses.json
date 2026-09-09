@@ -1,0 +1,63 @@
+{
+  "package": "ares",
+  "effectiveTerms": "MAME licence (non-commercial) over ISC, with MIT integration",
+  "commercialUse": "prohibited",
+  "note": "ares itself is ISC and would permit commercial use, but this core replaces ares' Vulkan renderer with angrylion's software RDP, which descends from MESS and carries the MAME licence: redistribution is permitted, sale and commercial use are not. The built core is therefore distributable under those terms and no others. The same shape as the gpgx, opera and snes9x packages.",
+  "components": [
+    {
+      "name": "chimera-core-ares (the integration)",
+      "license": "MIT",
+      "url": "https://github.com/ToolAssisted-run/chimera-core-ares",
+      "commit": "{selfCommit}",
+      "file": "LICENSE",
+      "sourceUrl": "https://github.com/ToolAssisted-run/chimera-core-ares/archive/{commit}.tar.gz"
+    },
+    {
+      "name": "ares",
+      "license": "ISC",
+      "url": "https://github.com/ares-emulator/ares",
+      "commit": "{submodule:extern/ares}",
+      "file": "extern/ares/LICENSE"
+    },
+    {
+      "name": "angrylion RDP (mylittle-nocomment)",
+      "license": "MAME licence (non-commercial)",
+      "url": "https://github.com/TASEmulators/angrylion-rdp",
+      "commit": "{submodule:extern/angrylion-rdp}",
+      "file": "extern/angrylion-rdp/mylittle-nocomment/MAME License.txt",
+      "note": "The N64's display processor, rasterised in software. This is what makes the core's picture the same on every machine; ares' own renderer needs a Vulkan driver, which a movie cannot depend on."
+    },
+    {
+      "name": "sljit",
+      "license": "BSD-2-Clause",
+      "url": "https://github.com/zherczeg/sljit",
+      "commit": "{submodule:extern/ares}",
+      "file": "extern/ares/thirdparty/sljit/LICENSE",
+      "note": "ares' recompiler back end. Compiled in but not used: this core forces both interpreters, because a sandbox cannot host generated code and a movie cannot depend on it."
+    },
+    {
+      "name": "TZXFile",
+      "license": "MIT",
+      "url": "https://github.com/ares-emulator/ares",
+      "commit": "{submodule:extern/ares}",
+      "file": "extern/ares/thirdparty/TZXFile/LICENSE",
+      "note": "Reached through mia, ares' media loader."
+    },
+    {
+      "name": "libco",
+      "license": "ISC",
+      "url": "https://github.com/ares-emulator/ares",
+      "commit": "{submodule:extern/ares}",
+      "file": "extern/ares/LICENSE",
+      "note": "ares' cooperative scheduler."
+    },
+    {
+      "name": "Nintendo 64 boot ROMs (PIF, CIC)",
+      "license": "see note",
+      "url": "https://github.com/ares-emulator/ares",
+      "commit": "{submodule:extern/ares}",
+      "file": "extern/ares/LICENSE",
+      "note": "About four kilobytes of console boot code, vendored by ares upstream in mia/Firmware and compiled into the package as ares itself distributes them. Bundling them is what makes this core need no firmware from the user, and it is a decision inherited from upstream rather than made here; see docs/PLAN.md for the alternative, which is to drop them and let ares emulate the boot at a high level."
+    }
+  ]
+}

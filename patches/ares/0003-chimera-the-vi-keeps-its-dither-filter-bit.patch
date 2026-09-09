@@ -1,0 +1,44 @@
+diff --git a/ares/n64/vi/io.cpp b/ares/n64/vi/io.cpp
+index d541f2861..033647bf9 100644
+--- a/ares/n64/vi/io.cpp
++++ b/ares/n64/vi/io.cpp
+@@ -13,6 +13,7 @@ auto VI::readWord(u32 address, Thread& thread) -> u32 {
+     data.bit( 7)    = io.reserved.bit(7);
+     data.bit( 8, 9) = io.antialias;
+     data.bit(10,15) = io.reserved.bit(10,15);
++    data.bit(16)    = io.dedither;
+   }
+ 
+   if(address == 1) {
+@@ -115,6 +116,7 @@ auto VI::writeWord(u32 address, u32 data_, Thread& thread) -> void {
+     io.reserved.bit(7)     = data.bit( 7);
+     io.antialias           = data.bit( 8, 9);
+     io.reserved.bit(10,15) = data.bit(10,15);
++    io.dedither            = data.bit(16);
+   }
+ 
+   if(address == 1) {
+diff --git a/ares/n64/vi/serialization.cpp b/ares/n64/vi/serialization.cpp
+index 3a01c3e92..5634a06f9 100644
+--- a/ares/n64/vi/serialization.cpp
++++ b/ares/n64/vi/serialization.cpp
+@@ -7,6 +7,7 @@ auto VI::serialize(serializer& s) -> void {
+   s(io.divot);
+   s(io.serrate);
+   s(io.antialias);
++  s(io.dedither);
+   s(io.reserved);
+   s(io.dramAddress);
+   s(io.width);
+diff --git a/ares/n64/vi/vi.hpp b/ares/n64/vi/vi.hpp
+index 043e9f2c7..c3d79f32a 100644
+--- a/ares/n64/vi/vi.hpp
++++ b/ares/n64/vi/vi.hpp
+@@ -38,6 +38,7 @@ struct VI : Thread, Memory::RCP<VI> {
+     n1  divot;
+     n1  serrate;  //interlace
+     n2  antialias;
++    n1  dedither;
+     n32 reserved;
+     n24 dramAddress;
+     n12 width;

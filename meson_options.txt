@@ -1,0 +1,8 @@
+option('waterbox', type: 'boolean', value: false,
+  description: 'Build the native reference (run-native). A cross build selects the guest (core.wbx) by itself.')
+option('minibox_dir', type: 'string', value: '',
+  description: 'Path to a miniBox checkout. Defaults to ../chimera/extern/chimera-common-minibox when that exists.')
+option('cpu_interpreter', type: 'boolean', value: true,
+  description: 'Emulate the CPU with the interpreter rather than the dynamic recompiler. A sandbox cannot host a recompiler, so the guest always forces this on; the native reference follows it so the two flavours are the same machine.')
+option('rsp_interpreter', type: 'boolean', value: true,
+  description: 'The same choice for the RSP.')

@@ -1,0 +1,7 @@
+[submodule "extern/ares"]
+	path = extern/ares
+	url = https://github.com/ares-emulator/ares.git
+[submodule "extern/angrylion-rdp"]
+	path = extern/angrylion-rdp
+	url = https://github.com/TASEmulators/angrylion-rdp.git
+	branch = ares

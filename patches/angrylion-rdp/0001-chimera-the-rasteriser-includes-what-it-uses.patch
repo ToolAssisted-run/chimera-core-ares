@@ -1,0 +1,12 @@
+diff --git a/mylittle-nocomment/n64video.cpp b/mylittle-nocomment/n64video.cpp
+index 8066477..d6b4f9d 100644
+--- a/mylittle-nocomment/n64video.cpp
++++ b/mylittle-nocomment/n64video.cpp
+@@ -1,5 +1,7 @@
+ #include <n64/n64.hpp>
+ 
++#include <emulibc.h>
++
+ #include "z64.h"
+ #include "angrylion.h"
+ #include "tctables.h"

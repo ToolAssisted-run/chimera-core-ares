@@ -1,0 +1,21 @@
+{
+  "_comment": "The core-declared file form for chimera's project wizard: categories, cardinality (max -1 = unbounded), accepted formats, tooltip help. Chimera renders and enforces; this file decides. Slot ids are what project manifests record.",
+  "slots": [
+    {
+      "id": "rom",
+      "title": "Cartridge",
+      "min": 1,
+      "max": 1,
+      "formats": [ "n64", "v64", "z64" ],
+      "help": "The Nintendo 64 cartridge image. Any of the three byte orders will do - .z64 (big-endian, what a dump of the cartridge actually contains), .n64 and .v64 are the same data shuffled, and the core works out which it was given. No BIOS is needed: the console's boot ROM travels with the core."
+    },
+    {
+      "id": "savedata",
+      "title": "Save data",
+      "min": 0,
+      "max": 1,
+      "formats": [ "sav", "srm", "eep", "fla", "ram" ],
+      "help": "What a battery-backed cartridge starts with already saved. This is the file Emulator > Export Save Data... writes - whichever save chip the cartridge has (EEPROM, SRAM or Flash) - put back so a run can continue from where another left off. It is mounted read-only and pinned by hash, and the movie cites it, so a movie that starts from a saved game is as reproducible as one that starts from a fresh cart. A cartridge with no save chip keeps nothing, and the project will say so rather than load one. Leave it empty and the cart starts as it came."
+    }
+  ]
+}

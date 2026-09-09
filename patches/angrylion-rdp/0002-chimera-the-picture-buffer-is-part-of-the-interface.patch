@@ -1,0 +1,22 @@
+diff --git a/mylittle-nocomment/angrylion.h b/mylittle-nocomment/angrylion.h
+index 8d04701..949b496 100644
+--- a/mylittle-nocomment/angrylion.h
++++ b/mylittle-nocomment/angrylion.h
+@@ -5,6 +5,17 @@
+ 
+ namespace angrylion {
+ 
++/******************************************************************
++  OutFrameBuffer: where FinalizeFrame writes the finished picture,
++            as 640-pixel rows of BGRA. Set it to NULL to skip
++            drawing entirely (turbo).
++  OutHeight: how many rows the last FinalizeFrame actually wrote.
++            The N64's video mode decides it, so it changes while a
++            game runs.
++*******************************************************************/
++extern uint32_t* OutFrameBuffer;
++extern uint32_t  OutHeight;
++
+ /******************************************************************
+   Function: FinalizeFrame
+   Purpose:  This function is called to finalize the frame buffer,

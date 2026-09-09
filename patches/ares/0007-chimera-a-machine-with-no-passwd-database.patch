@@ -1,0 +1,19 @@
+diff --git a/nall/nall/path.cpp b/nall/nall/path.cpp
+index 7b3940236..b0d16fc76 100644
+--- a/nall/nall/path.cpp
++++ b/nall/nall/path.cpp
+@@ -70,8 +70,13 @@ NALL_HEADER_INLINE auto user() -> string {
+   string result = (const char*)utf8_t(path);
+   result.transform("\\", "/");
+   #else
++  //getpwuid returns null wherever there is no passwd database to read - a
++  //sandbox, a chroot, a static binary with no NSS - and the old code
++  //dereferenced it unconditionally. There is no home directory to find in any
++  //of those places, so say so rather than fault.
+   struct passwd* userinfo = getpwuid(getuid());
+-  string result = userinfo->pw_dir;
++  string result = userinfo && userinfo->pw_dir ? userinfo->pw_dir : "";
++  if(!result) if(const char* home = getenv("HOME")) result = home;
+   #endif
+   if(!result) result = ".";
+   if(!result.endsWith("/")) result.append("/");

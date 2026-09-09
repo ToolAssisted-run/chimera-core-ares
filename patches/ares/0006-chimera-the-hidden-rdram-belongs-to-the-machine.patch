@@ -1,0 +1,56 @@
+diff --git a/ares/n64/rdram/rdram.cpp b/ares/n64/rdram/rdram.cpp
+index b7268c0e4..ce6e5b033 100644
+--- a/ares/n64/rdram/rdram.cpp
++++ b/ares/n64/rdram/rdram.cpp
+@@ -16,11 +16,27 @@ auto RDRAM::load(Node::Object parent) -> void {
+     ram.allocate(4_MiB + 4_MiB);
+   }
+ 
++  #if !defined(VULKAN)
++  //RDRAM's ninth bit per byte, two bits to a byte here. With paraLLEl-RDP it is
++  //the renderer's memory and ares only borrows a pointer to it; with a software
++  //rasteriser there is no renderer to own it, and every write through
++  //Writable::write dereferences a null pointer. So the machine owns it, which
++  //is also what makes it part of a savestate.
++  //
++  //The eight bytes of slack are for the reads that run off the end: an ebus
++  //Dual read asks for the nibble four bytes past its address.
++  hidden.data = new u8[ram.size / 2 + 8]();
++  #endif
++
+   debugger.load(node);
+ }
+ 
+ auto RDRAM::unload() -> void {
+   debugger = {};
++  #if !defined(VULKAN)
++  delete[] hidden.data;
++  #endif
++  hidden.data = nullptr;
+   ram.reset();
+   node.reset();
+ }
+@@ -28,6 +44,9 @@ auto RDRAM::unload() -> void {
+ auto RDRAM::power(bool reset) -> void {
+   if(!reset) {
+     ram.fill();
++    #if !defined(VULKAN)
++    if(hidden.data) memory::fill<u8>(hidden.data, ram.size / 2 + 8, 0);
++    #endif
+     u32 count = system.expansionPak ? 4 : 2;
+     for(u32 n : range(4)) {
+       auto& chip = chips[n];
+diff --git a/ares/n64/rdram/serialization.cpp b/ares/n64/rdram/serialization.cpp
+index 51294b1a9..f2ca73496 100644
+--- a/ares/n64/rdram/serialization.cpp
++++ b/ares/n64/rdram/serialization.cpp
+@@ -1,5 +1,9 @@
+ auto RDRAM::serialize(serializer& s) -> void {
+   s(ram);
++  #if !defined(VULKAN)
++  //Only ours to save: with paraLLEl-RDP this memory is the renderer's.
++  if(hidden.data) s(std::span<u8>{hidden.data, ram.size / 2 + 8});
++  #endif
+   s(mapIdentity);
+   for(auto& chip : chips) {
+     s(chip.present);

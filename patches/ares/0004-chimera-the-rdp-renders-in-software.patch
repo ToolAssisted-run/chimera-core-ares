@@ -1,0 +1,92 @@
+diff --git a/ares/n64/n64.hpp b/ares/n64/n64.hpp
+index 33a2a973d..ab2d7e0d0 100644
+--- a/ares/n64/n64.hpp
++++ b/ares/n64/n64.hpp
+@@ -39,7 +39,20 @@ using v128 = __m128i;
+ #include <gb/gb.hpp>
+ #endif
+ 
++#if defined(ANGRYLION)
++  #include <angrylion.h>
++#endif
++
+ namespace ares::Nintendo64 {
++#if defined(ANGRYLION)
++  //Set by the frontend before a frame runs. FastVI skips the VI's filtering
++  //(divot, anti-alias, gamma) for speed; BobDeinterlace picks which way an
++  //interlaced field is doubled. Neither changes the emulated machine - only
++  //the picture drawn from it.
++  extern bool FastVI;
++  extern bool BobDeinterlace;
++#endif
++
+   auto enumerate() -> std::vector<string>;
+   auto load(Node::System& node, string name) -> bool;
+   auto option(string name, string value) -> bool;
+diff --git a/ares/n64/rdp/rdp.cpp b/ares/n64/rdp/rdp.cpp
+index b71c40724..63e845f90 100644
+--- a/ares/n64/rdp/rdp.cpp
++++ b/ares/n64/rdp/rdp.cpp
+@@ -11,6 +11,10 @@ RDP rdp;
+ auto RDP::load(Node::Object parent) -> void {
+   node = parent->append<Node::Object>("RDP");
+   debugger.load(node);
++
++  #if defined(ANGRYLION)
++  angrylion::Init();
++  #endif
+ }
+ 
+ auto RDP::unload() -> void {
+diff --git a/ares/n64/rdp/render.cpp b/ares/n64/rdp/render.cpp
+index d930fb98b..57a769115 100644
+--- a/ares/n64/rdp/render.cpp
++++ b/ares/n64/rdp/render.cpp
+@@ -53,6 +53,14 @@ auto RDP::render() -> void {
+   }
+   #endif
+ 
++  #if defined(ANGRYLION)
++  //The software rasteriser walks the display list itself, straight out of
++  //RDRAM, so ares' own command decoding below is dead in this build.
++  angrylion::ProcessRDPList();
++  command.current = command.end;
++  return;
++  #endif
++
+   auto& memory = !command.source ? (Memory::Writable&)rdram.ram : (Memory::Writable&)rsp.dmem;
+ 
+   auto fetch = [&]() -> u64 {
+diff --git a/ares/n64/vi/vi.cpp b/ares/n64/vi/vi.cpp
+index 698d02f9d..d9effe762 100644
+--- a/ares/n64/vi/vi.cpp
++++ b/ares/n64/vi/vi.cpp
+@@ -2,6 +2,11 @@
+ 
+ namespace ares::Nintendo64 {
+ 
++#if defined(ANGRYLION)
++bool FastVI = false;
++bool BobDeinterlace = false;
++#endif
++
+ VI vi;
+ #include "io.cpp"
+ #include "debugger.cpp"
+@@ -92,8 +97,16 @@ auto VI::main() -> void {
+           vulkan.frame();
+         }
+         #endif
++        #if defined(ANGRYLION)
++        angrylion::UpdateScreen(FastVI);
++        angrylion::FinalizeFrame(BobDeinterlace);
++        #endif
+         refreshed = true;
++        #if !defined(ANGRYLION)
++        //The picture is read out of the rasteriser's own buffer, so ares'
++        //screen node has nothing to present and its per-frame work is waste.
+         screen->frame();
++        #endif
+         ri.checkRefresh();
+       }
+ 

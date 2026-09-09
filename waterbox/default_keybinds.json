@@ -1,0 +1,45 @@
+{
+	"_comment": [
+		"Default bindings for the controller this package declares. The frontend ships no bindings",
+		"of its own: a package that declares a controller says how it is played by default, and",
+		"Chimera uses that for a controller the user's config has never seen. The user's own",
+		"bindings always win, and the controller config's Defaults button comes back here.",
+		"Only player 1 is bound, which is BizHawk's own choice and the right one - a second pad is",
+		"something you plug in deliberately, and the keys it would take are the ones player 1",
+		"already has.",
+		"The four C buttons sit on IJKL because that is where every N64 emulator has put them, and",
+		"the analogue stick is the left stick of a pad, which is what an N64 stick is."
+	],
+	"AllTrollers": {
+		"Nintendo 64 Controller": {
+			"P1 Up": "Up, J1 POV1U, X1 DpadUp",
+			"P1 Down": "Down, J1 POV1D, X1 DpadDown",
+			"P1 Left": "Left, J1 POV1L, X1 DpadLeft",
+			"P1 Right": "Right, J1 POV1R, X1 DpadRight",
+			"P1 A": "X, J1 B1, X1 A",
+			"P1 B": "Z, J1 B3, X1 X",
+			"P1 Z": "LeftShift, J1 B7, X1 LeftTrigger",
+			"P1 Start": "Enter, J1 B10, X1 Start",
+			"P1 L": "Q, J1 B5, X1 LeftShoulder",
+			"P1 R": "W, J1 B6, X1 RightShoulder",
+			"P1 C-Up": "I, X1 RStickUp",
+			"P1 C-Down": "K, X1 RStickDown",
+			"P1 C-Left": "J, X1 RStickLeft",
+			"P1 C-Right": "L, X1 RStickRight",
+			"Reset": "",
+			"Power": ""
+		}
+	},
+	"AllTrollersAutoFire": {
+		"Nintendo 64 Controller": {
+			"P1 A": "S",
+			"P1 B": "A"
+		}
+	},
+	"AllTrollersAnalog": {
+		"Nintendo 64 Controller": {
+			"P1 X": { "Value": "X1 LStickX", "Mult": 1.0, "Deadzone": 0.1 },
+			"P1 Y": { "Value": "X1 LStickY", "Mult": 1.0, "Deadzone": 0.1 }
+		}
+	}
+}
