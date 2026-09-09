@@ -8,8 +8,8 @@ deterministic sandbox and packaged as a Chimera core (`core.wbx` +
 [chimera-core-dosbox-x](https://github.com/ToolAssisted-run/chimera-core-dosbox-x)
 and [chimera-core-gpgx](https://github.com/ToolAssisted-run/chimera-core-gpgx).
 
-Status: **twenty-one machines declared; four proven by the gate and fifteen
-proven against real commercial games.**
+Status: **twenty-one machines declared; four proven by the gate, fifteen proven
+against real commercial games, and four run end to end inside Chimera.**
 
 ares emulates about thirty systems from one codebase, which is why this
 repository is named for the emulator rather than for a console. The Nintendo 64
@@ -29,6 +29,14 @@ Fifteen machines have run a real commercial game here with the reference and the
 sandbox agreeing byte for byte - Super Mario 64 among them. The gate cannot say
 so, because those ROMs may not be redistributed; `docs/PLAN.md` writes it down
 with the speeds instead.
+
+Four of them - Game Boy, Famicom, Mega Drive and Nintendo 64 - have also been
+opened as a Chimera project and recorded to a video file, which is a different
+test from the gate and found four faults the gate structurally could not: audio
+streams concatenated instead of mixed, a monaural machine's right channel left
+uninitialised, every machine with a controller port refusing to load, and a
+wizard that would offer no cartridge but a Nintendo 64's. `docs/PLAN.md` has
+the details under "In the frontend".
 
 That table is the honest shape of it, and `docs/PLAN.md` keeps it current.
 Adding a machine is a row in `waterbox/machines.h` and a regenerate; making one

@@ -348,6 +348,47 @@ for anybody writing a test.
   link different maths libraries. Making it agree means computing that table
   without libm, which is a patch nobody has written.
 
+- **The Mega Drive's picture is 1280 across.** ares renders its VDP into a
+  buffer four times as wide as the machine's 320, because a Mega Drive's
+  shadow/highlight and its H32/H40 mixing happen between pixels; `setScale(0.25,
+  ...)` is how ares' own frontend puts it back. Sampled over a frame of a real
+  game, **98.3% of every group of four is identical and 1.7% is not** - so
+  dividing by four in the core would be lossy, and it is handed over as ares
+  drew it. The package declares 292x224 as the virtual size, which is what
+  Chimera displays it at, so the picture is right; what it costs is a recording
+  four times wider than the machine. Worth revisiting if anybody minds the file
+  size more than the last 1.7%.
+
+- **The Mega Drive's audio runs 0.18% short** of what its refresh rate asks for
+  - 734.6 samples a frame against 735.95. Both its streams are short on their
+  own (-0.07% and -0.18% measured separately), so it is ares' own thread timing
+  and not the mixing above it; every other machine measured is within 0.06%, and
+  most within 0.015%. Over an hour it is about six seconds of drift in a
+  recording, which is worth knowing and has not been chased upstream.
+
+- **The Nintendo 64 emits audio at half rate for its first sixty frames**, 371
+  samples a frame instead of 735, until the game programs the AI. Chimera's A/V
+  writer is audio-driven and drops a video frame when too little sound arrives
+  with it, so a Super Mario 64 recording is **thirty frames shorter than the
+  movie** and its frame numbers do not line up with the movie's until the game
+  has booted. The recording itself is right - 210 video frames and 154374
+  samples are both exactly 3.5 seconds - and this is what BizHawk does too. It
+  is stated here because "the video is thirty frames short" looks like a fault
+  and is not one.
+
+- **The Nintendo 64 reports a flat 60Hz** where every other machine reports its
+  own. ares hints 60 there itself, with `//TODO: More accurate refresh rate
+  hint` beside it, so the core has nothing better to pass on. Its audio implies
+  about 59.82Hz. 60 is also the figure mupen and BizHawk record N64 movies at,
+  which is the same convention the analogue stick follows above, so the two
+  agree by accident and there is nothing to fix until ares fixes it.
+
+- **A Game Boy frame is sometimes two frames long.** When a game switches the
+  LCD off, ares refreshes the screen late, and that frame carries twice the
+  audio. Real, and both the picture and the sound are right; it simply means a
+  frame is not a fixed length of machine time on any of these machines, which is
+  why the audio is drained per frame rather than counted.
+
 ### Absent
 
 Nothing is now absent for want of a BIOS - Sergio supplied the Atari 5200, Neo
@@ -475,6 +516,63 @@ wrong does not look like an error: `h(-1)=1, h(-2)=0` and `k(-1)=0, k(-2)=1`.
 With `k(-1)` set to 1 instead the first version reported 0.98Hz, which is
 nonsense the code was perfectly happy with.
 
+### Four faults the Game Boy could not have found
+
+A Game Boy has no controller port, one audio stream, stereo sound and a small
+cartridge. It is the one machine in the core that misses every one of these, and
+it was the machine the frontend had been walked with. A Famicom and a Mega Drive
+found all four in an afternoon.
+
+**Audio streams were concatenated rather than mixed.** A machine with more than
+one voice - a Mega Drive has the YM2612 and the PSG - had each stream's samples
+appended to the frame in turn, so a Mega Drive frame came out twice as long as
+it should and the frontend played PSG followed by FM at double speed. 1470
+samples a frame where the refresh rate wants 736. A sample is now taken from
+every stream and summed, and only when all of them have one waiting, which is
+ares' own rule in `desktop-ui/program/platform.cpp`. 735 a frame now.
+
+**Monaural streams left the right channel uninitialised.** `Stream::read` writes
+only as many channels as the stream has, and the second slot of the buffer was
+never zeroed - so ten of the twenty-one machines put whatever the stack held
+into the right speaker. It is the mono signal in both channels now; an NES
+encode through Chimera has left byte-identical to right.
+
+**Every machine with a controller port refused to load.** The port settings were
+the Nintendo 64's, spelt its way - `gamepad`, `mouse`, `controllerPak` - while
+ares knows a Mega Drive's device as "Control Pad", a Neo Geo's as "Arcade
+Stick", an Atari 5200's as "Controller", and `Port::allocate` is exact. That
+did not show up until now because nothing had ever *sent* a port setting: the
+gate writes `{"machine": ...}` and nothing else, so the core took its "nobody
+said" path. A project is not like that - Chimera gives every declared setting a
+value - so every ported machine got `gamepad` and answered *this machine has no
+such device for that port*.
+
+The id is matched to the machine's own name on letters alone now (case ignored,
+spaces dropped), and the ports take `default`, which is what the package ships
+and the only answer that means the same thing on all twenty-one.
+
+**The wizard would offer no cartridge but a Nintendo 64's.**
+`file_slots.json` still declared `.n64/.v64/.z64` alone. Chimera narrows a slot
+by the chosen machine's own extensions, so what belongs in the slot is the union
+of all of them - which is generated from the machines now rather than typed.
+
+### What let them hide, and what was done about it
+
+The gate could not have caught any of these, and one thing made it worse: **the
+gate's runner sandboxed the guest in a different arena from the one the package
+asks for** - 384 MB of mmap where `waterbox.config` says 256 - under a comment
+claiming the two matched. So `waterbox/memory-layout.h` is generated from the
+package and included by `run-wbx.cpp`, and `gen-config.py --check` fails if
+anybody edits one without the other. `file_slots.json`'s formats are generated
+the same way.
+
+sbrk went from 16 MB to 32 MB while this was being looked at. The Famicom wants
+more than 16 while mia works out what board a cartridge has; musl asked, miniBox
+said no, and musl went to mmap and carried on - so it cost nothing but a page of
+`sbrk heap exhausted` on stderr, and stayed invisible until a machine other than
+the Game Boy went through the frontend. Raising it is free: a savestate holds
+the pages that were touched, not the ones that were offered.
+
 ## Not done
 
 In rough order of what would matter first:
@@ -501,6 +599,10 @@ In rough order of what would matter first:
   but publishing it is Sergio's to authorise and has not been.
 - **Optional tooling**: no registers, no trace, no core-rendered surfaces.
   Memory domains, buses and the Nintendo 64's save-data export are done.
+- **A gate leg that goes through Chimera.** Everything in "In the frontend"
+  above was found by hand, one machine at a time, and none of it is on a
+  schedule. A leg that opens a project headless and reads back what came out
+  would have caught all four faults on the day they were written.
 
 ## Speed
 
