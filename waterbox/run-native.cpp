@@ -101,8 +101,10 @@ int main(int argc, char **argv)
 
 	if (!opts.quiet)
 	{
-		fprintf(stderr, "run-native: %s on %s, %s, %d frames\n",
-			config.romFile, config.machine, config.pal ? "PAL" : "NTSC", opts.frames);
+		fprintf(stderr, "run-native: %s on %s, %s, %d frames, %.4fHz (%d/%d)\n",
+			config.romFile, config.machine, config.pal ? "PAL" : "NTSC", opts.frames,
+			(double)machine::vsyncNumerator() / machine::vsyncDenominator(),
+			machine::vsyncNumerator(), machine::vsyncDenominator());
 	}
 
 	/* --report-stick: run, then say what the pad reported. Nothing else in the

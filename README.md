@@ -49,24 +49,27 @@ What the machines have in common:
   asks the emulator what each machine is made of and `gen-config.py` writes the
   declaration, so a newer ares that renames a button fails the gate rather than
   renumbering somebody's movie.
-- **Firmware only where the console truly needs it.** Thirteen of the seventeen
-  need nothing but a cartridge; the Game Boy Advance, ColecoVision, MSX and
-  PlayStation need their console BIOS, which the user supplies and Chimera pins
-  by hash. None of it ships here.
+- **Firmware only where the console truly needs it.** Fourteen of the twenty-one
+  need nothing but a cartridge; the Game Boy Advance, ColecoVision, MSX,
+  PlayStation, Atari 5200, Neo Geo and Neo Geo Pocket Color need their console
+  BIOS, which the user supplies and Chimera pins by hash. None of it ships here.
+- **The refresh rate is the machine's own**, not a nominal 60: a Game Boy
+  reports 262144/4389 = 59.7275Hz, taken from ares' own hint and turned back
+  into the exact ratio it came from.
 - **The analogue stick is the byte** the controller reports, reaching the game
   unchanged - the convention mupen and BizHawk record, so an N64 run made here
   means the same as a run made there.
 
 The equivalence gate (`waterbox/run-gate.sh`) runs twenty-six legs: native
 against sandbox on every digest for all four proven machines, the machine
-round-tripped through a savestate before every frame, every one of the seventeen
-rebuilt and re-enumerated against its committed declaration, input proven to
+round-tripped through a savestate before every frame, every one of the
+twenty-one rebuilt and re-enumerated against its committed declaration, input proven to
 reach the machine, the picture compared **pixel for pixel against real
 hardware**, and **jsmolka's ARM test suite read off the screen**. Its content is
 [PeterLemon/N64](https://github.com/PeterLemon/N64) (public domain),
 [libbet](https://github.com/pinobatch/libbet) (Zlib) and
 [gba-tests](https://github.com/jsmolka/gba-tests) (MIT), so the whole gate runs
-on a public runner with nothing licensed on it - it simply skips the four
+on a public runner with nothing licensed on it - it simply skips the seven
 machines whose BIOS is not there, and says so.
 
 ## Building

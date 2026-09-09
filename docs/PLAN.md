@@ -434,21 +434,61 @@ point of choosing this convention over the physically faithful one.
 The gate checks it directly rather than by digest: seven stick positions, each
 compared against what the controller actually reported to the machine.
 
+## In the frontend
+
+The package is not finished when the gate is green - the gate loads the guest
+directly, and Chimera loads it through a project, a core manager, an input
+system and an encoder. So the whole of that was walked once, headless: a
+hand-written `.chimeraProject` naming the package and a Game Boy ROM, opened
+with `--headless --chromeless --dump-type ffmpeg`, and the result read back with
+`ffprobe`.
+
+It works, and it found one thing that no digest could have.
+
+### The refresh rate was wrong on every machine but one
+
+The core reported **60Hz** (or 50 in PAL), because that is what the two lines it
+had said. No machine here actually runs at 60Hz. A Game Boy is
+4194304/(456*154) = **59.7275Hz**; a Famicom is 60.0985; a Mega Drive is
+59.9228. Half a percent - which is a video file whose audio drifts a second out
+over half an hour, and a movie whose length in seconds is wrong by the same
+amount.
+
+ares already knows the true figure and offers it: every machine calls
+`Platform::refreshRateHint` with a rate it computed from its own master clock.
+The core now keeps that number, and `vsyncNumerator`/`vsyncDenominator` recover
+the ratio it came from with a **continued fraction** rather than approximating
+it - a rate that arrived as a double goes back out as 262144/4389, exactly the
+integers the machine divided. A machine that never hints keeps the nominal rate
+for its region, which is what the Nintendo 64 gets (ares hints a flat 60 there
+itself).
+
+| | reported before | reported now |
+| --- | --- | --- |
+| Game Boy, Game Boy Advance | 60/1 | 262144/4389 = 59.7275Hz |
+| Famicom | 60/1 | 311851/5189 = 60.0985Hz |
+| Mega Drive, Master System | 60/1 | 183843/3068 = 59.9228Hz |
+| Nintendo 64, Atari 2600 | 60/1 | 60/1 |
+
+The seeds of the continued fraction are worth one line, because getting them
+wrong does not look like an error: `h(-1)=1, h(-2)=0` and `k(-1)=0, k(-2)=1`.
+With `k(-1)` set to 1 instead the first version reported 0.98Hz, which is
+nonsense the code was perfectly happy with.
+
 ## Not done
 
 In rough order of what would matter first:
 
 - **Speed on the Nintendo 64** - measured, and it is the real problem. See
   below.
-- **A real game, anywhere.** Every test here is homebrew of a few kilobytes.
-  Nothing has booted a commercial cartridge, so nothing is known in practice
-  about save chips, the 64DD, the Transfer Pak or the Expansion Pak.
-- **Eleven machines that have never run anything** - see above. Each wants a
-  freely distributable ROM in `tests/content/` and a gate leg.
-- **The machines that need firmware**, which is where the most valuable ones
-  are: the Game Boy Advance, the PlayStation, the Neo Geo. The package has to
-  declare that firmware and mia has to be handed it; neither is hard, and both
-  are undone.
+- **Two machines that have never run anything** - the MSX and the MyVision,
+  for want of a ROM. Everything else has booted something; fifteen have booted a
+  commercial game.
+- **A commercial game in the gate.** Fifteen machines were compared against real
+  cartridges by hand, native against sandbox, and agreed - but none of that is
+  in `run-gate.sh`, because the ROMs cannot be committed. The gate's own legs
+  are homebrew. What that leaves untested on a schedule: save chips, the 64DD,
+  the Transfer Pak and the Expansion Pak.
 - **`n64-systemtest`** (MIT) is the accuracy suite ares itself is tested against
   and would be a far stronger gate than three homebrew ROMs. It needs a Rust
   MIPS toolchain to build, which is why it is not here yet.
@@ -456,8 +496,9 @@ In rough order of what would matter first:
   the savestate and cannot be exported, because mia writes them through a host
   path this core does not give it.
 - **Publishing**: no `chimera.yml`, no row in Chimera's `official-cores.json`,
-  no release. The package builds and passes Chimera's contract tests, but
-  nothing publishes it yet.
+  no release, and the repository is not pushed anywhere. The package builds,
+  passes Chimera's contract tests and has been run end to end by the frontend -
+  but publishing it is Sergio's to authorise and has not been.
 - **Optional tooling**: no registers, no trace, no core-rendered surfaces.
   Memory domains, buses and the Nintendo 64's save-data export are done.
 
@@ -504,10 +545,10 @@ as the accurate path (its Reference profile forces it), and there was nothing to
 buy with that difference. The flag is off, with a comment in `meson.build` saying
 why. Somebody measuring a game that actually leans on the RSP should revisit it.
 
-## Numbers, as of the seventeen-machine build
+## Numbers, as of the twenty-one-machine build
 
-- `core.wbx` is 18.0 MB with every machine in it - it was 9.3 MB with only the
-  Nintendo 64, so sixteen more machines cost under nine megabytes between them. The
+- `core.wbx` is 20.2 MB with every machine in it - it was 9.3 MB with only the
+  Nintendo 64, so twenty more machines cost about eleven megabytes between them. The
   package is built reproducibly (the build script packs twice and compares).
 - The declared arena is 296 MB, and **mmap is the part that matters**: a 1 MB
   cartridge already needs more than 80 MB there, because the ROM is held three

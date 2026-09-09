@@ -70,6 +70,7 @@ namespace
 
 	bool g_inputWasRead = false;
 	bool g_pal = false;
+	double g_refreshRate = 0.0;
 	const machines::Spec *g_spec = nullptr;
 	const machines::MachineInputs *g_inputs = nullptr;
 	bool g_isN64 = false;
@@ -133,6 +134,16 @@ namespace
 			}
 			g_videoWidth = (int)width;
 			g_videoHeight = (int)height;
+		}
+
+		/* Every machine tells ares what it actually refreshes at, out of its own
+		 * clock: a Game Boy is 4194304/(456*154) = 59.7275Hz, not 60. The
+		 * frontend needs that for the length of a movie and for keeping sound in
+		 * step with picture, so it is taken from the machine rather than
+		 * guessed. */
+		auto refreshRateHint(double refreshRate) -> void override
+		{
+			if (refreshRate > 1.0 && refreshRate < 1000.0) g_refreshRate = refreshRate;
 		}
 
 		auto input(Node::Input::Input node) -> void override
@@ -275,6 +286,7 @@ namespace machine
 		if (g_spec == nullptr) return fail("this core has no such machine");
 		g_isN64 = nall::string{g_spec->id} == "N64";
 		g_pal = config.pal && g_spec->configPal != nullptr;
+		g_refreshRate = 0.0;
 
 		g_inputs = nullptr;
 		for (auto &entry : kMachineInputs)
@@ -430,8 +442,52 @@ namespace machine
 	int audioSamples(void) { return g_audioSamples; }
 	bool inputWasRead(void) { return g_inputWasRead; }
 
-	int vsyncNumerator(void) { return g_pal ? 50 : 60; }
-	int vsyncDenominator(void) { return 1; }
+	/* The machine's own refresh, as an exact-as-possible rational. ares hands it
+	 * over as a double computed from integers - a pixel clock over dots times
+	 * lines - so a continued fraction recovers the original ratio rather than
+	 * approximating it: 59.7275Hz comes back as 4194304/70224, not as a
+	 * six-decimal-place near miss.
+	 *
+	 * A machine that never said gets the nominal rate for its region, which is
+	 * what the Nintendo 64 does (ares hints a flat 50 or 60 there itself). */
+	static void refreshAsRational(int *numerator, int *denominator)
+	{
+		double rate = g_refreshRate;
+		if (!(rate > 1.0 && rate < 1000.0))
+		{
+			*numerator = g_pal ? 50 : 60;
+			*denominator = 1;
+			return;
+		}
+
+		/* Continued fractions, stopping at the first convergent that is right to
+		 * a part in a billion or when the denominator would stop being sane. */
+		/* h(-1)=1, h(-2)=0; k(-1)=0, k(-2)=1 - the standard seeds, and getting
+		 * k wrong turns 59.7Hz into 0.98Hz without complaining. */
+		int64_t bestNum = 1, bestDen = 0;
+		int64_t prevNum = 0, prevDen = 1;
+		double value = rate;
+		for (int i = 0; i < 32; i++)
+		{
+			int64_t whole = (int64_t)value;
+			int64_t num = whole * bestNum + prevNum;
+			int64_t den = whole * bestDen + prevDen;
+			if (den > 100000000ll || num > 2000000000ll) break;
+			prevNum = bestNum; prevDen = bestDen;
+			bestNum = num; bestDen = den;
+			double got = (double)bestNum / (double)bestDen;
+			double err = got > rate ? got - rate : rate - got;
+			if (err < rate * 1e-9) break;
+			double frac = value - (double)whole;
+			if (frac < 1e-12) break;
+			value = 1.0 / frac;
+		}
+		*numerator = (int)bestNum;
+		*denominator = (int)bestDen;
+	}
+
+	int vsyncNumerator(void) { int n, d; refreshAsRational(&n, &d); return n; }
+	int vsyncDenominator(void) { int n, d; refreshAsRational(&n, &d); return d; }
 
 	int memoryDomainCount(void) { return g_domainCount; }
 	const char *memoryDomainName(int i) { return (i >= 0 && i < g_domainCount) ? g_domains[i].name : nullptr; }
