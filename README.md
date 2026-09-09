@@ -28,8 +28,9 @@ What the Nintendo 64 machine has:
 - **No firmware to find.** The console's boot ROMs travel with the core, as they
   do with ares itself, so a project is a cartridge and nothing else.
 - **Four controller ports**, each taking a pad (optionally with a Controller Pak
-  or a Rumble Pak) or a mouse, with the analogue stick in the console's own
-  -127..127 units.
+  or a Rumble Pak) or a mouse. The analogue stick is the signed byte the
+  controller reports, reaching the game unchanged - the convention mupen and
+  BizHawk record, so a run made here means the same as a run made there.
 - **Save chips**: EEPROM, SRAM and Flash, detected from the cartridge, exported
   and reloaded through Chimera's save-data channel.
 - **A pinned clock and a pinned power-on seed**, because a movie replayed next

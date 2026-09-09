@@ -83,6 +83,12 @@ namespace machine
 	 * is a lag frame. */
 	bool inputWasRead(void);
 
+	/* What a pad most recently reported to the machine, as the two signed bytes
+	 * the console reads. The gate uses it to prove that the byte a movie holds
+	 * is the byte the game gets - see patches/ares/0008. False when that port
+	 * has no pad in it. */
+	bool padReport(int pad, int *x, int *y);
+
 	/* The nominal refresh, as a rational. It depends on the region, which is why
 	 * the frontend asks the core rather than reading one number off the package.
 	 * Nominal because the N64's real rate is whatever the game programs its video

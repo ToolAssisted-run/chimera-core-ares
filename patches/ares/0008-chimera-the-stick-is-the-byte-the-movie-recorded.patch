@@ -1,0 +1,65 @@
+diff --git a/ares/n64/controller/gamepad/gamepad.cpp b/ares/n64/controller/gamepad/gamepad.cpp
+index 2da6bdeb8..ebde9c779 100644
+--- a/ares/n64/controller/gamepad/gamepad.cpp
++++ b/ares/n64/controller/gamepad/gamepad.cpp
+@@ -369,41 +369,26 @@ auto Gamepad::read() -> n32 {
+   platform->input(z);
+   platform->input(start);
+ 
+-  auto cardinalMax   = 85.0;
+-  auto diagonalMax   = 69.0;
+-  auto innerDeadzone =  7.0; // default should remain 7 (~8.2% of 85) as the deadzone is axial in nature and fights cardinalMax
+-  auto saturationRadius = (innerDeadzone + diagonalMax + sqrt(pow(innerDeadzone + diagonalMax, 2.0) - 2.0 * sqrt(2.0) * diagonalMax * innerDeadzone)) / sqrt(2.0); //from linear response curve function within axis->processDeadzoneAndResponseCurve, substitute saturationRadius * sqrt(2) / 2 for right-hand lengthAbsolute and set diagonalMax as the result then solve for saturationRadius
+-  auto offset = 0.0;
+-
+-  //scale {-32767 ... +32767} to {-saturationRadius + offset ... +saturationRadius + offset}
+-  auto ax = axis->setOperatingRange(x->value(), saturationRadius, offset);
+-  auto ay = axis->setOperatingRange(y->value(), saturationRadius, offset);
+-
+-  //create inner axial dead-zone in range {-innerDeadzone ... +innerDeadzone} and scale from it up to saturationRadius
+-  ax = axis->processDeadzoneAndResponseCurve(ax, innerDeadzone, saturationRadius, offset);
+-  ay = axis->processDeadzoneAndResponseCurve(ay, innerDeadzone, saturationRadius, offset);
+-
+-  auto scaledLength = hypot(ax - offset, ay - offset);
+-  if(scaledLength > saturationRadius) {
+-    ax = axis->revisePosition(ax, scaledLength, saturationRadius, offset);
+-    ay = axis->revisePosition(ay, scaledLength, saturationRadius, offset);
+-  }
+-
+-  //let cardinalMax and diagonalMax define boundaries and restrict to an octagonal gate
+-  double axBounded = 0.0;
+-  double ayBounded = 0.0;
+-  axis->applyGateBoundaries(innerDeadzone, cardinalMax, diagonalMax, ax, ay, offset, axBounded, ayBounded);
+-  ax = axBounded;
+-  ay = ayBounded;
++  //ares takes a modern gamepad's {-32767 ... +32767} and shapes it into a stick
++  //position: a deadzone, a response curve and the octagonal gate a real N64
++  //stick is physically held in. That is right for somebody playing with a
++  //thumbstick, and wrong for a movie.
++  //
++  //A Nintendo 64 tool-assisted run is written in the BYTE the controller
++  //reports. That is what mupen and BizHawk record, what every existing N64
++  //movie contains, and what a frame of a movie means: not "the player pushed
++  //the stick about this far", but "the game read exactly this number". Shaping
++  //it here would make the value the author wrote unreachable - most of the
++  //byte range maps to something else, and the range near zero maps to nothing
++  //at all - and it would make a movie recorded here incomparable with one
++  //recorded anywhere else.
++  //
++  //So the axes pass straight through. The frontend hands over the signed byte
++  //and the machine reads it back unchanged; the deadzone and the gate belong to
++  //whatever is producing that byte, which for a movie is a person typing it.
++  auto ax = (double)x->value();
++  auto ay = (double)y->value();
+ 
+-  //keep cardinal input within positive and negative bounds of cardinalMax
+-  ax = axis->clampAxisToNearestBoundary(ax, offset, cardinalMax);
+-  ay = axis->clampAxisToNearestBoundary(ay, offset, cardinalMax);
+-
+-  //add epsilon to counteract floating point precision error
+-  ax = axis->counteractPrecisionError(ax);
+-  ay = axis->counteractPrecisionError(ay);
+-  
+   n32 data;
+   data.byte(0) = s8(-ay);
+   data.byte(1) = s8(+ax);

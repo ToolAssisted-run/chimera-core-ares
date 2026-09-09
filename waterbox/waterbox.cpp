@@ -149,8 +149,8 @@ ECL_EXPORT void FrameAdvance(uint64_t packed)
 		/* b[14], b[15] are spare: the pak in the pad is a setting, not a button */
 		int x = g_axes[pad * 2 + 0];
 		int y = g_axes[pad * 2 + 1];
-		if (x < -127) x = -127; if (x > 127) x = 127;
-		if (y < -127) y = -127; if (y > 127) y = 127;
+		if (x < -128) x = -128; if (x > 127) x = 127;
+		if (y < -128) y = -128; if (y > 127) y = 127;
 		p.x = (int8_t)x;
 		p.y = (int8_t)y;
 	}

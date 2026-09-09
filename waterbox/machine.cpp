@@ -251,19 +251,16 @@ namespace machine
 			Nintendo64::ControllerPort *slot = g_ports[i];
 			if (auto pad = dynamic_cast<Nintendo64::Gamepad *>(slot->device.get()))
 			{
-				/* The frontend speaks the console's units - the -127..127 byte a
-				 * Nintendo 64 controller actually reports - because that is what a
-				 * movie records and what every N64 TAS is written in. ares' pads
-				 * take the ±32767 of a modern analogue stick and put it through a
-				 * deadzone and an octagonal gate on the way in, so the value is
-				 * scaled up to that range here. Passing the raw byte instead lands
-				 * inside ares' deadzone and the stick does nothing at all, which is
-				 * how this was found.
+				/* The signed byte the controller reports, straight through. A
+				 * Nintendo 64 movie is written in that byte - it is what mupen and
+				 * BizHawk record and what every existing N64 run contains - so
+				 * ares' stick shaping is patched out rather than fed
+				 * (patches/ares/0008).
 				 *
-				 * What the game finally reads is therefore SHAPED, not the byte the
-				 * author typed; see docs/PLAN.md, "the analogue stick". */
-				pad->x->setValue(p.x * 32767 / 127);
-				pad->y->setValue(p.y * 32767 / 127);
+				 * Y is negated because the frontend's axis points the way a player
+				 * does, up-positive, and the machine reads it the other way round. */
+				pad->x->setValue(p.x);
+				pad->y->setValue(-p.y);
 				pad->up->setValue(p.up);
 				pad->down->setValue(p.down);
 				pad->left->setValue(p.left);
@@ -302,6 +299,17 @@ namespace machine
 	const int16_t *audio(void) { return g_audio; }
 	int audioSamples(void) { return g_audioSamples; }
 	bool inputWasRead(void) { return g_inputWasRead; }
+
+	bool padReport(int pad, int *x, int *y)
+	{
+		if (pad < 0 || pad > 3) return false;
+		auto *device = g_ports[pad]->device.get();
+		if (device == nullptr) return false;
+		auto data = device->read();
+		if (x) *x = (int8_t)(uint8_t)(data >> 8 & 0xff);
+		if (y) *y = (int8_t)(uint8_t)(data >> 0 & 0xff);
+		return true;
+	}
 
 	int vsyncNumerator(void) { return g_pal ? 50 : 60; }
 	int vsyncDenominator(void) { return 1; }

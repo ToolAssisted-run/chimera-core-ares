@@ -137,6 +137,29 @@ else
 fi
 
 echo
+echo "== the stick is the byte the movie recorded =="
+# A Nintendo 64 movie is written in the signed byte the controller reports, which
+# is what mupen and BizHawk record. ares shapes a modern thumbstick through a
+# deadzone and an octagonal gate on the way in; patches/ares/0008 takes that out,
+# and this leg is what says so. The small values matter most: before the patch
+# everything under about eight vanished into the deadzone entirely.
+stick_exact=1
+for pair in "0 0" "1 0" "-1 0" "5 0" "85 -70" "127 127" "-128 -128"; do
+	# shellcheck disable=SC2086
+	got="$("$native" --rom "$content/input-cpu.n64" --quiet --frames 220 --stick $pair --report-stick | tail -1)"
+	want="stick reported x=$(echo "$pair" | cut -d' ' -f1) y=$(echo "$pair" | cut -d' ' -f2)"
+	if [ "$got" != "$want" ]; then
+		stick_exact=0
+		echo "     typed $pair -> $got"
+	fi
+done
+if [ "$stick_exact" -eq 1 ]; then
+	say_pass "every stick byte reaches the machine unchanged"
+else
+	say_fail "every stick byte reaches the machine unchanged" "see above"
+fi
+
+echo
 echo "== the picture is the one the hardware draws =="
 # PeterLemon's repository ships the picture each program produces on a real
 # console. The CPU one is a plain framebuffer, so with the video interface's

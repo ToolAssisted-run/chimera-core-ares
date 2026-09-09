@@ -177,25 +177,31 @@ real hardware, not against ourselves.
 
 ## The analogue stick
 
-Worth its own section, because it is a decision and not just a bug.
+Worth its own section, because it is a decision about what a movie *means*.
 
 Modern ares takes stick input in the **±32767** range of a PC gamepad and puts
-it through a deadzone, a response curve and an octagonal gate before the machine
-sees it. Passing the console's own -127..127 byte therefore lands *inside the
-deadzone* and the stick does nothing whatsoever - which is how this was found,
-by an input leg that watched three stick positions produce one machine.
+it through a deadzone, a response curve and the octagonal gate a real stick is
+physically held in before the machine sees it. That is right for somebody
+playing with a thumbstick. It is wrong for a movie, and it hid a bug: passing
+the console's own signed byte landed *inside the deadzone*, so the stick did
+nothing whatsoever - found by an input leg that watched three stick positions
+produce one machine.
 
-`machine.cpp` now scales -127..127 up to ares' range, so the stick works and the
-gate is happy. But note what that means: **the value the game reads is shaped,
-not the byte the author typed.** The mupen and BizHawk convention for N64 TASing
-is the opposite - the author sets the byte the controller reports, exactly, and
-the emulator does not interpret it.
+A Nintendo 64 tool-assisted run is written in **the byte the controller
+reports**. That is what mupen and BizHawk record, what every existing N64 movie
+contains, and what a frame of one means: not "the player pushed the stick about
+this far" but "the game read exactly this number". So `patches/ares/0008` takes
+the shaping out and the axes pass straight through - the frontend hands over the
+signed byte and the machine reads it back unchanged. The declared range is the
+byte itself, -128..127, positive up and right.
 
-Making that exact needs a patch to ares' `Gamepad::read` to bypass its own
-shaping. It is not done, because which behaviour is *right* is a question about
-what N64 movies should mean, and that is Sergio's to answer. Until then a movie
-recorded here records a stick position, and replays identically - it is just not
-byte-comparable with a mupen movie.
+Two consequences worth stating. Everything in the byte range is now reachable,
+including the small values that the deadzone used to swallow whole. And a run
+recorded here means the same thing as a run recorded in mupen, which is the
+point of choosing this convention over the physically faithful one.
+
+The gate checks it directly rather than by digest: seven stick positions, each
+compared against what the controller actually reported to the machine.
 
 ## Not done
 

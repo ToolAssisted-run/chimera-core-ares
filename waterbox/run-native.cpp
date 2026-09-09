@@ -33,8 +33,8 @@ namespace
 			p.l = b[8];   p.r = b[9];
 			p.cUp = b[10]; p.cDown = b[11]; p.cLeft = b[12]; p.cRight = b[13];
 			int x = g_axes[pad * 2 + 0], y = g_axes[pad * 2 + 1];
-			if (x < -127) x = -127; if (x > 127) x = 127;
-			if (y < -127) y = -127; if (y > 127) y = 127;
+			if (x < -128) x = -128; if (x > 127) x = 127;
+			if (y < -128) y = -128; if (y > 127) y = 127;
 			p.x = (int8_t)x;
 			p.y = (int8_t)y;
 		}
@@ -117,11 +117,23 @@ int main(int argc, char **argv)
 			config.romFile, config.pal ? "PAL" : "NTSC", opts.frames);
 	}
 
+	/* --report-stick: run, then say what the pad reported. Nothing else in the
+	 * run changes, so the digests stay comparable. */
+	bool reportStick = false;
+	for (int i = 1; i < argc; i++) if (!strcmp(argv[i], "--report-stick")) reportStick = true;
+
 	struct gate_core core = {
 		core_init, core_load_error, core_set_button, core_set_axis, core_frame,
 		core_video, core_audio, core_input_was_read, core_domain_count,
 		core_domain_name, core_domain_ptr, core_domain_size, core_set_rendering,
 		core_pre_frame,
 	};
-	return gate_run(&core, &opts);
+	int rc = gate_run(&core, &opts);
+	if (reportStick)
+	{
+		int x = 0, y = 0;
+		if (machine::padReport(0, &x, &y)) printf("stick reported x=%d y=%d\n", x, y);
+		else printf("stick reported none\n");
+	}
+	return rc;
 }
