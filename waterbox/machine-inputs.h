@@ -29,6 +29,8 @@ namespace machines
 		/* What goes into the first port when nobody says otherwise: the
 		 * ordinary controller, or null for a machine with no ports at all. */
 		const char *defaultDevice;
+		/* True for a machine that starts with nothing in its drive. */
+		bool bootsWithoutMedium;
 	};
 }
 

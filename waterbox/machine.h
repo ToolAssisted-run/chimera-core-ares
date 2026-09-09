@@ -31,10 +31,15 @@ namespace machine
 		bool pal;
 		uint64_t initTimeUnix;   /* what a cartridge clock starts at */
 
-		/* What to plug into each of the machine's controller ports, by ares'
-		 * own name for the device ("Gamepad", "Mouse", "Control Pad"). Null or
-		 * empty leaves the port empty. Ports the machine does not have are
-		 * ignored; a handheld has none at all. */
+		/* What to plug into each of the machine's ports, by ares' own name for
+		 * the device - which differs between machines: a Mega Drive port takes a
+		 * "Control Pad" and a PlayStation's a "Digital Gamepad". The order is the
+		 * machine's own, and it is not all controllers: a PlayStation's ports run
+		 * Controller 1, Memory Card 1, Controller 2, Memory Card 2.
+		 *
+		 * An EMPTY string leaves a port empty. NULL means "nothing was said",
+		 * and the first port then gets whatever that machine's ordinary
+		 * controller is. A handheld has no ports and ignores all of this. */
 		const char *port[8];
 		/* What goes in the pad's own slot, where it has one: a Nintendo 64
 		 * pad's "Controller Pak" or "Rumble Pak". */

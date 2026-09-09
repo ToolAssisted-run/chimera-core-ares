@@ -98,7 +98,8 @@ def render_inc(machines):
         # what the first port takes when nobody says otherwise
         first = m["ports"][0]["devices"][0]["name"] if m["ports"] else None
         d = f'"{first}"' if first else "nullptr"
-        out.append(f'\t{{"{m["id"]}", {b}, {len(buttons)}, {a}, {len(axes)}, {d}}},')
+        boots = "true" if m.get("bootsWithoutMedium") else "false"
+        out.append(f'\t{{"{m["id"]}", {b}, {len(buttons)}, {a}, {len(axes)}, {d}, {boots}}},')
     out.append("};")
     out.append("")
     return "\n".join(out)
@@ -121,6 +122,15 @@ FIRMWARE_TEXT = {
         "The ColecoVision's 8KB boot ROM - the console's title screen and its "
         "cartridge checks live in it, and nothing runs without it.",
         "Coleco_Bios.bin",
+    ),
+    "ps1Bios": (
+        "PlayStation BIOS",
+        "The PlayStation's 512KB boot ROM. It is the console's operating system: "
+        "games call into it constantly, and the machine reaches nothing without "
+        "it. Sony's, so it is yours to supply. Any retail BIOS will do and they "
+        "differ by region and revision; the one pinned here is what this package "
+        "was tested against, and a project records which was used.",
+        "PSX_4.1(A).bin",
     ),
     "msxBios": (
         "MSX BIOS",

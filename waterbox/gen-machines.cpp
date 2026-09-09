@@ -164,6 +164,7 @@ int main(int argc, char **argv)
 		printf("      \"maxWidth\": %d,\n      \"maxHeight\": %d,\n", spec.maxWidth, spec.maxHeight);
 		printf("      \"virtualWidth\": %d,\n      \"virtualHeight\": %d,\n", spec.virtualWidth, spec.virtualHeight);
 		printf("      \"regions\": [\"ntsc\"%s],\n", spec.configPal ? ", \"pal\"" : "");
+		printf("      \"bootsWithoutMedium\": %s,\n", spec.bootsWithoutMedium ? "true" : "false");
 		if (spec.firmware != nullptr)
 		{
 			/* Only the id: gen-config.py finds the file under tests/firmware and

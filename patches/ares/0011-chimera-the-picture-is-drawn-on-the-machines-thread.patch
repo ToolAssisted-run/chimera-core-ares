@@ -22,3 +22,30 @@ index 1d82199cb..2ef398043 100644
    }
  
    namespace Constants {
+diff --git a/ares/ps1/accuracy.hpp b/ares/ps1/accuracy.hpp
+index f3fcb0e8d..3b5e78e62 100644
+--- a/ares/ps1/accuracy.hpp
++++ b/ares/ps1/accuracy.hpp
+@@ -1,3 +1,7 @@
++#if !defined(CHIMERA_SINGLE_THREADED)
++  #define CHIMERA_SINGLE_THREADED 0
++#endif
++
+ struct Accuracy {
+   //enable all accuracy flags
+   static constexpr bool Reference = 0;
+@@ -15,6 +19,13 @@ struct Accuracy {
+ 
+   struct GPU {
+     //performs GPU primitive rendering on a separate thread
+-    static constexpr bool Threaded = 1;
++    //
++    //A sandbox has one thread, and it is the machine's. With this on the
++    //rasteriser's queue is filled and never drained: every register ends up
++    //exactly where it should be and not one pixel is drawn, which looks like a
++    //renderer bug rather than a missing thread. It is also the wrong shape for
++    //a movie regardless - a picture that depends on when another thread got
++    //round to it is not reproducible.
++    static constexpr bool Threaded = 1 & !CHIMERA_SINGLE_THREADED;
+   };
+ };

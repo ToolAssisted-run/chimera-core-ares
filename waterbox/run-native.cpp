@@ -67,16 +67,16 @@ int main(int argc, char **argv)
 			int which = atoi(argv[++i]);
 			const char *device = argv[++i];
 			if (which < 1 || which > 8) { fprintf(stderr, "run-native: --port takes 1..8\n"); return 2; }
-			config.port[which - 1] = strcmp(device, "none") ? device : nullptr;
+			config.port[which - 1] = strcmp(device, "none") ? device : "";
 			portsGiven = 1;
 		}
 	}
 
-	/* Nothing said about the ports means the ordinary controller in the first
-	 * one, which is what almost every run wants. */
-	if (!portsGiven) config.port[0] = machines::defaultDevice(config.machine);
+	/* Nothing said about the ports leaves them all null, and the machine puts
+	 * its own ordinary controller in the first one. */
+	(void)portsGiven;
 
-	if (!config.romFile)
+	if (!config.romFile && !machines::bootsWithoutMedium(config.machine))
 	{
 		fprintf(stderr, "usage: run-native --rom FILE [options]\n"
 			"  --machine ID      which console (default N64); see waterbox/machines.h\n"

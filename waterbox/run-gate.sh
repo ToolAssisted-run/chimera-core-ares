@@ -45,6 +45,7 @@ firmware_for() {
 		GBA) echo "$root/tests/firmware/gbaBios" ;;
 		CV)  echo "$root/tests/firmware/cvBios" ;;
 		MSX) echo "$root/tests/firmware/msxBios" ;;
+		PS1) echo "$root/tests/firmware/ps1Bios" ;;
 	esac
 }
 
@@ -52,8 +53,14 @@ firmware_for() {
 setup_work() {
 	id="$1"; rom="$2"
 	rm -rf "$work/w"; mkdir -p "$work/w"
-	cp "$content/$rom" "$work/w/rom"
-	printf '{"rom":["rom"]}' > "$work/w/slots"
+	if [ "$rom" = "-" ]; then
+		# a machine that starts with nothing in its drive - a PlayStation
+		# reaching its BIOS shell, which needs no content at all
+		printf '{}' > "$work/w/slots"
+	else
+		cp "$content/$rom" "$work/w/rom"
+		printf '{"rom":["rom"]}' > "$work/w/slots"
+	fi
 	printf '{"machine":"%s"}' "$(echo "$id" | tr 'A-Z' 'a-z')" > "$work/w/settings"
 	fw="$(firmware_for "$id")"
 	nativefw=""
@@ -72,11 +79,10 @@ compare() {
 		echo "SKIP $leg (no console BIOS in tests/firmware)"
 		return
 	fi
-	if [ -n "$nativefw" ]; then
-		a="$("$native" --machine "$id" --firmware "$nativefw" --rom "$work/w/rom" --quiet "$@" | tail -1)"
-	else
-		a="$("$native" --machine "$id" --rom "$work/w/rom" --quiet "$@" | tail -1)"
-	fi
+	set -- "$@"
+	[ "$rom" = "-" ] || set -- "$@" --rom "$work/w/rom"
+	[ -z "$nativefw" ] || set -- "$@" --firmware "$nativefw"
+	a="$("$native" --machine "$id" --quiet "$@" | tail -1)"
 	b="$("$runwbx" "$wbx" "$work/w" --machine "$id" --quiet "$@" | tail -1)"
 	if [ "$a" = "$b" ]; then
 		say_pass "$leg (native == sandbox)"
@@ -114,12 +120,13 @@ deterministic() {
 	leg="$1"; id="$2"; rom="$3"; shift 3
 	fw="$(firmware_for "$id")"
 	set -- "$@"
+	[ "$rom" = "-" ] || set -- "$@" --rom "$content/$rom"
 	if [ -n "$fw" ]; then
 		[ -f "$fw" ] || { echo "SKIP $leg (no console BIOS in tests/firmware)"; return; }
 		set -- "$@" --firmware "$fw"
 	fi
-	a="$("$native" --machine "$id" --rom "$content/$rom" --quiet "$@" | tail -1)"
-	b="$("$native" --machine "$id" --rom "$content/$rom" --quiet "$@" | tail -1)"
+	a="$("$native" --machine "$id" --quiet "$@" | tail -1)"
+	b="$("$native" --machine "$id" --quiet "$@" | tail -1)"
 	if [ "$a" = "$b" ]; then
 		say_pass "$leg is the same machine twice running"
 	else
@@ -167,6 +174,9 @@ compare "GB libbet"          GB  libbet.gb          --frames 200
 compare "GB libbet, Start held" GB libbet.gb        --frames 200 --hold Start
 compare "GBA arm tests"      GBA gba-arm.gba        --frames 200
 compare "GBA arm tests, A held" GBA gba-arm.gba     --frames 200 --hold A
+# The PlayStation with nothing in its drive: the BIOS boots, draws its logo and
+# settles into the shell. No content, and still a whole machine to compare.
+compare "PS1 BIOS shell"     PS1 -                  --frames 400
 
 echo
 echo "== the machine survives being saved and reloaded =="
@@ -174,12 +184,14 @@ rerecord "N64 helloworld-cpu" N64 helloworld-cpu.n64 --frames 130
 rerecord "N64 input, A held"  N64 input-cpu.n64      --frames 200 --hold "P1 Gamepad A"
 rerecord "GB libbet"          GB  libbet.gb          --frames 200
 rerecord "GBA arm tests"      GBA gba-arm.gba        --frames 200
+rerecord "PS1 BIOS shell"     PS1 -                  --frames 400
 
 echo
 echo "== the same run twice is the same machine =="
 deterministic "N64" N64 helloworld-cpu.n64 --frames 60
 deterministic "GB"  GB  libbet.gb          --frames 120
 deterministic "GBA" GBA gba-arm.gba        --frames 120
+deterministic "PS1" PS1 -                  --frames 300
 
 echo
 echo "== input reaches the machine =="

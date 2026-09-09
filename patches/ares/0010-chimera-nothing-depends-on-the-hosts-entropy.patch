@@ -1,3 +1,30 @@
+diff --git a/ares/ares/random.hpp b/ares/ares/random.hpp
+index d2dbf73f6..d446b811d 100644
+--- a/ares/ares/random.hpp
++++ b/ares/ares/random.hpp
+@@ -18,8 +18,22 @@ struct Random {
+   }
+ 
+   auto seed(maybe<n64> seed = nothing, maybe<n64> sequence = nothing) -> void {
++    #if defined(CHIMERA_DETERMINISTIC_SEED)
++    //A machine that seeds itself from clock() powers on differently every time.
++    //ares fills a PlayStation's RAM, scratchpad, video memory, sound memory and
++    //instruction cache from this generator, so an unseeded run is a different
++    //console on every boot - which a movie cannot be replayed against.
++    //
++    //This is a SECOND host dependency, separate from nall::randomSeed(): that
++    //one asks the operating system for entropy, this one asks the clock. Both
++    //had to go, and each was found the same way - by a run of the same thing
++    //twice producing two machines whose pictures agreed.
++    if(!seed) seed = (n64)Default.seed;
++    if(!sequence) sequence = (n64)Default.sequence;
++    #else
+     if(!seed) seed = (n64)clock();
+     if(!sequence) sequence = 0;
++    #endif
+ 
+     _state = 0;
+     _increment = sequence() << 1 | 1;
 diff --git a/nall/nall/random.cpp b/nall/nall/random.cpp
 index 02ef580cf..76301b812 100644
 --- a/nall/nall/random.cpp

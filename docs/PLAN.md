@@ -14,12 +14,12 @@ Chimera has never had - and the reason to start there is that N64 is the
 *hardest* of ares' systems to sandbox, so a port that works for it works for
 the rest.
 
-**Sixteen machines are declared now**: Nintendo 64, Famicom/NES, Game Boy,
+**Seventeen machines are declared now**: Nintendo 64, Famicom/NES, Game Boy,
 Game Boy Color, Mega Drive, Master System, Game Gear, SG-1000, Atari 2600,
 WonderSwan, WonderSwan Color, ZX Spectrum, MyVision - which need nothing of the
 user but a cartridge - and the Game Boy Advance, ColecoVision and MSX, which
-need a console BIOS the user supplies. Three of them are validated end to end
-against real content; the rest are declared, built and enumerated but have never
+need a console BIOS the user supplies, and the PlayStation, which loads discs.
+Four of them are validated end to end; the rest are declared, built and enumerated but have never
 run a game here. See "What is proven and what is only declared" below, because
 the difference matters.
 
@@ -123,12 +123,27 @@ the reference *random*, and the two would have disagreed for a reason nobody
 would go looking for. The seed is now a fixed number under
 `CHIMERA_DETERMINISTIC_SEED`, in both flavours.
 
-**Threading** (`ares/0011`). ares draws on a second thread and hands frames over
-through a condition variable with a **timed wait**. A waterbox has one thread,
-so the first frame parked it and the core hung - exactly the trap
-`porting-a-core.md` warns about. `ares::Video::Threaded` is now off in both
-flavours, so `refresh()` runs inline where `frame()` is called. That is also the
-only arrangement in which the picture can be part of a reproducible run.
+**Threading** (`ares/0011`), which bit twice and differently.
+
+ares draws on a second thread and hands frames over through a condition variable
+with a **timed wait**. A waterbox has one thread, so the Game Boy's first frame
+parked it and the core hung - exactly the trap `porting-a-core.md` warns about.
+
+The PlayStation then failed in the far nastier way. Its GPU rasterises on a
+thread of its own (`Accuracy::GPU::Threaded`), and a thread that never runs does
+not hang anything: the queue simply fills, every register ends up exactly where
+it should be, and **not one pixel is drawn**. The whole four-megabyte machine
+state matched between the two flavours except the contents of video memory, and
+the sandbox's picture was the noise it had been filled with at power-on. That
+looks like a broken renderer, and it is a missing thread.
+
+Both are off under `CHIMERA_SINGLE_THREADED`, in both flavours - the reference
+must be single-threaded too, or the two are not running the same program.
+
+**Still threaded, and therefore unusable here**: the LaserActive video prefetch
+in `md/mcd/megald.cpp` and `pce/pcd/ldrom2.cpp`. Neither is reached by the
+machines this core offers - they are the Mega LD and PC Engine LD media - but
+anybody adding those will meet this section again.
 
 ## The shape of the code
 
@@ -210,19 +225,19 @@ not.
 
 ## The gate
 
-`waterbox/run-gate.sh`, twenty-three legs, a few minutes. It runs anywhere, CI
+`waterbox/run-gate.sh`, twenty-six legs, a few minutes. It runs anywhere, CI
 included, because the content is free: **PeterLemon/N64** test ROMs (Unlicense)
 and **libbet** (Zlib), a real Game Boy homebrew. This core is in the "upstream
 ships something free" category of `porting-a-core.md`.
 
 What the legs prove, in the order they matter:
 
-1. **native == sandbox**, on every digest, over eight runs across three
-   machines including ones with buttons held and the stick over.
-2. **every machine is what ares says it is** - all sixteen rebuilt, their inputs
-   re-enumerated, and the committed declaration diffed against them. A runner
-   without the console BIOSes checks the thirteen it can and says which three it
-   skipped.
+1. **native == sandbox**, on every digest, over nine runs across four machines
+   including ones with buttons held and the stick over.
+2. **every machine is what ares says it is** - all seventeen rebuilt, their
+   inputs re-enumerated, and the committed declaration diffed against them. A
+   runner without the console BIOSes checks the thirteen it can and says which
+   four it skipped.
 3. **the machine survives a savestate**, saved and reloaded before every single
    frame, digests unchanged.
 4. **the same run twice is the same machine**, for both validated machines. This
@@ -258,7 +273,11 @@ every digest between the two flavours:
 - the **Game Boy**, running a whole homebrew game;
 - the **Game Boy Advance**, which passes **jsmolka's ARM test suite** - and the
   gate reads the verdict off the screen rather than comparing a digest, so that
-  leg cannot pass by agreeing with itself.
+  leg cannot pass by agreeing with itself;
+- the **PlayStation**, which reaches its BIOS shell with nothing in its drive.
+  That needs no content at all, and it is still a whole machine to compare: the
+  CPU, the GPU and the sound chip all run, and the picture it settles into is
+  the console's own menu.
 
 **Declared**, in the sense that ares builds them, this core enumerates their
 ports and inputs, and the package offers them - but no cartridge has ever been
@@ -274,11 +293,6 @@ gate leg before it should be believed.
 MVS) and the Neo Geo Pocket. Each is a table row and a firmware declaration away
 once one turns up.
 
-**Absent because it is a bigger job**: the **PlayStation**. ares can build it,
-and a BIOS is available, but it loads discs rather than cartridges - which means
-CD images, a swap list, and a slot shape this core does not have yet. It is the
-next substantial machine rather than the next easy one.
-
 **Not in ares at all**: the Saturn is a stub upstream (one file), so it is not a
 machine anybody could offer. The Super Famicom and the PC Engine build but crash
 when asked to power on with no cartridge, which is probably nothing more than
@@ -286,7 +300,8 @@ that - they are absent until somebody checks.
 
 ## Firmware
 
-Three machines need a console BIOS, and none of it is in this repository.
+Four machines need a console BIOS - the Game Boy Advance, the ColecoVision, the
+MSX and the PlayStation - and none of it is in this repository.
 
 The package declares each one - id, size, SHA-1, a suggested filename and the
 condition it is needed under (`{"setting": "machine", "is": "gba"}`) - and
@@ -364,10 +379,10 @@ In rough order of what would matter first:
 - **Optional tooling**: no registers, no trace, no core-rendered surfaces.
   Memory domains, buses and the Nintendo 64's save-data export are done.
 
-## Numbers, as of the thirteen-machine build
+## Numbers, as of the seventeen-machine build
 
-- `core.wbx` is 16.3 MB with every machine in it - it was 9.3 MB with only the
-  Nintendo 64, so twelve more machines cost seven megabytes between them. The
+- `core.wbx` is 18.0 MB with every machine in it - it was 9.3 MB with only the
+  Nintendo 64, so sixteen more machines cost under nine megabytes between them. The
   package is built reproducibly (the build script packs twice and compares).
 - The declared arena is 296 MB, and **mmap is the part that matters**: a 1 MB
   cartridge already needs more than 80 MB there, because the ROM is held three

@@ -155,6 +155,13 @@ namespace
 	 * declared inputs to the nodes that now exist. */
 	bool connectPorts(const machine::Config &config)
 	{
+		/* Nothing said at all: the machine's ordinary controller goes in its
+		 * first port, which is what almost every run wants. What that controller
+		 * is called differs between machines, so it is asked of the port rather
+		 * than assumed. */
+		bool nobodySaid = true;
+		for (auto &p : config.port) if (p != nullptr) nobodySaid = false;
+
 		int index = 0;
 		for (auto &port : g_root->find<Node::Port>())
 		{
@@ -162,8 +169,18 @@ namespace
 			if (index >= 8) break;
 			const char *device = config.port[index];
 			const char *accessory = config.portAccessory[index];
+			nall::string first;
+			if (device == nullptr)
+			{
+				if (index == 0 && nobodySaid && !port->supported().empty())
+				{
+					first = port->supported().front();
+					device = first;
+				}
+				else device = "";
+			}
 			index++;
-			if (device == nullptr || !*device) continue;
+			if (!*device) continue;
 
 			auto peripheral = port->allocate(device);
 			if (!peripheral) return fail("this machine has no such device for that port");
@@ -292,10 +309,17 @@ namespace machine
 			                             : "this machine's system pak would not load");
 		}
 
-		if (!config.romFile || !*config.romFile) return fail("no cartridge given");
-		g_cartridgePak = mia::Medium::create(g_spec->miaMedium);
-		if (!g_cartridgePak) return fail("ares has no such medium");
-		if (g_cartridgePak->load(config.romFile) != successful) return fail("the cartridge would not load");
+		bool haveMedium = config.romFile != nullptr && *config.romFile;
+		if (!haveMedium && !g_spec->bootsWithoutMedium) return fail("no cartridge given");
+		if (haveMedium)
+		{
+			g_cartridgePak = mia::Medium::create(g_spec->miaMedium);
+			if (!g_cartridgePak) return fail("ares has no such medium");
+			if (g_cartridgePak->load(config.romFile) != successful)
+			{
+				return fail("the game would not load");
+			}
+		}
 
 		if (g_isN64)
 		{

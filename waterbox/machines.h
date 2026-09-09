@@ -33,6 +33,7 @@
 #include <msx/msx.hpp>
 #include <myvision/myvision.hpp>
 #include <n64/n64.hpp>
+#include <ps1/ps1.hpp>
 #include <sg/sg.hpp>
 #include <spec/spec.hpp>
 #include <ws/ws.hpp>
@@ -68,6 +69,11 @@ namespace machines
 		 * package declares it under - which is also the name the frontend mounts
 		 * it as. Null for a machine that carries everything it needs. */
 		const char *firmware;
+		/* True for a machine that starts with nothing in its drive - a
+		 * PlayStation reaches its BIOS shell with no disc, which is a real
+		 * machine to compare and one that needs no content at all. A cartridge
+		 * console does not, and asking it to is a mistake worth refusing. */
+		bool bootsWithoutMedium;
 	};
 
 	/* Ordered as a person would look for them, not as ares stores them. */
@@ -144,6 +150,14 @@ namespace machines
 			{"MSX", "MSX", "MSX", "MSX", ares::MSX::load,
 			 "[Microsoft] MSX (NTSC)", "[Microsoft] MSX (PAL)",
 			 284, 243, 284, 192, "msx rom", nullptr, "msxBios"},
+
+			/* The one machine here that loads a disc rather than a cartridge.
+			 * mia takes a .cue (with its .bin beside it, mounted under the name
+			 * the cue gives) or a bare PlayStation executable, which is how most
+			 * homebrew arrives and which needs no disc at all. */
+			{"PS1", "PlayStation", "PlayStation", "PlayStation", ares::PlayStation::load,
+			 "[Sony] PlayStation (NTSC-U)", "[Sony] PlayStation (PAL)",
+			 640, 512, 640, 480, "cue exe ps-exe", nullptr, "ps1Bios", true},
 		};
 		return specs;
 	}

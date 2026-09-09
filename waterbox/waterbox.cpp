@@ -36,7 +36,10 @@ namespace
 		if (g_settingsUsed >= 8) return dflt;
 		char *slot = g_settingBuf[g_settingsUsed];
 		if (wbx_setting_str(name, slot, (int)sizeof g_settingBuf[0]) < 0) return dflt;
-		if (!*slot || !strcmp(slot, "none")) return nullptr;
+		/* "none" is a decision - leave the port empty - and is not the same as
+		 * saying nothing, which lets the machine put its own controller in the
+		 * first port. */
+		if (!*slot || !strcmp(slot, "none")) return "";
 		g_settingsUsed++;
 		return slot;
 	}
@@ -54,6 +57,15 @@ ECL_EXPORT int Init(void)
 	static char romName[256];
 	if (!wbx_slot_first("rom", romName, (int)sizeof romName)) snprintf(romName, sizeof romName, "rom");
 
+	/* A machine that boots with nothing in its drive - a PlayStation reaching
+	 * its BIOS shell - is started with no medium at all. Rather than ask which
+	 * machines those are, look: if the host mounted nothing under that name,
+	 * there is nothing to load, and machine::init decides whether that is
+	 * allowed. A cartridge console says so plainly. */
+	const char *rom = romName;
+	if (FILE *probe = fopen(romName, "rb")) fclose(probe);
+	else rom = nullptr;
+
 	static char machineName[32];
 	if (wbx_setting_str("machine", machineName, (int)sizeof machineName) < 0)
 	{
@@ -65,7 +77,7 @@ ECL_EXPORT int Init(void)
 
 	machine::Config config = {};
 	config.machine = machineName;
-	config.romFile = romName;
+	config.romFile = rom;
 
 	char region[16];
 	config.pal = wbx_setting_str("region", region, (int)sizeof region) >= 0 && !strcmp(region, "pal");
@@ -77,7 +89,10 @@ ECL_EXPORT int Init(void)
 	config.fastVI = wbx_setting_bool("fastVI", 0) != 0;
 	config.bobDeinterlace = wbx_setting_bool("bobDeinterlace", 0) != 0;
 
-	config.port[0] = settingString("port1", "Gamepad");
+	/* Null when the project said nothing, so the machine chooses its own
+	 * ordinary controller - "Gamepad" on a Famicom, "Control Pad" on a Mega
+	 * Drive, "Digital Gamepad" on a PlayStation. */
+	config.port[0] = settingString("port1", nullptr);
 	config.port[1] = settingString("port2", nullptr);
 	config.port[2] = settingString("port3", nullptr);
 	config.port[3] = settingString("port4", nullptr);

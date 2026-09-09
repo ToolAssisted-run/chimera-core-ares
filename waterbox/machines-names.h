@@ -42,6 +42,14 @@ namespace machines
 		return (m && i >= 0 && i < m->axisCount) ? m->axes[i].name : nullptr;
 	}
 
+	/* True for a machine that starts with nothing in its drive. Generated, so
+	 * the drivers need not link the emulator to ask. */
+	inline bool bootsWithoutMedium(const char *id)
+	{
+		for (auto &entry : kMachineInputs) if (id && !strcmp(entry.id, id)) return entry.bootsWithoutMedium;
+		return false;
+	}
+
 	/* What to plug into the first port when nobody said - the ordinary
 	 * controller for this machine, or null for a handheld with no ports. */
 	inline const char *defaultDevice(const char *id)

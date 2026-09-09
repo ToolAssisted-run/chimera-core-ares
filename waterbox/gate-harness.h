@@ -65,6 +65,8 @@ struct gate_opts
 	struct gate_press press[16];
 	int press_count;
 	const char *dump_path;
+	const char *dump_state;
+	const char *dump_bus;
 	int list_inputs;
 };
 
@@ -78,6 +80,8 @@ static void gate_usage(void)
 		"  --digest-every N  print a digest every N frames as well as at the end\n"
 		"  --dump-frame F    write frame F as a .ppm and stop\n"
 		"  --dump-to PATH    where --dump-frame writes (default frame.ppm)\n"
+		"  --dump-state PATH write the whole serialised machine there at the end\n"
+		"  --dump-bus PATH   write every bus there, one file per bus, at the end\n"
 		"  --no-render       run with drawing off (turbo)\n"
 		"  --list-inputs     print what this machine declares, and stop\n"
 		"  --quiet           only the final digest line\n"
@@ -100,6 +104,8 @@ static int gate_parse_opts(int argc, char **argv, int from, struct gate_opts *o)
 		else if (!strcmp(a, "--digest-every")) o->digest_every = atoi(GATE_NEXT());
 		else if (!strcmp(a, "--dump-frame")) o->dump_frame = atoi(GATE_NEXT());
 		else if (!strcmp(a, "--dump-to")) o->dump_path = GATE_NEXT();
+		else if (!strcmp(a, "--dump-state")) o->dump_state = GATE_NEXT();
+		else if (!strcmp(a, "--dump-bus")) o->dump_bus = GATE_NEXT();
 		else if (!strcmp(a, "--no-render")) o->render = 0;
 		else if (!strcmp(a, "--quiet")) o->quiet = 1;
 		else if (!strcmp(a, "--list-inputs")) o->list_inputs = 1;
@@ -272,18 +278,74 @@ static int gate_run(const struct gate_core *c, const struct gate_opts *o)
 
 		if (o->digest_every > 0 && (f + 1) % o->digest_every == 0)
 		{
+			/* In a defined order: asking for the state SYNCHRONISES the machine,
+			 * so a memory digest taken after it is a digest of a different
+			 * moment. As printf's arguments are evaluated in whatever order the
+			 * compiler likes, they cannot both be arguments. */
+			uint64_t mem = gate_memory_digest(c);
+			uint64_t state = gate_state_digest(c);
 			printf("frame %6d  video %016llx  audio %016llx  memory %016llx  state %016llx  %dx%d  %d samples\n",
 				f + 1, (unsigned long long)video, (unsigned long long)audio,
-				(unsigned long long)gate_memory_digest(c), (unsigned long long)gate_state_digest(c),
-				w, h, samples);
+				(unsigned long long)mem, (unsigned long long)state, w, h, samples);
 			fflush(stdout);
 		}
 	}
 
+	if (o->dump_bus)
+	{
+		for (int b = 0; b < c->bus_count(); b++)
+		{
+			char path[512];
+			snprintf(path, sizeof path, "%s.%d", o->dump_bus, b);
+			FILE *f = fopen(path, "wb");
+			if (!f) continue;
+			int64_t size = c->bus_size(b);
+			for (int64_t a = 0; a < size; a++) fputc(c->bus_peek(b, (int)a), f);
+			fclose(f);
+			fprintf(stderr, "wrote %s (%s, %lld bytes)\n", path, c->bus_name(b), (long long)size);
+		}
+	}
+
+	/* Before any of the digests, and in particular before the state capture,
+	 * which synchronises. */
+	if (!o->quiet)
+	{
+		for (int b = 0; b < c->bus_count(); b++)
+		{
+			uint64_t h = gate_hash_init();
+			int64_t size = c->bus_size(b);
+			for (int64_t a = 0; a < size; a++)
+			{
+				uint8_t byte = (uint8_t)c->bus_peek(b, (int)a);
+				h = gate_hash_feed(h, &byte, 1);
+			}
+			fprintf(stderr, "  bus    %-14s %016llx\n", c->bus_name(b), (unsigned long long)h);
+		}
+		for (int d = 0; d < c->domain_count(); d++)
+		{
+			fprintf(stderr, "  domain %-14s %016llx\n", c->domain_name(d),
+				(unsigned long long)gate_hash_feed(gate_hash_init(), c->domain_ptr(d), (size_t)c->domain_size(d)));
+		}
+	}
+
+	if (o->dump_state && c->state)
+	{
+		const uint8_t *data = NULL;
+		int64_t size = 0;
+		if (c->state(&data, &size) && data)
+		{
+			FILE *f = fopen(o->dump_state, "wb");
+			if (f) { fwrite(data, 1, (size_t)size, f); fclose(f); }
+			fprintf(stderr, "wrote %s (%lld bytes)\n", o->dump_state, (long long)size);
+		}
+	}
+
+	/* Memory first, then the state - see the note above. */
+	uint64_t mem = gate_memory_digest(c);
+	uint64_t state = gate_state_digest(c);
 	printf("video %016llx  audio %016llx  memory %016llx  state %016llx  lag %d/%d  %dx%d\n",
 		(unsigned long long)video, (unsigned long long)audio,
-		(unsigned long long)gate_memory_digest(c), (unsigned long long)gate_state_digest(c),
-		lag, o->frames, w, h);
+		(unsigned long long)mem, (unsigned long long)state, lag, o->frames, w, h);
 	return 0;
 }
 

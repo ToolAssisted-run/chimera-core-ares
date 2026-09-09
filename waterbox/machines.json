@@ -10,6 +10,7 @@
       "virtualWidth": 640,
       "virtualHeight": 480,
       "regions": ["ntsc", "pal"],
+      "bootsWithoutMedium": false,
       "loads": true,
       "console": [],
       "ports": [
@@ -76,6 +77,7 @@
       "virtualWidth": 293,
       "virtualHeight": 240,
       "regions": ["ntsc", "pal"],
+      "bootsWithoutMedium": false,
       "loads": true,
       "console": [{"name": "Reset", "path": "Controls/Reset", "axis": false}, {"name": "Microphone", "path": "Controls/Microphone", "axis": false}],
       "ports": [
@@ -117,6 +119,7 @@
       "virtualWidth": 160,
       "virtualHeight": 144,
       "regions": ["ntsc"],
+      "bootsWithoutMedium": false,
       "loads": true,
       "console": [{"name": "Up", "path": "Controls/Up", "axis": false}, {"name": "Down", "path": "Controls/Down", "axis": false}, {"name": "Left", "path": "Controls/Left", "axis": false}, {"name": "Right", "path": "Controls/Right", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "Select", "path": "Controls/Select", "axis": false}, {"name": "Start", "path": "Controls/Start", "axis": false}],
       "ports": [
@@ -132,6 +135,7 @@
       "virtualWidth": 160,
       "virtualHeight": 144,
       "regions": ["ntsc"],
+      "bootsWithoutMedium": false,
       "loads": true,
       "console": [{"name": "Up", "path": "Controls/Up", "axis": false}, {"name": "Down", "path": "Controls/Down", "axis": false}, {"name": "Left", "path": "Controls/Left", "axis": false}, {"name": "Right", "path": "Controls/Right", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "Select", "path": "Controls/Select", "axis": false}, {"name": "Start", "path": "Controls/Start", "axis": false}],
       "ports": [
@@ -147,6 +151,7 @@
       "virtualWidth": 292,
       "virtualHeight": 224,
       "regions": ["ntsc", "pal"],
+      "bootsWithoutMedium": false,
       "loads": true,
       "console": [{"name": "Reset", "path": "Controls/Reset", "axis": false}],
       "ports": [
@@ -188,6 +193,7 @@
       "virtualWidth": 284,
       "virtualHeight": 192,
       "regions": ["ntsc", "pal"],
+      "bootsWithoutMedium": false,
       "loads": true,
       "console": [{"name": "Reset", "path": "Controls/Reset", "axis": false}, {"name": "Pause", "path": "Controls/Pause", "axis": false}],
       "ports": [
@@ -220,6 +226,7 @@
       "virtualWidth": 160,
       "virtualHeight": 144,
       "regions": ["ntsc"],
+      "bootsWithoutMedium": false,
       "loads": true,
       "console": [{"name": "Up", "path": "Controls/Up", "axis": false}, {"name": "Down", "path": "Controls/Down", "axis": false}, {"name": "Left", "path": "Controls/Left", "axis": false}, {"name": "Right", "path": "Controls/Right", "axis": false}, {"name": "1", "path": "Controls/1", "axis": false}, {"name": "2", "path": "Controls/2", "axis": false}, {"name": "Start", "path": "Controls/Start", "axis": false}],
       "ports": [
@@ -252,6 +259,7 @@
       "virtualWidth": 284,
       "virtualHeight": 192,
       "regions": ["ntsc", "pal"],
+      "bootsWithoutMedium": false,
       "loads": true,
       "console": [],
       "ports": [
@@ -284,6 +292,7 @@
       "virtualWidth": 292,
       "virtualHeight": 222,
       "regions": ["ntsc", "pal"],
+      "bootsWithoutMedium": false,
       "loads": true,
       "console": [{"name": "Reset", "path": "Controls/Reset", "axis": false}, {"name": "Select", "path": "Controls/Select", "axis": false}, {"name": "Left Difficulty", "path": "Controls/Left Difficulty", "axis": false}, {"name": "Right Difficulty", "path": "Controls/Right Difficulty", "axis": false}, {"name": "TV Type", "path": "Controls/TV Type", "axis": false}],
       "ports": [
@@ -316,6 +325,7 @@
       "virtualWidth": 224,
       "virtualHeight": 144,
       "regions": ["ntsc"],
+      "bootsWithoutMedium": false,
       "loads": true,
       "console": [{"name": "Y1", "path": "Controls/Y1", "axis": false}, {"name": "Y2", "path": "Controls/Y2", "axis": false}, {"name": "Y3", "path": "Controls/Y3", "axis": false}, {"name": "Y4", "path": "Controls/Y4", "axis": false}, {"name": "X1", "path": "Controls/X1", "axis": false}, {"name": "X2", "path": "Controls/X2", "axis": false}, {"name": "X3", "path": "Controls/X3", "axis": false}, {"name": "X4", "path": "Controls/X4", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "Start", "path": "Controls/Start", "axis": false}, {"name": "Volume", "path": "Controls/Volume", "axis": false}, {"name": "Power", "path": "Controls/Power", "axis": false}],
       "ports": [
@@ -331,6 +341,7 @@
       "virtualWidth": 224,
       "virtualHeight": 144,
       "regions": ["ntsc"],
+      "bootsWithoutMedium": false,
       "loads": true,
       "console": [{"name": "Y1", "path": "Controls/Y1", "axis": false}, {"name": "Y2", "path": "Controls/Y2", "axis": false}, {"name": "Y3", "path": "Controls/Y3", "axis": false}, {"name": "Y4", "path": "Controls/Y4", "axis": false}, {"name": "X1", "path": "Controls/X1", "axis": false}, {"name": "X2", "path": "Controls/X2", "axis": false}, {"name": "X3", "path": "Controls/X3", "axis": false}, {"name": "X4", "path": "Controls/X4", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "Start", "path": "Controls/Start", "axis": false}, {"name": "Volume", "path": "Controls/Volume", "axis": false}, {"name": "Power", "path": "Controls/Power", "axis": false}],
       "ports": [
@@ -346,6 +357,7 @@
       "virtualWidth": 352,
       "virtualHeight": 296,
       "regions": ["ntsc"],
+      "bootsWithoutMedium": false,
       "loads": true,
       "console": [],
       "ports": [
@@ -369,6 +381,7 @@
       "virtualWidth": 284,
       "virtualHeight": 192,
       "regions": ["ntsc"],
+      "bootsWithoutMedium": false,
       "loads": true,
       "console": [{"name": "UP [B]", "path": "Controls/UP [B]", "axis": false}, {"name": "DOWN [C]", "path": "Controls/DOWN [C]", "axis": false}, {"name": "LEFT [A]", "path": "Controls/LEFT [A]", "axis": false}, {"name": "RIGHT [D]", "path": "Controls/RIGHT [D]", "axis": false}, {"name": "ACTION [E]", "path": "Controls/ACTION [E]", "axis": false}, {"name": "1", "path": "Controls/1", "axis": false}, {"name": "2", "path": "Controls/2", "axis": false}, {"name": "3", "path": "Controls/3", "axis": false}, {"name": "4", "path": "Controls/4", "axis": false}, {"name": "5", "path": "Controls/5", "axis": false}, {"name": "6", "path": "Controls/6", "axis": false}, {"name": "7", "path": "Controls/7", "axis": false}, {"name": "8", "path": "Controls/8", "axis": false}, {"name": "9", "path": "Controls/9", "axis": false}, {"name": "10", "path": "Controls/10", "axis": false}, {"name": "11", "path": "Controls/11", "axis": false}, {"name": "12", "path": "Controls/12", "axis": false}, {"name": "13", "path": "Controls/13", "axis": false}, {"name": "14", "path": "Controls/14", "axis": false}],
       "ports": [
@@ -384,6 +397,7 @@
       "virtualWidth": 240,
       "virtualHeight": 160,
       "regions": ["ntsc"],
+      "bootsWithoutMedium": false,
       "firmware": {"id": "gbaBios"},
       "loads": true,
       "console": [{"name": "Up", "path": "Controls/Up", "axis": false}, {"name": "Down", "path": "Controls/Down", "axis": false}, {"name": "Left", "path": "Controls/Left", "axis": false}, {"name": "Right", "path": "Controls/Right", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "L", "path": "Controls/L", "axis": false}, {"name": "R", "path": "Controls/R", "axis": false}, {"name": "Select", "path": "Controls/Select", "axis": false}, {"name": "Start", "path": "Controls/Start", "axis": false}],
@@ -400,6 +414,7 @@
       "virtualWidth": 284,
       "virtualHeight": 192,
       "regions": ["ntsc", "pal"],
+      "bootsWithoutMedium": false,
       "firmware": {"id": "cvBios"},
       "loads": true,
       "console": [{"name": "Reset", "path": "Controls/Reset", "axis": false}],
@@ -433,6 +448,7 @@
       "virtualWidth": 284,
       "virtualHeight": 192,
       "regions": ["ntsc", "pal"],
+      "bootsWithoutMedium": false,
       "firmware": {"id": "msxBios"},
       "loads": true,
       "console": [],
@@ -461,6 +477,58 @@
             {
               "name": "Gamepad",
               "inputs": [{"name": "Up", "path": "Controller Port 2/Gamepad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 2/Gamepad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 2/Gamepad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 2/Gamepad/Right", "axis": false}, {"name": "A", "path": "Controller Port 2/Gamepad/A", "axis": false}, {"name": "B", "path": "Controller Port 2/Gamepad/B", "axis": false}]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "PS1",
+      "label": "PlayStation",
+      "extensions": "cue exe ps-exe",
+      "maxWidth": 640,
+      "maxHeight": 512,
+      "virtualWidth": 640,
+      "virtualHeight": 480,
+      "regions": ["ntsc", "pal"],
+      "bootsWithoutMedium": true,
+      "firmware": {"id": "ps1Bios"},
+      "loads": true,
+      "console": [],
+      "ports": [
+        {
+          "name": "Controller Port 1",
+          "devices": [
+            {
+              "name": "Digital Gamepad",
+              "inputs": [{"name": "Up", "path": "Controller Port 1/Digital Gamepad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 1/Digital Gamepad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 1/Digital Gamepad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 1/Digital Gamepad/Right", "axis": false}, {"name": "Cross", "path": "Controller Port 1/Digital Gamepad/Cross", "axis": false}, {"name": "Circle", "path": "Controller Port 1/Digital Gamepad/Circle", "axis": false}, {"name": "Square", "path": "Controller Port 1/Digital Gamepad/Square", "axis": false}, {"name": "Triangle", "path": "Controller Port 1/Digital Gamepad/Triangle", "axis": false}, {"name": "L1", "path": "Controller Port 1/Digital Gamepad/L1", "axis": false}, {"name": "L2", "path": "Controller Port 1/Digital Gamepad/L2", "axis": false}, {"name": "R1", "path": "Controller Port 1/Digital Gamepad/R1", "axis": false}, {"name": "R2", "path": "Controller Port 1/Digital Gamepad/R2", "axis": false}, {"name": "Select", "path": "Controller Port 1/Digital Gamepad/Select", "axis": false}, {"name": "Start", "path": "Controller Port 1/Digital Gamepad/Start", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Memory Card Port 1",
+          "devices": [
+            {
+              "name": "Memory Card",
+              "inputs": []
+            }
+          ]
+        },
+        {
+          "name": "Controller Port 2",
+          "devices": [
+            {
+              "name": "Digital Gamepad",
+              "inputs": [{"name": "Up", "path": "Controller Port 2/Digital Gamepad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 2/Digital Gamepad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 2/Digital Gamepad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 2/Digital Gamepad/Right", "axis": false}, {"name": "Cross", "path": "Controller Port 2/Digital Gamepad/Cross", "axis": false}, {"name": "Circle", "path": "Controller Port 2/Digital Gamepad/Circle", "axis": false}, {"name": "Square", "path": "Controller Port 2/Digital Gamepad/Square", "axis": false}, {"name": "Triangle", "path": "Controller Port 2/Digital Gamepad/Triangle", "axis": false}, {"name": "L1", "path": "Controller Port 2/Digital Gamepad/L1", "axis": false}, {"name": "L2", "path": "Controller Port 2/Digital Gamepad/L2", "axis": false}, {"name": "R1", "path": "Controller Port 2/Digital Gamepad/R1", "axis": false}, {"name": "R2", "path": "Controller Port 2/Digital Gamepad/R2", "axis": false}, {"name": "Select", "path": "Controller Port 2/Digital Gamepad/Select", "axis": false}, {"name": "Start", "path": "Controller Port 2/Digital Gamepad/Start", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Memory Card Port 2",
+          "devices": [
+            {
+              "name": "Memory Card",
+              "inputs": []
             }
           ]
         }
