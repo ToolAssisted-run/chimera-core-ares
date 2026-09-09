@@ -19,6 +19,7 @@
 #include <sys/stat.h>
 
 #include "machines-names.h"
+#include "memory-layout.h"
 #include "gate-harness.h"
 
 typedef struct { FILE *f; } freader;
@@ -167,8 +168,9 @@ int main(int argc, char **argv)
 	FILE *wf = fopen(wbxPath, "rb");
 	if (!wf) { perror(wbxPath); return 1; }
 
-	/* matches waterbox.config memoryLayoutMiB */
-	mb_memory_layout_template layout = { 16u << 20, 4u << 20, 16u << 20, 4u << 20, 384u << 20 };
+	/* waterbox/memory-layout.h is generated from waterbox.config, so the
+	 * sandbox the gate runs in is the one the package asks Chimera for. */
+	mb_memory_layout_template layout = ARES_MEMORY_LAYOUT_TEMPLATE;
 	freader fr = { wf };
 	mb_return r;
 	wbx_create_host(&layout, "core.wbx", file_read, (uintptr_t)&fr, &r);

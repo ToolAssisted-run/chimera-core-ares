@@ -83,6 +83,7 @@ namespace
 	 * an input the machine does not have this time - a port left empty. */
 	std::vector<Node::Input::Button> g_buttons;
 	std::vector<Node::Input::Axis> g_axes;
+	std::vector<Node::Audio::Stream> g_streams;
 
 	struct ChimeraPlatform : ares::Platform
 	{
@@ -90,7 +91,20 @@ namespace
 		{
 			/* ares resamples its audio to whatever the host asks for. 44100 is
 			 * what the package declares. */
-			if (auto stream = node->cast<Node::Audio::Stream>()) stream->setResamplerFrequency(44100);
+			if (auto stream = node->cast<Node::Audio::Stream>())
+			{
+				stream->setResamplerFrequency(44100);
+				g_streams.push_back(stream);
+			}
+		}
+
+		auto detach(Node::Object node) -> void override
+		{
+			if (auto stream = node->cast<Node::Audio::Stream>())
+			{
+				for (auto it = g_streams.begin(); it != g_streams.end(); ++it)
+					if (*it == stream) { g_streams.erase(it); break; }
+			}
 		}
 
 		auto pak(Node::Object node) -> std::shared_ptr<vfs::directory> override
@@ -101,21 +115,51 @@ namespace
 			return g_cartridgePak ? g_cartridgePak->pak : nullptr;
 		}
 
-		auto audio(Node::Audio::Stream stream) -> void override
+		/* A machine can have more than one of these - a Mega Drive has the
+		 * YM2612 and the PSG, a Mega CD adds two more - and they are separate
+		 * voices of one output, not separate outputs. So a sample is taken from
+		 * EVERY stream and the samples are summed, and only when every stream
+		 * has one waiting: reading them out of step lets the streams slide
+		 * against each other. That is ares' own rule, in desktop-ui.
+		 *
+		 * ares calls this once per stream, so it runs as often as there are
+		 * voices and does nothing on all but the call that completes the set.
+		 *
+		 * Taking each stream's samples in turn instead - which is what this did
+		 * - concatenates the voices rather than mixing them: a Mega Drive frame
+		 * came out twice as long, PSG followed by FM, and the frontend heard
+		 * both at double speed. */
+		auto audio(Node::Audio::Stream) -> void override
 		{
-			while (stream->pending())
+			if (g_streams.empty()) return;
+
+			auto clamp16 = [](double v) -> int16_t {
+				double scaled = v * 32768.0;
+				if (scaled > 32767.0) scaled = 32767.0;
+				if (scaled < -32768.0) scaled = -32768.0;
+				return (int16_t)scaled;
+			};
+
+			for (;;)
 			{
-				double frame[2];
-				stream->read(frame);
+				for (auto &stream : g_streams) if (!stream->pending()) return;
+
+				double left = 0.0, right = 0.0;
+				for (auto &stream : g_streams)
+				{
+					/* read() only writes as many channels as the stream has, so
+					 * a monaural voice leaves the second slot untouched - it has
+					 * to be zeroed here and doubled, or the right channel is
+					 * whatever the stack held. */
+					double buffer[2] = {0.0, 0.0};
+					uint32_t channels = stream->read(buffer);
+					left += buffer[0];
+					right += channels == 1 ? buffer[0] : buffer[1];
+				}
+
 				if (g_audioSamples >= MaxSamplesPerFrame) continue;
-				auto clamp16 = [](double v) -> int16_t {
-					double scaled = v * 32768.0;
-					if (scaled > 32767.0) scaled = 32767.0;
-					if (scaled < -32768.0) scaled = -32768.0;
-					return (int16_t)scaled;
-				};
-				g_audio[g_audioSamples * 2 + 0] = clamp16(frame[0]);
-				g_audio[g_audioSamples * 2 + 1] = clamp16(frame[1]);
+				g_audio[g_audioSamples * 2 + 0] = clamp16(left);
+				g_audio[g_audioSamples * 2 + 1] = clamp16(right);
 				g_audioSamples++;
 			}
 		}
@@ -162,6 +206,34 @@ namespace
 		return g_isN64 ? &Nintendo64::cpu.fenv : nullptr;
 	}
 
+	/* One setting has to name a device across twenty-one machines whose devices
+	 * are not called the same thing - a Nintendo 64 has a "Gamepad", a Mega
+	 * Drive a "Control Pad", a Neo Geo an "Arcade Stick" - and the setting
+	 * carries an id, not ares' own display name. So the two are matched on
+	 * letters alone: case ignored, and spaces dropped, which turns "controlPad"
+	 * and "Control Pad" into the same word.
+	 *
+	 * Without this the settings were the Nintendo 64's, spelt its way, and a
+	 * project that carried them - which every project the frontend makes does,
+	 * because a declared setting always has a value - refused to load on every
+	 * machine with a controller port in it. The gate never saw it: the gate
+	 * writes only {"machine": ...} and leaves the ports unmentioned. */
+	static bool sameDeviceName(const char *a, const nall::string &b)
+	{
+		const char *p = a;
+		const char *q = b.data();
+		for (;;)
+		{
+			while (*p == ' ' || *p == '-' || *p == '_') p++;
+			while (*q == ' ' || *q == '-' || *q == '_') q++;
+			if (*p == 0 || *q == 0) return *p == 0 && *q == 0;
+			char lp = (*p >= 'A' && *p <= 'Z') ? (char)(*p + 32) : *p;
+			char lq = (*q >= 'A' && *q <= 'Z') ? (char)(*q + 32) : *q;
+			if (lp != lq) return false;
+			p++; q++;
+		}
+	}
+
 	/* Plugs in whatever the config asked for, port by port, and binds the
 	 * declared inputs to the nodes that now exist. */
 	bool connectPorts(const machine::Config &config)
@@ -169,7 +241,8 @@ namespace
 		/* Nothing said at all: the machine's ordinary controller goes in its
 		 * first port, which is what almost every run wants. What that controller
 		 * is called differs between machines, so it is asked of the port rather
-		 * than assumed. */
+		 * than assumed. "default" says the same thing out loud, and is what the
+		 * package ships as port 1's value. */
 		bool nobodySaid = true;
 		for (auto &p : config.port) if (p != nullptr) nobodySaid = false;
 
@@ -181,19 +254,23 @@ namespace
 			const char *device = config.port[index];
 			const char *accessory = config.portAccessory[index];
 			nall::string first;
-			if (device == nullptr)
+			bool wantsDefault = device != nullptr && sameDeviceName(device, nall::string{"default"});
+			if (wantsDefault || (device == nullptr && index == 0 && nobodySaid))
 			{
-				if (index == 0 && nobodySaid && !port->supported().empty())
-				{
-					first = port->supported().front();
-					device = first;
-				}
-				else device = "";
+				first = port->supported().front();
+				device = first;
 			}
+			else if (device == nullptr) device = "";
 			index++;
 			if (!*device) continue;
 
-			auto peripheral = port->allocate(device);
+			/* The id has to become the name ares knows this port's device by. */
+			nall::string resolved;
+			for (auto &supported : port->supported())
+				if (sameDeviceName(device, supported)) { resolved = supported; break; }
+			if (!resolved) return fail("this machine has no such device for that port");
+
+			auto peripheral = port->allocate(resolved);
 			if (!peripheral) return fail("this machine has no such device for that port");
 			port->connect();
 
@@ -287,6 +364,7 @@ namespace machine
 		g_isN64 = nall::string{g_spec->id} == "N64";
 		g_pal = config.pal && g_spec->configPal != nullptr;
 		g_refreshRate = 0.0;
+		g_streams.clear();
 
 		g_inputs = nullptr;
 		for (auto &entry : kMachineInputs)

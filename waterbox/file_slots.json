@@ -3,19 +3,63 @@
   "slots": [
     {
       "id": "rom",
-      "title": "Cartridge",
+      "title": "Cartridge, disc or tape",
       "min": 1,
       "max": 1,
-      "formats": [ "n64", "v64", "z64" ],
-      "help": "The Nintendo 64 cartridge image. Any of the three byte orders will do - .z64 (big-endian, what a dump of the cartridge actually contains), .n64 and .v64 are the same data shuffled, and the core works out which it was given. No BIOS is needed: the console's boot ROM travels with the core."
+      "formats": [
+        "n64",
+        "v64",
+        "z64",
+        "fc",
+        "nes",
+        "unf",
+        "unif",
+        "gb",
+        "gbc",
+        "md",
+        "gen",
+        "smd",
+        "bin",
+        "sms",
+        "gg",
+        "sg",
+        "sg1000",
+        "a26",
+        "ws",
+        "wsc",
+        "z80",
+        "tap",
+        "tzx",
+        "myvision",
+        "gba",
+        "cv",
+        "col",
+        "msx",
+        "rom",
+        "cue",
+        "exe",
+        "ps-exe",
+        "a52",
+        "ngp",
+        "ngc",
+        "ngpc",
+        "zip"
+      ],
+      "help": "The thing the machine loads: a cartridge for most of them, a .cue for the PlayStation, a .tzx or .tap for the ZX Spectrum, a .zip romset for the Neo Geo. Which kinds are offered follows the machine chosen above. A Nintendo 64 cartridge may be in any of its three byte orders - .z64 is what a dump of the cartridge actually contains, .n64 and .v64 are the same data shuffled, and the core works out which it was given. Some machines also want their console BIOS, which is asked for separately; the Nintendo 64's boot ROM travels with the core."
     },
     {
       "id": "savedata",
       "title": "Save data",
       "min": 0,
       "max": 1,
-      "formats": [ "sav", "srm", "eep", "fla", "ram" ],
-      "help": "What a battery-backed cartridge starts with already saved. This is the file Emulator > Export Save Data... writes - whichever save chip the cartridge has (EEPROM, SRAM or Flash) - put back so a run can continue from where another left off. It is mounted read-only and pinned by hash, and the movie cites it, so a movie that starts from a saved game is as reproducible as one that starts from a fresh cart. A cartridge with no save chip keeps nothing, and the project will say so rather than load one. Leave it empty and the cart starts as it came."
+      "formats": [
+        "sav",
+        "srm",
+        "eep",
+        "fla",
+        "ram"
+      ],
+      "help": "What a battery-backed cartridge starts with already saved. This is the file Emulator > Export Save Data... writes - whichever save chip the cartridge has (EEPROM, SRAM or Flash) - put back so a run can continue from where another left off. It is mounted read-only and pinned by hash, and the movie cites it, so a movie that starts from a saved game is as reproducible as one that starts from a fresh cart. Only the Nintendo 64 exports and reloads its saves this way so far; every other machine keeps them inside the savestate. A cartridge with no save chip keeps nothing, and the project will say so rather than load one. Leave it empty and the cart starts as it came."
     }
   ]
 }
