@@ -35,8 +35,10 @@ opened as a Chimera project and recorded to a video file, which is a different
 test from the gate and found four faults the gate structurally could not: audio
 streams concatenated instead of mixed, a monaural machine's right channel left
 uninitialised, every machine with a controller port refusing to load, and a
-wizard that would offer no cartridge but a Nintendo 64's. `docs/PLAN.md` has
-the details under "In the frontend".
+wizard that would offer no cartridge but a Nintendo 64's. That pass is a script
+now - `waterbox/run-frontend-gate.sh` opens a project headless, records it and
+reads the file back with ffprobe - and `docs/PLAN.md` has the details under
+"In the frontend".
 
 That table is the honest shape of it, and `docs/PLAN.md` keeps it current.
 Adding a machine is a row in `waterbox/machines.h` and a regenerate; making one

@@ -627,6 +627,43 @@ said no, and musl went to mmap and carried on - so it cost nothing but a page of
 the Game Boy went through the frontend. Raising it is free: a savestate holds
 the pages that were touched, not the ones that were offered.
 
+### The leg that would have caught them
+
+`waterbox/run-frontend-gate.sh` is the gate run-gate.sh cannot be. It builds a
+real `.chimeraProject` from the package's own `waterbox.config` - **a value for
+every declared setting, not just the machine**, which is exactly how the ports
+came to be handed a Nintendo 64 device name on a Mega Drive - opens it headless,
+records it to a video file, and reads the file back with `ffprobe`. What it
+compares is what the *core* says against what *Chimera wrote*: the refresh rate,
+the picture size, 44100 stereo sound, and no `sbrk heap exhausted` anywhere in
+the log.
+
+It is separate from `run-gate.sh` because it needs a built Chimera, Mono, an X
+server, ffprobe and ffmpeg. It skips, loudly, when they are missing, so it stays
+a developer's leg rather than a public runner's:
+
+```
+CHIMERA_BUILD=/path/to/chimera/build ./waterbox/run-frontend-gate.sh
+```
+
+It was checked against the fault it exists for rather than assumed to work:
+pointing the package's `port1` default at a Mega Drive device made the Nintendo 64
+leg fail with the exact message the four faults began with - *ares: this machine
+has no such device for that port* - and putting it back made it pass.
+
+Three legs, and one honest skip. **A PlayStation with no disc cannot be made
+into a project at all**: the core boots one (it is the gate's PS1 leg) but
+`file_slots.json` declares the cartridge slot `min: 1`, and it is one slot shared
+by twenty-one machines, so loosening it would let somebody make a Famicom project
+with no cartridge in it. A BIOS shell is not something anybody records, and the
+gate already compares that machine both ways, so the skip is the right answer
+rather than a thing to fix.
+
+What it still cannot see: the audio faults above. Every machine the gate has
+free content for is stereo with a single stream, so neither the mixing nor the
+monaural channel would have shown up. That wants a free Mega Drive or Famicom
+ROM more than it wants more code.
+
 ## Not done
 
 In rough order of what would matter first:
@@ -653,10 +690,10 @@ In rough order of what would matter first:
   but publishing it is Sergio's to authorise and has not been.
 - **Optional tooling**: no registers, no trace, no core-rendered surfaces.
   Memory domains, buses and the Nintendo 64's save-data export are done.
-- **A gate leg that goes through Chimera.** Everything in "In the frontend"
-  above was found by hand, one machine at a time, and none of it is on a
-  schedule. A leg that opens a project headless and reads back what came out
-  would have caught all four faults on the day they were written.
+- **A free Mega Drive or Famicom ROM.** `run-frontend-gate.sh` exists now, but
+  every machine it can run is stereo with one audio stream - so the two audio
+  faults above would still have got past it. One redistributable multi-voice or
+  monaural ROM in `tests/content/` closes that, and nothing else does.
 
 ## Speed
 
