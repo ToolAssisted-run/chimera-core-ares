@@ -8,40 +8,54 @@ deterministic sandbox and packaged as a Chimera core (`core.wbx` +
 [chimera-core-dosbox-x](https://github.com/ToolAssisted-run/chimera-core-dosbox-x)
 and [chimera-core-gpgx](https://github.com/ToolAssisted-run/chimera-core-gpgx).
 
-Status: **the Nintendo 64 works; it is the only machine wired up so far.**
+Status: **thirteen machines declared; the Nintendo 64 and the Game Boy are
+proven end to end.**
 
 ares emulates about thirty systems from one codebase, which is why this
-repository is named for the emulator rather than for a console. The N64 came
-first because it is the hardest of them to sandbox - a Vulkan renderer, two
+repository is named for the emulator rather than for a console. The Nintendo 64
+came first because it is the hardest of them to sandbox - a Vulkan renderer, two
 dynamic recompilers and a host clock - so the machinery that makes it work is
-the machinery the rest need. Adding another ares system is now a build-list
-entry and a declaration, not a port.
+the machinery the rest need.
 
-What the Nintendo 64 machine has:
+| | |
+| --- | --- |
+| **Proven** (a real program runs, every digest compared) | Nintendo 64, Game Boy |
+| **Declared** (builds, powers on, inputs enumerated; no game has run) | Famicom/NES, Game Boy Color, Mega Drive, Master System, Game Gear, SG-1000, Atari 2600, WonderSwan, WonderSwan Color, ZX Spectrum, MyVision |
+| **Absent** (ares needs a console BIOS this core does not declare yet) | Game Boy Advance, PlayStation, Neo Geo, Neo Geo Pocket, ColecoVision, MSX, Atari 5200 |
+
+That table is the honest shape of it, and `docs/PLAN.md` keeps it current.
+Adding a machine is a row in `waterbox/machines.h` and a regenerate; making one
+*believable* is a free ROM in `tests/content/` and a gate leg.
+
+What the machines have in common:
 
 - **Everything drawn on the CPU.** ares renders the N64 through paraLLEl-RDP on
   Vulkan; this core uses **angrylion's software rasteriser** instead, so the
   picture is decided entirely by code Chimera compiles and is identical on every
   machine. No GPU, no driver, no graphics context in a savestate.
-- **Interpreters, not recompilers**, for both the CPU and the RSP - the same
-  choice for the same reason.
-- **No firmware to find.** The console's boot ROMs travel with the core, as they
-  do with ares itself, so a project is a cartridge and nothing else.
-- **Four controller ports**, each taking a pad (optionally with a Controller Pak
-  or a Rumble Pak) or a mouse. The analogue stick is the signed byte the
-  controller reports, reaching the game unchanged - the convention mupen and
-  BizHawk record, so a run made here means the same as a run made there.
-- **Save chips**: EEPROM, SRAM and Flash, detected from the cartridge, exported
-  and reloaded through Chimera's save-data channel.
-- **A pinned clock and a pinned power-on seed**, because a movie replayed next
-  year has to build the same machine as today's.
+- **Interpreters, not recompilers**, for the N64's CPU and RSP - the same choice
+  for the same reason.
+- **Nothing depends on the host.** Not the clock a cartridge's RTC starts from,
+  not the entropy a console's uninitialised memory is filled with, and not a
+  second thread to draw on. All three were real, and all three are patched.
+- **The controller wire format is derived from ares**, not typed: `gen-machines`
+  asks the emulator what each machine is made of and `gen-config.py` writes the
+  declaration, so a newer ares that renames a button fails the gate rather than
+  renumbering somebody's movie.
+- **No firmware to find** for any machine offered. The Nintendo 64's boot ROMs
+  travel with the core, as they do with ares itself.
+- **The analogue stick is the byte** the controller reports, reaching the game
+  unchanged - the convention mupen and BizHawk record, so an N64 run made here
+  means the same as a run made there.
 
-The equivalence gate (`waterbox/run-gate.sh`) runs twelve legs in about a
-minute: native against sandbox on every digest, the machine round-tripped
-through a savestate before every frame, input proven to reach the machine, and
-the picture compared **pixel for pixel against real hardware**. Its content is
-[PeterLemon/N64](https://github.com/PeterLemon/N64) test ROMs, which are public
-domain, so the whole gate runs on a public runner with nothing licensed on it.
+The equivalence gate (`waterbox/run-gate.sh`) runs eighteen legs: native
+against sandbox on every digest for both proven machines, the machine
+round-tripped through a savestate before every frame, every one of the thirteen
+rebuilt and re-enumerated against its committed declaration, input proven to
+reach the machine, and the picture compared **pixel for pixel against real
+hardware**. Its content is [PeterLemon/N64](https://github.com/PeterLemon/N64)
+(public domain) and [libbet](https://github.com/pinobatch/libbet) (Zlib), so the
+whole gate runs on a public runner with nothing licensed on it.
 
 ## Building
 
@@ -62,11 +76,22 @@ ninja -C build/meson-guest               # core.wbx
 ./waterbox/run-gate.sh                   # the equivalence gate
 ```
 
+Adding a machine is a row in `waterbox/machines.h`, then
+
+```
+build/meson-native/waterbox/gen-machines > waterbox/machines.json
+./waterbox/gen-config.py
+```
+
+which asks ares what the machine is made of and writes the guest's binding
+table, the package's `machines[]` and the default keybindings from it.
+
 The changes this core needs live in `patches/`, one directory per submodule,
 applied to the pristine pins by `waterbox/apply-patches.sh` (idempotent, and run
-automatically at configure time). There are eight, all small; three of them are
-plain bugs in ares that show up only in a build without Vulkan, and are worth
-offering upstream. `docs/PLAN.md` explains every one.
+automatically at configure time). There are eleven, all small; six of them are
+plain bugs in ares that only show up in a build like this one - without Vulkan,
+with more than one machine, or inside a sandbox - and are worth offering
+upstream. `docs/PLAN.md` explains every one.
 
 ## Credits & provenance
 

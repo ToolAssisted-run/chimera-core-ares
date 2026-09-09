@@ -1,8 +1,21 @@
 diff --git a/ares/n64/controller/gamepad/gamepad.cpp b/ares/n64/controller/gamepad/gamepad.cpp
-index 2da6bdeb8..ebde9c779 100644
+index 2da6bdeb8..b9ea8bb15 100644
 --- a/ares/n64/controller/gamepad/gamepad.cpp
 +++ b/ares/n64/controller/gamepad/gamepad.cpp
-@@ -369,41 +369,26 @@ auto Gamepad::read() -> n32 {
+@@ -15,8 +15,10 @@ Gamepad::Gamepad(Node::Port parent) {
+ 
+   bank = 0;
+ 
+-  axis = node->append<Node::Input::Axis>("Axis");
+-
++  //There used to be an "Axis" node here. It was never an input a player could
++  //move: it carried the deadzone and gate maths this build does not do, and it
++  //appeared in the node graph beside the two real ones, where anything
++  //enumerating the machine's inputs would count it as a third.
+   x           = node->append<Node::Input::Axis>  ("X-Axis");
+   y           = node->append<Node::Input::Axis>  ("Y-Axis");
+   up          = node->append<Node::Input::Button>("Up");
+@@ -369,43 +371,33 @@ auto Gamepad::read() -> n32 {
    platform->input(z);
    platform->input(start);
  
@@ -32,6 +45,15 @@ index 2da6bdeb8..ebde9c779 100644
 -  axis->applyGateBoundaries(innerDeadzone, cardinalMax, diagonalMax, ax, ay, offset, axBounded, ayBounded);
 -  ax = axBounded;
 -  ay = ayBounded;
+-
+-  //keep cardinal input within positive and negative bounds of cardinalMax
+-  ax = axis->clampAxisToNearestBoundary(ax, offset, cardinalMax);
+-  ay = axis->clampAxisToNearestBoundary(ay, offset, cardinalMax);
+-
+-  //add epsilon to counteract floating point precision error
+-  ax = axis->counteractPrecisionError(ax);
+-  ay = axis->counteractPrecisionError(ay);
+-  
 +  //ares takes a modern gamepad's {-32767 ... +32767} and shapes it into a stick
 +  //position: a deadzone, a response curve and the octagonal gate a real N64
 +  //stick is physically held in. That is right for somebody playing with a
@@ -51,15 +73,27 @@ index 2da6bdeb8..ebde9c779 100644
 +  //whatever is producing that byte, which for a movie is a person typing it.
 +  auto ax = (double)x->value();
 +  auto ay = (double)y->value();
- 
--  //keep cardinal input within positive and negative bounds of cardinalMax
--  ax = axis->clampAxisToNearestBoundary(ax, offset, cardinalMax);
--  ay = axis->clampAxisToNearestBoundary(ay, offset, cardinalMax);
--
--  //add epsilon to counteract floating point precision error
--  ax = axis->counteractPrecisionError(ax);
--  ay = axis->counteractPrecisionError(ay);
--  
++
++  //Not negated, unlike upstream. ares' own Y axis points the way a thumbstick
++  //is pushed (down positive) and is flipped here to reach the byte; with the
++  //shaping gone there is nothing between the two, so the node simply IS the
++  //byte, up positive, exactly as the console reports it and as a movie writes
++  //it.
    n32 data;
-   data.byte(0) = s8(-ay);
+-  data.byte(0) = s8(-ay);
++  data.byte(0) = s8(+ay);
    data.byte(1) = s8(+ax);
+   data.bit(16) = cameraRight->value();
+   data.bit(17) = cameraLeft->value();
+diff --git a/ares/n64/controller/gamepad/gamepad.hpp b/ares/n64/controller/gamepad/gamepad.hpp
+index 5a4f9e8e2..4005f0d2d 100644
+--- a/ares/n64/controller/gamepad/gamepad.hpp
++++ b/ares/n64/controller/gamepad/gamepad.hpp
+@@ -6,7 +6,6 @@ struct Gamepad : Controller {
+   u8 bank;
+   Memory::Writable ram;  //Toshiba TC55257DFL-85V
+   Node::Input::Rumble motor;
+-  Node::Input::Axis axis;
+ 
+   Node::Input::Axis x;
+   Node::Input::Axis y;

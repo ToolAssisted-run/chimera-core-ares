@@ -35,10 +35,33 @@ else
   # ---- the reference the gate compares against ---------------------------
   native_shim = include_directories('native-shim')
 
-  executable('run-native',
-    core_sources + files('run-native.cpp'),
+  # One build of the machines, shared by everything that drives them.
+  ares_lib = static_library('ares-machines',
+    core_sources,
     include_directories: [core_inc, gen_inc, native_shim],
     c_args: core_args,
+    cpp_args: core_args,
+    install: false,
+  )
+
+  # ares_resource[1] and mia_resource[1] are the generated headers these sources
+  # #include. Meson does not carry that dependency across from the library, so
+  # each target that compiles its own translation unit names them.
+  executable('run-native',
+    [files('run-native.cpp'), ares_resource[1], mia_resource[1]],
+    link_with: ares_lib,
+    include_directories: [core_inc, gen_inc, native_shim],
+    cpp_args: core_args,
+    dependencies: [dependency('threads')],
+    install: false,
+  )
+
+  # Asks ares what its machines are made of. Its output is committed, and the
+  # gate regenerates it and diffs - see waterbox/gen-config.py.
+  executable('gen-machines',
+    [files('gen-machines.cpp'), ares_resource[1], mia_resource[1]],
+    link_with: ares_lib,
+    include_directories: [core_inc, gen_inc, native_shim],
     cpp_args: core_args,
     dependencies: [dependency('threads')],
     install: false,
@@ -55,12 +78,12 @@ else
   endif
   if mbdir != ''
     mbhost = mbdir / 'build/meson-linux/source/host'
-    executable('run-wbx', files('run-wbx.c'),
+    executable('run-wbx', files('run-wbx.cpp'),
       # -I rather than include_directories(): meson refuses to make an absolute
       # path to a directory inside the source tree, and in CI the Chimera
       # checkout (and so miniBox) sits inside this repository's workspace.
       include_directories: [core_inc],
-      c_args: ['-I' + mbdir / 'source/host'],
+      cpp_args: core_args + ['-I' + mbdir / 'source/host'],
       link_args: [mbhost / 'libminiboxhost.so'],
       build_rpath: mbhost,
       install: false)

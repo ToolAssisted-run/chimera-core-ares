@@ -1,0 +1,24 @@
+diff --git a/ares/ares/ares.hpp b/ares/ares/ares.hpp
+index 1d82199cb..2ef398043 100644
+--- a/ares/ares/ares.hpp
++++ b/ares/ares/ares.hpp
+@@ -59,7 +59,19 @@ namespace ares {
+   }
+ 
+   namespace Video {
++    //A sandbox has one thread, and it is the machine's. With this on, ares
++    //draws on a second thread and the frame handshake between them is a
++    //condition variable with a TIMED wait - which in a waterbox parks the only
++    //thread that could ever satisfy it, and the core hangs on its first frame
++    //rather than failing in a way anybody could read.
++    //
++    //Off, refresh() runs inline where frame() is called, which is also the only
++    //way the picture can be part of a reproducible run.
++    #if defined(CHIMERA_GUEST) || defined(CHIMERA_SINGLE_THREADED)
++    static constexpr bool Threaded = false;
++    #else
+     static constexpr bool Threaded = true;
++    #endif
+   }
+ 
+   namespace Constants {

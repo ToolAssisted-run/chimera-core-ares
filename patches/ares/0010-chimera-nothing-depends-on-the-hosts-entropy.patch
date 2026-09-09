@@ -1,0 +1,37 @@
+diff --git a/nall/nall/random.cpp b/nall/nall/random.cpp
+index 02ef580cf..76301b812 100644
+--- a/nall/nall/random.cpp
++++ b/nall/nall/random.cpp
+@@ -13,6 +13,24 @@
+ namespace nall {
+ 
+ NALL_HEADER_INLINE auto RNGBase::randomSeed() -> u256 {
++  #if defined(CHIMERA_DETERMINISTIC_SEED)
++  //Nothing in an emulated machine may depend on the host's entropy. ares seeds
++  //its generators from here, and those generators decide what a console's
++  //uninitialised memory holds at power-on - a Game Boy's wave RAM, a Mega
++  //Drive's work RAM. A movie replayed tomorrow has to find the same machine it
++  //found today, so the seed is a number rather than a draw.
++  //
++  //It also has to be the same number in both flavours of this core. A sandbox
++  //has no getrandom to call, so leaving this alone would not make the guest
++  //random: it would make the guest CONSTANT and the reference random, and the
++  //two would disagree for a reason nobody would look for.
++  //
++  //The value is arbitrary; what matters is that it never changes, because
++  //changing it changes every machine's power-on state and desynchronises every
++  //movie recorded before it.
++  return u256{0x9e3779b97f4a7c15ull} << 192 | u256{0xbf58476d1ce4e5b9ull} << 128
++       | u256{0x94d049bb133111ebull} << 64  | u256{0x2545f4914f6cdd1dull};
++  #else
+   u256 seed = 0;
+   #if defined(PLATFORM_BSD) || defined(PLATFORM_MACOS)
+   for(u32 n : range(8)) seed = seed << 32 | (u32)arc4random();
+@@ -35,6 +53,7 @@ NALL_HEADER_INLINE auto RNGBase::randomSeed() -> u256 {
+   }
+   #endif
+   return seed;
++  #endif
+ }
+ 
+ }

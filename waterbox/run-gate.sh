@@ -9,19 +9,20 @@
 #   ninja -C build/meson-native
 #   ./waterbox/setup-guest.sh && ninja -C build/meson-guest
 #
-# Content is tests/content/ - public domain N64 test ROMs, so this runs anywhere,
-# including a CI runner with nothing licensed on it.
+# Content is tests/content/ - public domain and permissively licensed test ROMs,
+# so this runs anywhere, including a CI runner with nothing licensed on it.
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$here/.." && pwd)"
 
 native="$root/build/meson-native/waterbox/run-native"
 runwbx="$root/build/meson-native/waterbox/run-wbx"
+genmachines="$root/build/meson-native/waterbox/gen-machines"
 wbx="$root/build/meson-guest/waterbox/core.wbx"
 content="$root/tests/content"
 
-for f in "$native" "$runwbx" "$wbx"; do
-	[ -x "$f" ] || [ -f "$f" ] || { echo "missing $f - see the header of this script" >&2; exit 1; }
+for f in "$native" "$runwbx" "$genmachines" "$wbx"; do
+	[ -f "$f" ] || { echo "missing $f - see the header of this script" >&2; exit 1; }
 done
 
 work="$(mktemp -d)"
@@ -33,16 +34,17 @@ fail=0
 say_pass() { echo "PASS $1"; pass=$((pass + 1)); }
 say_fail() { echo "FAIL $1"; echo "     $2"; fail=$((fail + 1)); }
 
-# Runs the reference and the sandbox over the same ROM and options, and requires
-# every digest to agree. The sandbox gets a work dir holding the ROM under the
-# name its slot map gives, which is what the frontend mounts.
+# Runs the reference and the sandbox over the same machine, ROM and options, and
+# requires every digest to agree. The sandbox gets a work dir holding the ROM
+# under the name its slot map gives, and the settings a project would carry.
 compare() {
-	leg="$1"; rom="$2"; shift 2
+	leg="$1"; id="$2"; rom="$3"; shift 3
 	rm -rf "$work/w"; mkdir -p "$work/w"
 	cp "$content/$rom" "$work/w/rom"
 	printf '{"rom":["rom"]}' > "$work/w/slots"
-	a="$("$native" --rom "$work/w/rom" --quiet "$@" | tail -1)"
-	b="$("$runwbx" "$wbx" "$work/w" --quiet "$@" | tail -1)"
+	printf '{"machine":"%s"}' "$(echo "$id" | tr 'A-Z' 'a-z')" > "$work/w/settings"
+	a="$("$native" --machine "$id" --rom "$work/w/rom" --quiet "$@" | tail -1)"
+	b="$("$runwbx" "$wbx" "$work/w" --machine "$id" --quiet "$@" | tail -1)"
 	if [ "$a" = "$b" ]; then
 		say_pass "$leg (native == sandbox)"
 		echo "     $a"
@@ -55,17 +57,35 @@ compare() {
 # The same, but the sandbox saves and reloads the WHOLE machine before every
 # frame. Anything of the machine living outside the arena shows up here.
 rerecord() {
-	leg="$1"; rom="$2"; shift 2
+	leg="$1"; id="$2"; rom="$3"; shift 3
 	rm -rf "$work/w"; mkdir -p "$work/w"
 	cp "$content/$rom" "$work/w/rom"
 	printf '{"rom":["rom"]}' > "$work/w/slots"
-	a="$("$runwbx" "$wbx" "$work/w" --quiet "$@" | tail -1)"
-	b="$("$runwbx" "$wbx" "$work/w" --quiet --rerecord "$@" | tail -1)"
+	printf '{"machine":"%s"}' "$(echo "$id" | tr 'A-Z' 'a-z')" > "$work/w/settings"
+	a="$("$runwbx" "$wbx" "$work/w" --machine "$id" --quiet "$@" | tail -1)"
+	b="$("$runwbx" "$wbx" "$work/w" --machine "$id" --quiet --rerecord "$@" | tail -1)"
 	if [ "$a" = "$b" ]; then
 		say_pass "$leg (survives a savestate every frame)"
 	else
 		say_fail "$leg (survives a savestate every frame)" "straight  $a
      rerecord  $b"
+	fi
+}
+
+# Two runs of the same thing have to be the same machine. Real hardware powers
+# on with random memory and ares models that from the host's entropy unless it
+# is told not to; without the pin this leg fails and every movie is
+# unreproducible. The STATE digest is what catches it - the picture agreed
+# perfectly while the machine did not.
+deterministic() {
+	leg="$1"; id="$2"; rom="$3"; shift 3
+	a="$("$native" --machine "$id" --rom "$content/$rom" --quiet "$@" | tail -1)"
+	b="$("$native" --machine "$id" --rom "$content/$rom" --quiet "$@" | tail -1)"
+	if [ "$a" = "$b" ]; then
+		say_pass "$leg is the same machine twice running"
+	else
+		say_fail "$leg is the same machine twice running" "first   $a
+     second  $b"
 	fi
 }
 
@@ -83,70 +103,93 @@ else
 fi
 
 echo
+echo "== every machine is what ares says it is =="
+# The order of a controller's buttons IS the wire format a movie records, so it
+# is generated from the emulator rather than typed. This leg rebuilds every
+# machine, asks ares what it is made of, and fails if the committed declaration
+# has moved - which is also how it proves all of them still build.
+"$genmachines" > "$work/machines.json"
+if diff -q "$work/machines.json" "$here/machines.json" >/dev/null 2>&1; then
+	if out="$(python3 "$here/gen-config.py" --check 2>&1)"; then
+		say_pass "the declared machines match ares"
+		echo "     $out"
+	else
+		say_fail "the declared machines match ares" "$out"
+	fi
+else
+	say_fail "the declared machines match ares" "waterbox/machines.json is out of date; run:
+       build/meson-native/waterbox/gen-machines > waterbox/machines.json && ./waterbox/gen-config.py"
+fi
+
+echo
 echo "== the machine is the same in both flavours =="
-# 130 frames is past the boot ROM, which takes about ninety, and into the part
-# where the game has programmed the video interface and drawn something.
-compare "helloworld-cpu" helloworld-cpu.n64 --frames 130
-compare "helloworld-rdp" helloworld-rdp.n64 --frames 130
-compare "input-cpu"      input-cpu.n64      --frames 200
-compare "input-cpu, A held and the stick over" input-cpu.n64 --frames 200 --hold a --stick 100 -60
+# 130 frames is past the Nintendo 64's boot ROM, which takes about ninety, and
+# into the part where the game has drawn something.
+compare "N64 helloworld-cpu" N64 helloworld-cpu.n64 --frames 130
+compare "N64 helloworld-rdp" N64 helloworld-rdp.n64 --frames 130
+compare "N64 input-cpu"      N64 input-cpu.n64      --frames 200
+compare "N64 input, A held and the stick over" N64 input-cpu.n64 --frames 200 --hold "P1 Gamepad A" --stick 100 -60
+compare "GB libbet"          GB  libbet.gb          --frames 200
+compare "GB libbet, Start held" GB libbet.gb        --frames 200 --hold Start
 
 echo
 echo "== the machine survives being saved and reloaded =="
-rerecord "helloworld-cpu" helloworld-cpu.n64 --frames 130
-rerecord "helloworld-rdp" helloworld-rdp.n64 --frames 130
-rerecord "input-cpu, A held" input-cpu.n64 --frames 200 --hold a
+rerecord "N64 helloworld-cpu" N64 helloworld-cpu.n64 --frames 130
+rerecord "N64 input, A held"  N64 input-cpu.n64      --frames 200 --hold "P1 Gamepad A"
+rerecord "GB libbet"          GB  libbet.gb          --frames 200
 
 echo
 echo "== the same run twice is the same machine =="
-# Real hardware powers on with random RDRAM timings and ares seeds its RNG from
-# the host clock unless told not to. Without the pinned seed this leg fails and
-# every movie is unreproducible, so it is worth its own check.
-a="$("$native" --rom "$content/helloworld-cpu.n64" --quiet --frames 60 | tail -1)"
-b="$("$native" --rom "$content/helloworld-cpu.n64" --quiet --frames 60 | tail -1)"
-if [ "$a" = "$b" ]; then
-	say_pass "the entropy seed is pinned"
-else
-	say_fail "the entropy seed is pinned" "first   $a
-     second  $b"
-fi
+deterministic "N64" N64 helloworld-cpu.n64 --frames 60
+deterministic "GB"  GB  libbet.gb          --frames 120
 
 echo
 echo "== input reaches the machine =="
 # A leg that only proved two builds agree would pass just as well with the input
 # wire cut. These prove the machine NOTICED - each distinct input has to produce
 # a distinct machine.
-idle="$("$native" --rom "$content/input-cpu.n64" --quiet --frames 200 | tail -1)"
-held="$("$native" --rom "$content/input-cpu.n64" --quiet --frames 200 --hold a | tail -1)"
-other="$("$native" --rom "$content/input-cpu.n64" --quiet --frames 200 --hold start | tail -1)"
-stick="$("$native" --rom "$content/input-cpu.n64" --quiet --frames 200 --stick 127 0 | tail -1)"
-stick2="$("$native" --rom "$content/input-cpu.n64" --quiet --frames 200 --stick 40 0 | tail -1)"
+idle="$("$native" --machine N64 --rom "$content/input-cpu.n64" --quiet --frames 200 | tail -1)"
+held="$("$native" --machine N64 --rom "$content/input-cpu.n64" --quiet --frames 200 --hold "P1 Gamepad A" | tail -1)"
+other="$("$native" --machine N64 --rom "$content/input-cpu.n64" --quiet --frames 200 --hold "P1 Gamepad Start" | tail -1)"
+stick="$("$native" --machine N64 --rom "$content/input-cpu.n64" --quiet --frames 200 --stick 127 0 | tail -1)"
+stick2="$("$native" --machine N64 --rom "$content/input-cpu.n64" --quiet --frames 200 --stick 40 0 | tail -1)"
 if [ "$idle" != "$held" ] && [ "$held" != "$other" ]; then
-	say_pass "buttons (idle, A and Start each make a different machine)"
+	say_pass "N64 buttons (idle, A and Start each make a different machine)"
 else
-	say_fail "buttons" "idle  $idle
+	say_fail "N64 buttons" "idle  $idle
      A     $held
      Start $other"
 fi
 if [ "$idle" != "$stick" ] && [ "$stick" != "$stick2" ]; then
-	say_pass "the analogue stick (centre, full and half deflection all differ)"
+	say_pass "N64 analogue stick (centre, full and half deflection all differ)"
 else
-	say_fail "the analogue stick" "centre $idle
+	say_fail "N64 analogue stick" "centre $idle
      full   $stick
      half   $stick2"
 fi
 
+gbidle="$("$native" --machine GB --rom "$content/libbet.gb" --quiet --frames 200 | tail -1)"
+gba="$("$native" --machine GB --rom "$content/libbet.gb" --quiet --frames 200 --hold A | tail -1)"
+gbstart="$("$native" --machine GB --rom "$content/libbet.gb" --quiet --frames 200 --hold Start | tail -1)"
+if [ "$gbidle" != "$gba" ] && [ "$gba" != "$gbstart" ]; then
+	say_pass "GB buttons (idle, A and Start each make a different machine)"
+else
+	say_fail "GB buttons" "idle  $gbidle
+     A     $gba
+     Start $gbstart"
+fi
+
 echo
 echo "== the stick is the byte the movie recorded =="
-# A Nintendo 64 movie is written in the signed byte the controller reports, which
-# is what mupen and BizHawk record. ares shapes a modern thumbstick through a
-# deadzone and an octagonal gate on the way in; patches/ares/0008 takes that out,
-# and this leg is what says so. The small values matter most: before the patch
-# everything under about eight vanished into the deadzone entirely.
+# A Nintendo 64 movie is written in the signed byte the controller reports,
+# which is what mupen and BizHawk record. ares shapes a modern thumbstick
+# through a deadzone and an octagonal gate on the way in; patches/ares/0008
+# takes that out, and this leg is what says so. The small values matter most:
+# before the patch everything under about eight vanished into the deadzone.
 stick_exact=1
 for pair in "0 0" "1 0" "-1 0" "5 0" "85 -70" "127 127" "-128 -128"; do
 	# shellcheck disable=SC2086
-	got="$("$native" --rom "$content/input-cpu.n64" --quiet --frames 220 --stick $pair --report-stick | tail -1)"
+	got="$("$native" --machine N64 --rom "$content/input-cpu.n64" --quiet --frames 220 --stick $pair --report-stick | tail -1)"
 	want="stick reported x=$(echo "$pair" | cut -d' ' -f1) y=$(echo "$pair" | cut -d' ' -f2)"
 	if [ "$got" != "$want" ]; then
 		stick_exact=0
@@ -165,13 +208,13 @@ echo "== the picture is the one the hardware draws =="
 # console. The CPU one is a plain framebuffer, so with the video interface's
 # filtering off it should match exactly - and it does, to the pixel. See
 # docs/PLAN.md for why the RDP one is not held to the same test yet.
-"$native" --rom "$content/helloworld-cpu.n64" --quiet --frames 130 --fast-vi \
+"$native" --machine N64 --rom "$content/helloworld-cpu.n64" --quiet --frames 130 --fast-vi \
 	--dump-frame 120 --dump-to "$work/frame.ppm" >/dev/null 2>&1
 if out="$(python3 "$here/tests/compare-picture.py" "$content/helloworld-cpu.png" "$work/frame.ppm" 0 2>&1)"; then
-	say_pass "helloworld-cpu is pixel-exact against real hardware"
+	say_pass "N64 helloworld-cpu is pixel-exact against real hardware"
 	echo "     $out"
 else
-	say_fail "helloworld-cpu is pixel-exact against real hardware" "$out"
+	say_fail "N64 helloworld-cpu is pixel-exact against real hardware" "$out"
 fi
 
 echo

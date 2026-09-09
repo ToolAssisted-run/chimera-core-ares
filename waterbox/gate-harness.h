@@ -1,9 +1,9 @@
 /* gate-harness.h - the schedule, shared by the reference and the sandbox.
  *
- * The gate's claim is "these two builds are the same machine". That claim is
- * only worth anything if the two are driven identically, so the loop, the
- * option parsing and the digests live here and each driver supplies nothing but
- * a handful of function pointers. A difference in the numbers is then a
+ * The gate's claim is "these two builds are the same machine". That is only
+ * worth anything if the two are driven identically, so the loop, the option
+ * parsing and the digests live here and each driver supplies nothing but a
+ * handful of function pointers. A difference in the numbers is then a
  * difference in the MACHINE, which is the only thing being asked about.
  */
 #ifndef CHIMERA_ARES_GATE_HARNESS_H
@@ -14,22 +14,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Buttons, in the order waterbox.config declares them. */
-enum
-{
-	GATE_BTN_POWER = 0,
-	GATE_BTN_RESET,
-	GATE_BTN_PAD0,
-	GATE_BTN_PER_PAD = 16,
-	GATE_BTN_COUNT = GATE_BTN_PAD0 + 4 * GATE_BTN_PER_PAD,
-};
+#define GATE_MAX_INPUTS 512
 
 struct gate_core
 {
 	int (*init)(void);
 	const char *(*load_error)(void);
-	void (*set_button)(int32_t index, int32_t state);
-	void (*set_axis)(int32_t index, int32_t value);
+	int (*button_count)(void);
+	const char *(*button_name)(int i);
+	int (*axis_count)(void);
+	const char *(*axis_name)(int i);
+	void (*set_button)(int index, int state);
+	void (*set_axis)(int index, int value);
 	void (*frame)(void);
 	const uint32_t *(*video)(int *w, int *h);
 	const int16_t *(*audio)(int *samples);
@@ -38,6 +34,12 @@ struct gate_core
 	const char *(*domain_name)(int i);
 	const uint8_t *(*domain_ptr)(int i);
 	int64_t (*domain_size)(int i);
+	int (*bus_count)(void);
+	const char *(*bus_name)(int i);
+	int64_t (*bus_size)(int i);
+	int (*bus_peek)(int bus, int address);
+	/* The whole machine, as ares serialises it - the strong comparison. */
+	int (*state)(const uint8_t **data, int64_t *size);
 	void (*set_rendering)(int on);
 	/* Run before every frame. The sandbox driver round-trips the machine
 	 * through save/load here when --rerecord is given. */
@@ -47,7 +49,7 @@ struct gate_core
 struct gate_press
 {
 	int from;
-	int button;
+	char name[48];
 };
 
 struct gate_opts
@@ -58,51 +60,28 @@ struct gate_opts
 	int quiet;
 	int render;
 	int stick_x, stick_y;
-	int hold[GATE_BTN_COUNT];
-	struct gate_press press[32];
+	char hold[16][48];
+	int hold_count;
+	struct gate_press press[16];
 	int press_count;
 	const char *dump_path;
+	int list_inputs;
 };
-
-static const char *const gate_pad_button_names[GATE_BTN_PER_PAD] = {
-	"up", "down", "left", "right", "a", "b", "z", "start",
-	"l", "r", "cup", "cdown", "cleft", "cright", 0, 0,
-};
-
-/* "start" is pad 1; "p3:start" names another. */
-static int gate_button_index(const char *name)
-{
-	int pad = 0;
-	const char *bare = name;
-	if (name[0] == 'p' && name[1] >= '1' && name[1] <= '4' && name[2] == ':')
-	{
-		pad = name[1] - '1';
-		bare = name + 3;
-	}
-	if (!strcmp(bare, "power")) return GATE_BTN_POWER;
-	if (!strcmp(bare, "reset")) return GATE_BTN_RESET;
-	for (int i = 0; i < GATE_BTN_PER_PAD; i++)
-	{
-		if (gate_pad_button_names[i] && !strcmp(gate_pad_button_names[i], bare))
-			return GATE_BTN_PAD0 + pad * GATE_BTN_PER_PAD + i;
-	}
-	return -1;
-}
 
 static void gate_usage(void)
 {
 	fprintf(stderr,
 		"  --frames N        how many frames to run (default 60)\n"
-		"  --hold BUTTON     hold a button for the whole run\n"
-		"  --press F BUTTON  hold a button from frame F onwards\n"
-		"  --stick X Y       hold pad 1's analogue stick at X,Y (-127..127)\n"
+		"  --hold NAME       hold a button for the whole run, by its declared name\n"
+		"  --press F NAME    hold a button from frame F onwards\n"
+		"  --stick X Y       hold the first two axes at X,Y\n"
 		"  --digest-every N  print a digest every N frames as well as at the end\n"
 		"  --dump-frame F    write frame F as a .ppm and stop\n"
 		"  --dump-to PATH    where --dump-frame writes (default frame.ppm)\n"
 		"  --no-render       run with drawing off (turbo)\n"
+		"  --list-inputs     print what this machine declares, and stop\n"
 		"  --quiet           only the final digest line\n"
-		"Buttons: power, reset, up, down, left, right, a, b, z, start, l, r,\n"
-		"         cup, cdown, cleft, cright; prefix p2:/p3:/p4: for other pads.\n");
+		"Button names are the machine's own: run --list-inputs to see them.\n");
 }
 
 static int gate_parse_opts(int argc, char **argv, int from, struct gate_opts *o)
@@ -123,33 +102,26 @@ static int gate_parse_opts(int argc, char **argv, int from, struct gate_opts *o)
 		else if (!strcmp(a, "--dump-to")) o->dump_path = GATE_NEXT();
 		else if (!strcmp(a, "--no-render")) o->render = 0;
 		else if (!strcmp(a, "--quiet")) o->quiet = 1;
+		else if (!strcmp(a, "--list-inputs")) o->list_inputs = 1;
 		else if (!strcmp(a, "--stick")) { o->stick_x = atoi(GATE_NEXT()); o->stick_y = atoi(GATE_NEXT()); }
 		else if (!strcmp(a, "--hold"))
 		{
-			const char *name = GATE_NEXT();
-			int b = gate_button_index(name);
-			if (b < 0) { fprintf(stderr, "unknown button '%s'\n", name); return 0; }
-			o->hold[b] = 1;
+			if (o->hold_count >= 16) { fprintf(stderr, "too many --hold\n"); return 0; }
+			snprintf(o->hold[o->hold_count++], sizeof o->hold[0], "%s", GATE_NEXT());
 		}
 		else if (!strcmp(a, "--press"))
 		{
-			if (o->press_count >= (int)(sizeof o->press / sizeof *o->press))
-			{
-				fprintf(stderr, "too many --press\n");
-				return 0;
-			}
-			int f = atoi(GATE_NEXT());
-			const char *name = GATE_NEXT();
-			int b = gate_button_index(name);
-			if (b < 0) { fprintf(stderr, "unknown button '%s'\n", name); return 0; }
-			o->press[o->press_count].from = f;
-			o->press[o->press_count].button = b;
+			if (o->press_count >= 16) { fprintf(stderr, "too many --press\n"); return 0; }
+			o->press[o->press_count].from = atoi(GATE_NEXT());
+			snprintf(o->press[o->press_count].name, sizeof o->press[0].name, "%s", GATE_NEXT());
 			o->press_count++;
 		}
 		/* Options the driver itself consumed; skipping them here keeps one
 		 * parser rather than two that must agree. */
-		else if (!strcmp(a, "--rom") || !strcmp(a, "--time") || !strcmp(a, "--port")) { (void)GATE_NEXT(); if (!strcmp(a, "--port")) (void)GATE_NEXT(); }
-		else if (!strcmp(a, "--pal") || !strcmp(a, "--fast-vi") || !strcmp(a, "--rerecord") || !strcmp(a, "--report-stick")) { }
+		else if (!strcmp(a, "--rom") || !strcmp(a, "--time") || !strcmp(a, "--machine")) { (void)GATE_NEXT(); }
+		else if (!strcmp(a, "--port")) { (void)GATE_NEXT(); (void)GATE_NEXT(); }
+		else if (!strcmp(a, "--pal") || !strcmp(a, "--fast-vi") || !strcmp(a, "--rerecord")
+			|| !strcmp(a, "--report-stick")) { }
 		else { fprintf(stderr, "unknown option '%s'\n", a); gate_usage(); return 0; }
 		#undef GATE_NEXT
 	}
@@ -183,6 +155,48 @@ static void gate_write_ppm(const char *path, const uint32_t *bgra, int w, int h)
 	fprintf(stderr, "wrote %s (%dx%d)\n", path, w, h);
 }
 
+static int gate_find_button(const struct gate_core *c, const char *name)
+{
+	for (int i = 0; i < c->button_count(); i++)
+	{
+		const char *n = c->button_name(i);
+		if (n && !strcmp(n, name)) return i;
+	}
+	return -1;
+}
+
+/* The machine's memory, whichever way it publishes it. Blocks are a pointer, so
+ * they are cheap; a bus is resolved per byte, so it is not, but it is the one
+ * every ares machine has. */
+static uint64_t gate_memory_digest(const struct gate_core *c)
+{
+	uint64_t h = gate_hash_init();
+	if (c->domain_count() > 0)
+	{
+		for (int d = 0; d < c->domain_count(); d++)
+			h = gate_hash_feed(h, c->domain_ptr(d), (size_t)c->domain_size(d));
+		return h;
+	}
+	for (int b = 0; b < c->bus_count(); b++)
+	{
+		int64_t size = c->bus_size(b);
+		for (int64_t a = 0; a < size; a++)
+		{
+			uint8_t byte = (uint8_t)c->bus_peek(b, (int)a);
+			h = gate_hash_feed(h, &byte, 1);
+		}
+	}
+	return h;
+}
+
+static uint64_t gate_state_digest(const struct gate_core *c)
+{
+	const uint8_t *data = NULL;
+	int64_t size = 0;
+	if (!c->state || !c->state(&data, &size) || !data) return 0;
+	return gate_hash_feed(gate_hash_init(), data, (size_t)size);
+}
+
 static int gate_run(const struct gate_core *c, const struct gate_opts *o)
 {
 	if (c->init() != 1)
@@ -192,13 +206,35 @@ static int gate_run(const struct gate_core *c, const struct gate_opts *o)
 	}
 	c->set_rendering(o->render);
 
+	if (o->list_inputs)
+	{
+		printf("buttons (%d):\n", c->button_count());
+		for (int i = 0; i < c->button_count(); i++) printf("  %3d  %s\n", i, c->button_name(i));
+		printf("axes (%d):\n", c->axis_count());
+		for (int i = 0; i < c->axis_count(); i++) printf("  %3d  %s\n", i, c->axis_name(i));
+		return 0;
+	}
+
+	/* Resolve the names once. A name the machine does not have is a mistake in
+	 * the gate, not something to skip quietly. */
+	int held[16], pressed[16];
+	for (int i = 0; i < o->hold_count; i++)
+	{
+		held[i] = gate_find_button(c, o->hold[i]);
+		if (held[i] < 0) { fprintf(stderr, "this machine has no button '%s'\n", o->hold[i]); return 2; }
+	}
+	for (int i = 0; i < o->press_count; i++)
+	{
+		pressed[i] = gate_find_button(c, o->press[i].name);
+		if (pressed[i] < 0) { fprintf(stderr, "this machine has no button '%s'\n", o->press[i].name); return 2; }
+	}
+
 	if (!o->quiet)
 	{
 		for (int i = 0; i < c->domain_count(); i++)
-		{
-			fprintf(stderr, "  domain %-14s %10lld bytes\n",
-				c->domain_name(i), (long long)c->domain_size(i));
-		}
+			fprintf(stderr, "  domain %-14s %10lld bytes\n", c->domain_name(i), (long long)c->domain_size(i));
+		for (int i = 0; i < c->bus_count(); i++)
+			fprintf(stderr, "  bus    %-14s %10lld bytes\n", c->bus_name(i), (long long)c->bus_size(i));
 	}
 
 	uint64_t video = gate_hash_init(), audio = gate_hash_init();
@@ -206,15 +242,16 @@ static int gate_run(const struct gate_core *c, const struct gate_opts *o)
 
 	for (int f = 0; f < o->frames; f++)
 	{
-		for (int b = 0; b < GATE_BTN_COUNT; b++)
+		for (int b = 0; b < c->button_count(); b++)
 		{
-			int on = o->hold[b];
-			for (int p = 0; p < o->press_count; p++)
-				if (o->press[p].button == b && f >= o->press[p].from) on = 1;
+			int on = 0;
+			for (int i = 0; i < o->hold_count; i++) if (held[i] == b) on = 1;
+			for (int i = 0; i < o->press_count; i++)
+				if (pressed[i] == b && f >= o->press[i].from) on = 1;
 			c->set_button(b, on);
 		}
-		c->set_axis(0, o->stick_x);
-		c->set_axis(1, o->stick_y);
+		if (c->axis_count() > 0) c->set_axis(0, o->stick_x);
+		if (c->axis_count() > 1) c->set_axis(1, o->stick_y);
 
 		c->pre_frame();
 		c->frame();
@@ -234,22 +271,17 @@ static int gate_run(const struct gate_core *c, const struct gate_opts *o)
 
 		if (o->digest_every > 0 && (f + 1) % o->digest_every == 0)
 		{
-			uint64_t mem = gate_hash_init();
-			for (int d = 0; d < c->domain_count(); d++)
-				mem = gate_hash_feed(mem, c->domain_ptr(d), (size_t)c->domain_size(d));
-			printf("frame %6d  video %016llx  audio %016llx  memory %016llx  %dx%d  %d samples\n",
+			printf("frame %6d  video %016llx  audio %016llx  memory %016llx  state %016llx  %dx%d  %d samples\n",
 				f + 1, (unsigned long long)video, (unsigned long long)audio,
-				(unsigned long long)mem, w, h, samples);
+				(unsigned long long)gate_memory_digest(c), (unsigned long long)gate_state_digest(c),
+				w, h, samples);
 			fflush(stdout);
 		}
 	}
 
-	uint64_t mem = gate_hash_init();
-	for (int d = 0; d < c->domain_count(); d++)
-		mem = gate_hash_feed(mem, c->domain_ptr(d), (size_t)c->domain_size(d));
-
-	printf("video %016llx  audio %016llx  memory %016llx  lag %d/%d  %dx%d\n",
-		(unsigned long long)video, (unsigned long long)audio, (unsigned long long)mem,
+	printf("video %016llx  audio %016llx  memory %016llx  state %016llx  lag %d/%d  %dx%d\n",
+		(unsigned long long)video, (unsigned long long)audio,
+		(unsigned long long)gate_memory_digest(c), (unsigned long long)gate_state_digest(c),
 		lag, o->frames, w, h);
 	return 0;
 }

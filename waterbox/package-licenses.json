@@ -57,7 +57,23 @@
       "url": "https://github.com/ares-emulator/ares",
       "commit": "{submodule:extern/ares}",
       "file": "extern/ares/LICENSE",
-      "note": "About four kilobytes of console boot code, vendored by ares upstream in mia/Firmware and compiled into the package as ares itself distributes them. Bundling them is what makes this core need no firmware from the user, and it is a decision inherited from upstream rather than made here; see docs/PLAN.md for the alternative, which is to drop them and let ares emulate the boot at a high level."
+      "note": "About four kilobytes of console boot code, vendored by ares upstream in mia/Firmware and compiled into the package as ares itself distributes them. It is why the Nintendo 64 needs no firmware from the user, and it is a decision inherited from upstream rather than made here; see docs/PLAN.md for the alternative, which is to drop them and let ares emulate the boot at a high level. No other machine this package offers bundles anything of the kind - the ones that would need to are simply absent."
+    },
+    {
+      "name": "ymfm",
+      "license": "BSD-3-Clause",
+      "url": "https://github.com/aaronsgiles/ymfm",
+      "commit": "{submodule:extern/ares}",
+      "file": "extern/ares/thirdparty/ymfm/LICENSE",
+      "note": "Yamaha FM sound chips, reached through the Famicom's expansion audio and the Neo Geo's."
+    },
+    {
+      "name": "qon / qoi2",
+      "license": "MIT",
+      "url": "https://github.com/ares-emulator/ares",
+      "commit": "{submodule:extern/ares}",
+      "file": "extern/ares/LICENSE",
+      "note": "The video codec ares uses for LaserActive media; compiled in because the PC Engine and Mega Drive cores reference it."
     }
   ]
 }

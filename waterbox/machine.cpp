@@ -1,77 +1,87 @@
 /* machine.cpp - ares, driven as a machine rather than as an application.
  *
  * ares is written to be hosted: a Platform supplies its files, takes its
- * pictures and sound, and answers what time it is. That is exactly the shape a
- * waterbox core needs, so almost all of this file is that Platform, plus the
- * loading sequence ares' own desktop-ui performs.
+ * pictures and sound, and is told what the machine's inputs are doing. That is
+ * exactly the shape a waterbox core needs, so most of this file is that
+ * Platform plus the loading sequence ares' own desktop-ui performs, generalised
+ * over every console in waterbox/machines.h.
  *
- * Two things are deliberately NOT ares': the picture and the display list. The
- * RDP here is angrylion's software rasteriser (see patches/ares/0004), because
- * ares' own renderer is paraLLEl-RDP on Vulkan and a movie cannot be replayed
- * on somebody else's graphics driver.
+ * Two things are deliberately NOT ares'. The Nintendo 64's display processor is
+ * angrylion's software rasteriser (patches/ares/0004), because ares' own is
+ * paraLLEl-RDP on Vulkan and a movie cannot be replayed on somebody else's
+ * graphics driver. And the bindings between this core's declared inputs and
+ * ares' nodes are generated (waterbox/machines.inc), because the order of a
+ * controller's buttons is what a movie is written in.
  */
 #include "machine.h"
+#include "machines.h"
+#include "machines.inc"
 
-#include <n64/n64.hpp>
 #include <mia/mia.hpp>
 
 #include <angrylion.h>
 
 #include <string.h>
+#include <string>
 
 using namespace ares;
 
 namespace
 {
-	/* The N64's FPU rounding mode is machine state, and ares sets the HOST's
-	 * rounding mode to match it while the CPU runs. Anything that runs between
-	 * frames - the frontend, this file's own arithmetic - expects round-to-
-	 * nearest, so the mode is swapped in on the way in and out again on the way
-	 * out. Without this a savestate taken mid-run reloads under whatever mode
-	 * the last game left behind, and floating point stops being reproducible.
+	/* The Nintendo 64's FPU rounding mode is machine state, and ares sets the
+	 * HOST's rounding mode to match it while the CPU runs. Anything that runs
+	 * between frames expects round-to-nearest, so the mode is swapped in on the
+	 * way in and out again on the way out. Without this a savestate taken
+	 * mid-run reloads under whatever mode the last game left behind, and
+	 * floating point stops being reproducible.
 	 */
 	struct FenvGuard
 	{
 		nall::float_env saved;
-		nall::float_env &machine;
+		nall::float_env *machine;
 
-		FenvGuard(nall::float_env &machine_) : machine(machine_)
+		FenvGuard(nall::float_env *machine_) : machine(machine_)
 		{
-			if (machine.getRound() != saved.getRound()) machine.setRound(machine.getRound());
+			if (machine && machine->getRound() != saved.getRound()) machine->setRound(machine->getRound());
 		}
 
 		~FenvGuard()
 		{
-			if (machine.getRound() != saved.getRound()) saved.setRound(saved.getRound());
+			if (machine && machine->getRound() != saved.getRound()) saved.setRound(saved.getRound());
 		}
 	};
 
-	constexpr int VideoWidth = 640;
+	/* Wide enough for the largest picture any declared machine draws; the
+	 * package's video.width/height say the same number, generated from the same
+	 * table. */
+	constexpr int VideoWidthMax = 1280;
 	constexpr int VideoHeightMax = 576;
 	constexpr int MaxSamplesPerFrame = 4096;
 
 	char g_error[256] = "";
+	bool fail(const char *why) { snprintf(g_error, sizeof g_error, "%s", why); return false; }
 
-	void fail(const char *why)
-	{
-		snprintf(g_error, sizeof g_error, "%s", why);
-	}
-
-	/* ares hands audio out one stereo pair at a time, as doubles, whenever the
-	 * machine's audio interface has produced some. A frame's worth is collected
-	 * here and handed over whole. */
 	int16_t g_audio[MaxSamplesPerFrame * 2];
 	int g_audioSamples = 0;
 
-	uint32_t g_video[VideoWidth * VideoHeightMax];
+	uint32_t g_video[VideoWidthMax * VideoHeightMax];
+	int g_videoWidth = 0, g_videoHeight = 0;
 	bool g_rendering = true;
 
 	bool g_inputWasRead = false;
 	bool g_pal = false;
+	const machines::Spec *g_spec = nullptr;
+	const machines::MachineInputs *g_inputs = nullptr;
+	bool g_isN64 = false;
 
 	std::shared_ptr<mia::Pak> g_systemPak;
 	std::shared_ptr<mia::Pak> g_cartridgePak;
 	Node::System g_root;
+
+	/* What each declared input binds to, resolved once at init. A null entry is
+	 * an input the machine does not have this time - a port left empty. */
+	std::vector<Node::Input::Button> g_buttons;
+	std::vector<Node::Input::Axis> g_axes;
 
 	struct ChimeraPlatform : ares::Platform
 	{
@@ -79,17 +89,15 @@ namespace
 		{
 			/* ares resamples its audio to whatever the host asks for. 44100 is
 			 * what the package declares. */
-			if (auto stream = node->cast<Node::Audio::Stream>())
-			{
-				stream->setResamplerFrequency(44100);
-			}
+			if (auto stream = node->cast<Node::Audio::Stream>()) stream->setResamplerFrequency(44100);
 		}
 
 		auto pak(Node::Object node) -> std::shared_ptr<vfs::directory> override
 		{
-			if (node->name() == "Nintendo 64") return g_systemPak ? g_systemPak->pak : nullptr;
-			if (node->name() == "Nintendo 64 Cartridge") return g_cartridgePak ? g_cartridgePak->pak : nullptr;
-			return {};
+			/* The system node is the machine itself; anything else asking is the
+			 * medium in its slot. */
+			if (g_root && node == g_root) return g_systemPak ? g_systemPak->pak : nullptr;
+			return g_cartridgePak ? g_cartridgePak->pak : nullptr;
 		}
 
 		auto audio(Node::Audio::Stream stream) -> void override
@@ -111,229 +119,90 @@ namespace
 			}
 		}
 
+		/* Everything but the Nintendo 64 draws through ares' own screen node,
+		 * which hands over finished ARGB8888 rows. */
+		auto video(Node::Video::Screen, const u32 *data, u32 pitch, u32 width, u32 height) -> void override
+		{
+			if (!g_rendering || data == nullptr) return;
+			if (width > VideoWidthMax) width = VideoWidthMax;
+			if (height > VideoHeightMax) height = VideoHeightMax;
+			u32 stride = pitch / sizeof(u32);
+			for (u32 y = 0; y < height; y++)
+			{
+				memcpy(g_video + (size_t)y * width, data + (size_t)y * stride, width * sizeof(u32));
+			}
+			g_videoWidth = (int)width;
+			g_videoHeight = (int)height;
+		}
+
 		auto input(Node::Input::Input node) -> void override
 		{
 			/* A frame in which the machine polled a controller is a frame the
-			 * player's input reached. ares announces every read; one button is
-			 * enough to notice, and Start is the one every device has. */
-			if (auto button = node->cast<Node::Input::Button>())
-			{
-				if (button->name() == "Start" || button->name() == "Left Click") g_inputWasRead = true;
-			}
+			 * player's input reached. ares announces every read. */
+			(void)node;
+			g_inputWasRead = true;
 		}
-
 	};
 
 	ChimeraPlatform *g_platform = nullptr;
 
-	/* The four ports, in the order the frontend numbers them. */
-	Nintendo64::ControllerPort *g_ports[4] = {
-		&Nintendo64::controllerPort1, &Nintendo64::controllerPort2,
-		&Nintendo64::controllerPort3, &Nintendo64::controllerPort4,
-	};
-
-	const char *portDeviceName(machine::Port port)
+	nall::float_env *machineFenv(void)
 	{
-		switch (port)
-		{
-			case machine::Port::Gamepad:
-			case machine::Port::GamepadWithControllerPak:
-			case machine::Port::GamepadWithRumblePak: return "Gamepad";
-			case machine::Port::Mouse: return "Mouse";
-			default: return nullptr;
-		}
+		return g_isN64 ? &Nintendo64::cpu.fenv : nullptr;
 	}
 
-	const char *portPakName(machine::Port port)
+	/* Plugs in whatever the config asked for, port by port, and binds the
+	 * declared inputs to the nodes that now exist. */
+	bool connectPorts(const machine::Config &config)
 	{
-		switch (port)
+		int index = 0;
+		for (auto &port : g_root->find<Node::Port>())
 		{
-			case machine::Port::GamepadWithControllerPak: return "Controller Pak";
-			case machine::Port::GamepadWithRumblePak: return "Rumble Pak";
-			default: return nullptr;
-		}
-	}
-}
-
-namespace { void publishDomains(void); }
-
-namespace machine
-{
-	const char *error(void) { return g_error; }
-
-	bool init(const Config &config)
-	{
-		g_error[0] = 0;
-		Nintendo64::rtcEpoch = config.initTimeUnix;
-		g_pal = config.pal;
-
-		g_platform = new ChimeraPlatform;
-		ares::platform = g_platform;
-
-		/* mia is ares' own media layer: it reads the cartridge, works out its
-		 * region, its CIC and what kind of save chip it has, and hands back the
-		 * pak the machine expects. Using it rather than a table of our own is
-		 * what makes the OTHER ares systems a build-list change later. */
-		g_systemPak = mia::System::create("Nintendo 64");
-		if (!g_systemPak) return fail("ares has no Nintendo 64 system"), false;
-		if (g_systemPak->load({}) != successful) return fail("the Nintendo 64 system pak would not load"), false;
-
-		if (!config.romFile || !*config.romFile) return fail("no cartridge given"), false;
-		g_cartridgePak = mia::Medium::create("Nintendo 64");
-		if (!g_cartridgePak) return fail("ares has no Nintendo 64 medium"), false;
-		if (g_cartridgePak->load(config.romFile) != successful)
-			return fail("the cartridge would not load"), false;
-
-		/* The picture is the rasteriser's, and it is written straight into the
-		 * buffer the frontend reads. */
-		angrylion::OutFrameBuffer = g_video;
-		angrylion::OutHeight = config.pal ? 576 : 480;
-		Nintendo64::FastVI = config.fastVI;
-		Nintendo64::BobDeinterlace = config.bobDeinterlace;
-
-		/* Real hardware powers on with genuinely random RDRAM timings, and ares
-		 * models that by seeding its RNG from the host clock. A movie cannot be
-		 * replayed against a machine that starts differently every time, so the
-		 * seed is pinned - which is what this option is for. Without it the same
-		 * run produces a different machine on every boot, and only the picture
-		 * happens to agree. */
-		Nintendo64::option("Deterministic Entropy", "true");
-
-		string name = config.pal ? "[Nintendo] Nintendo 64 (PAL)" : "[Nintendo] Nintendo 64 (NTSC)";
-		if (!Nintendo64::load(g_root, name)) return fail("ares would not build the machine"), false;
-
-		if (auto port = g_root->find<Node::Port>("Cartridge Slot"))
-		{
-			port->allocate();
-			port->connect();
-		}
-		else return fail("the machine has no cartridge slot"), false;
-
-		for (int i = 0; i < 4; i++)
-		{
-			auto port = g_root->find<Node::Port>({"Controller Port ", 1 + i});
-			if (!port) return fail("the machine is missing a controller port"), false;
-			const char *device = portDeviceName(config.port[i]);
-			if (!device) continue;
+			if (port->supported().empty()) continue;  /* a media slot, not a controller port */
+			if (index >= 8) break;
+			const char *device = config.port[index];
+			const char *accessory = config.portAccessory[index];
+			index++;
+			if (device == nullptr || !*device) continue;
 
 			auto peripheral = port->allocate(device);
+			if (!peripheral) return fail("this machine has no such device for that port");
 			port->connect();
 
-			if (const char *pak = portPakName(config.port[i]))
+			if (accessory != nullptr && *accessory)
 			{
-				if (auto slot = peripheral->find<Node::Port>("Pak"))
+				bool plugged = false;
+				for (auto &slot : peripheral->find<Node::Port>())
 				{
-					slot->allocate(pak);
+					slot->allocate(accessory);
 					slot->connect();
+					plugged = true;
+					break;
 				}
-				else return fail("the pad has no pak slot"), false;
+				if (!plugged) return fail("this device has no slot for that accessory");
 			}
 		}
-
-		FenvGuard guard(Nintendo64::cpu.fenv);
-		g_root->power();
-		publishDomains();
 		return true;
 	}
 
-	void frame(const Input &input)
+	void bindInputs(void)
 	{
-		FenvGuard guard(Nintendo64::cpu.fenv);
-
-		angrylion::OutFrameBuffer = g_rendering ? g_video : nullptr;
-
-		if (input.power) g_root->power(false);
-		else if (input.reset) g_root->power(true);
-
-		for (int i = 0; i < 4; i++)
+		g_buttons.clear();
+		g_axes.clear();
+		if (g_inputs == nullptr) return;
+		for (int i = 0; i < g_inputs->buttonCount; i++)
 		{
-			const Pad &p = input.pad[i];
-			Nintendo64::ControllerPort *slot = g_ports[i];
-			if (auto pad = dynamic_cast<Nintendo64::Gamepad *>(slot->device.get()))
-			{
-				/* The signed byte the controller reports, straight through. A
-				 * Nintendo 64 movie is written in that byte - it is what mupen and
-				 * BizHawk record and what every existing N64 run contains - so
-				 * ares' stick shaping is patched out rather than fed
-				 * (patches/ares/0008).
-				 *
-				 * Y is negated because the frontend's axis points the way a player
-				 * does, up-positive, and the machine reads it the other way round. */
-				pad->x->setValue(p.x);
-				pad->y->setValue(-p.y);
-				pad->up->setValue(p.up);
-				pad->down->setValue(p.down);
-				pad->left->setValue(p.left);
-				pad->right->setValue(p.right);
-				pad->b->setValue(p.b);
-				pad->a->setValue(p.a);
-				pad->cameraUp->setValue(p.cUp);
-				pad->cameraDown->setValue(p.cDown);
-				pad->cameraLeft->setValue(p.cLeft);
-				pad->cameraRight->setValue(p.cRight);
-				pad->l->setValue(p.l);
-				pad->r->setValue(p.r);
-				pad->z->setValue(p.z);
-				pad->start->setValue(p.start);
-			}
-			else if (auto mouse = dynamic_cast<Nintendo64::Mouse *>(slot->device.get()))
-			{
-				mouse->x->setValue(p.x);
-				mouse->y->setValue(p.y);
-				mouse->left->setValue(p.a);
-				mouse->right->setValue(p.b);
-			}
+			g_buttons.push_back(g_root->find<Node::Input::Button>(g_inputs->buttons[i].path));
 		}
-
-		g_inputWasRead = false;
-		g_audioSamples = 0;
-
-		g_root->run();
+		for (int i = 0; i < g_inputs->axisCount; i++)
+		{
+			g_axes.push_back(g_root->find<Node::Input::Axis>(g_inputs->axes[i].path));
+		}
 	}
 
-	const uint32_t *video(void) { return g_video; }
-	int videoWidth(void) { return VideoWidth; }
-	int videoHeight(void) { return (int)angrylion::OutHeight; }
-	void setRenderingEnabled(bool on) { g_rendering = on; }
+	/* ---- what the machine is made of ---- */
 
-	const int16_t *audio(void) { return g_audio; }
-	int audioSamples(void) { return g_audioSamples; }
-	bool inputWasRead(void) { return g_inputWasRead; }
-
-	bool padReport(int pad, int *x, int *y)
-	{
-		if (pad < 0 || pad > 3) return false;
-		auto *device = g_ports[pad]->device.get();
-		if (device == nullptr) return false;
-		auto data = device->read();
-		if (x) *x = (int8_t)(uint8_t)(data >> 8 & 0xff);
-		if (y) *y = (int8_t)(uint8_t)(data >> 0 & 0xff);
-		return true;
-	}
-
-	int vsyncNumerator(void) { return g_pal ? 50 : 60; }
-	int vsyncDenominator(void) { return 1; }
-}
-
-/* ---- what the machine is made of ----
- *
- * Published once, as a pointer and a size, so a RAM search costs nothing. The
- * N64's memory IS blocks, so there is no bus to resolve per access.
- *
- * The cartridge's three save chips are mutually exclusive - a cart has one, or
- * none - so which of them exists depends on the game, and the list is built
- * after the cartridge is in.
- */
-namespace
-{
-	struct Domain
-	{
-		const char *name;
-		uint8_t *data;
-		int64_t size;
-		int writable;
-	};
-
+	struct Domain { const char *name; uint8_t *data; int64_t size; int writable; };
 	Domain g_domains[8];
 	int g_domainCount = 0;
 
@@ -344,10 +213,15 @@ namespace
 		g_domains[g_domainCount++] = {name, (uint8_t *)data, size, writable};
 	}
 
+	/* Only the Nintendo 64 publishes blocks: its memory IS blocks, and a
+	 * digest over eight megabytes wants a pointer rather than eight million
+	 * calls. Every other machine is covered by the buses below, which ares
+	 * gives us for free. */
 	void publishDomains(void)
 	{
-		using namespace ares::Nintendo64;
 		g_domainCount = 0;
+		if (!g_isN64) return;
+		using namespace ares::Nintendo64;
 		publish("RDRAM", rdram.ram.data, (int64_t)rdram.ram.size, 1);
 		publish("RSP DMEM", rsp.dmem.data, (int64_t)rsp.dmem.size, 1);
 		publish("RSP IMEM", rsp.imem.data, (int64_t)rsp.imem.size, 1);
@@ -357,36 +231,199 @@ namespace
 		publish("EEPROM", cartridge.eeprom.data, (int64_t)cartridge.eeprom.size, 1);
 		publish("Flash", cartridge.flash.data, (int64_t)cartridge.flash.size, 1);
 	}
+
+	std::vector<Node::Debugger::Memory> g_buses;
+	/* ares' node->name() hands back a string BY VALUE, so a (const char*) taken
+	 * from it dangles the moment the expression ends. The names are copied here
+	 * once instead, where they live as long as the machine does. */
+	std::vector<std::string> g_busNames;
+
+	void publishBuses(void)
+	{
+		g_buses = g_root->find<Node::Debugger::Memory>();
+		g_busNames.clear();
+		for (auto &bus : g_buses) g_busNames.push_back((const char *)bus->name());
+	}
 }
 
 namespace machine
 {
+	const char *error(void) { return g_error; }
+
+	bool init(const Config &config)
+	{
+		g_error[0] = 0;
+
+		g_spec = machines::find(config.machine ? config.machine : "N64");
+		if (g_spec == nullptr) return fail("this core has no such machine");
+		g_isN64 = nall::string{g_spec->id} == "N64";
+		g_pal = config.pal && g_spec->configPal != nullptr;
+
+		g_inputs = nullptr;
+		for (auto &entry : kMachineInputs)
+		{
+			if (nall::string{entry.id} == g_spec->id) g_inputs = &entry;
+		}
+
+		g_platform = new ChimeraPlatform;
+		ares::platform = g_platform;
+
+		/* mia is ares' own media layer: it reads the cartridge, works out its
+		 * region and what kind of save chip it has, and hands back the pak the
+		 * machine expects. Using it rather than a loader of our own is what
+		 * makes each additional machine a table entry. */
+		g_systemPak = mia::System::create(g_spec->miaSystem);
+		if (!g_systemPak) return fail("ares has no such system");
+		if (g_systemPak->load({}) != successful) return fail("this machine's system pak would not load");
+
+		if (!config.romFile || !*config.romFile) return fail("no cartridge given");
+		g_cartridgePak = mia::Medium::create(g_spec->miaMedium);
+		if (!g_cartridgePak) return fail("ares has no such medium");
+		if (g_cartridgePak->load(config.romFile) != successful) return fail("the cartridge would not load");
+
+		if (g_isN64)
+		{
+			/* The picture is the rasteriser's, written straight into the buffer
+			 * the frontend reads. */
+			angrylion::OutFrameBuffer = g_video;
+			angrylion::OutHeight = g_pal ? 576 : 480;
+			Nintendo64::FastVI = config.fastVI;
+			Nintendo64::BobDeinterlace = config.bobDeinterlace;
+			Nintendo64::rtcEpoch = config.initTimeUnix;
+			g_videoWidth = 640;
+			g_videoHeight = g_pal ? 576 : 480;
+
+			/* Real hardware powers on with genuinely random RDRAM timings, and
+			 * ares models that by seeding its RNG from the host clock. A movie
+			 * cannot be replayed against a machine that starts differently every
+			 * time, so the seed is pinned. Without it the same run produces a
+			 * different machine on every boot, and only the picture happens to
+			 * agree. */
+			Nintendo64::option("Deterministic Entropy", "true");
+		}
+
+		const char *name = g_pal ? g_spec->configPal : g_spec->configNtsc;
+		if (name == nullptr) name = g_spec->configNtsc ? g_spec->configNtsc : g_spec->configPal;
+		if (!g_spec->load(g_root, name)) return fail("ares would not build the machine");
+
+		/* Every machine has a slot for its medium, and it is the one port that
+		 * takes no device name. */
+		for (auto &port : g_root->find<Node::Port>())
+		{
+			if (!port->supported().empty()) continue;
+			port->allocate();
+			port->connect();
+		}
+
+		if (!connectPorts(config)) return false;
+
+		FenvGuard guard(machineFenv());
+		g_root->power();
+		bindInputs();
+		publishDomains();
+		publishBuses();
+		return true;
+	}
+
+	void setButton(int index, bool held)
+	{
+		if (index < 0 || index >= (int)g_buttons.size()) return;
+		if (auto &node = g_buttons[index]) node->setValue(held);
+	}
+
+	void setAxis(int index, int value)
+	{
+		if (index < 0 || index >= (int)g_axes.size()) return;
+		if (auto &node = g_axes[index]) node->setValue(value);
+	}
+
+	int buttonCount(void) { return g_inputs ? g_inputs->buttonCount : 0; }
+	int axisCount(void) { return g_inputs ? g_inputs->axisCount : 0; }
+	bool buttonActive(int i) { return i >= 0 && i < (int)g_buttons.size() && (bool)g_buttons[i]; }
+	bool axisActive(int i) { return i >= 0 && i < (int)g_axes.size() && (bool)g_axes[i]; }
+
+	void frame(void)
+	{
+		FenvGuard guard(machineFenv());
+		if (g_isN64) angrylion::OutFrameBuffer = g_rendering ? g_video : nullptr;
+
+		g_inputWasRead = false;
+		g_audioSamples = 0;
+
+		g_root->run();
+
+		if (g_isN64)
+		{
+			g_videoWidth = 640;
+			g_videoHeight = (int)angrylion::OutHeight;
+		}
+	}
+
+	const uint32_t *video(void) { return g_video; }
+	int videoWidth(void) { return g_videoWidth; }
+	int videoHeight(void) { return g_videoHeight; }
+	void setRenderingEnabled(bool on) { g_rendering = on; }
+
+	const int16_t *audio(void) { return g_audio; }
+	int audioSamples(void) { return g_audioSamples; }
+	bool inputWasRead(void) { return g_inputWasRead; }
+
+	int vsyncNumerator(void) { return g_pal ? 50 : 60; }
+	int vsyncDenominator(void) { return 1; }
+
 	int memoryDomainCount(void) { return g_domainCount; }
+	const char *memoryDomainName(int i) { return (i >= 0 && i < g_domainCount) ? g_domains[i].name : nullptr; }
+	uint8_t *memoryDomainData(int i) { return (i >= 0 && i < g_domainCount) ? g_domains[i].data : nullptr; }
+	int64_t memoryDomainSize(int i) { return (i >= 0 && i < g_domainCount) ? g_domains[i].size : 0; }
+	int memoryDomainWritable(int i) { return (i >= 0 && i < g_domainCount) ? g_domains[i].writable : 0; }
 
-	const char *memoryDomainName(int i)
+	int busCount(void) { return (int)g_buses.size(); }
+
+	const char *busName(int i)
 	{
-		return (i >= 0 && i < g_domainCount) ? g_domains[i].name : nullptr;
+		if (i < 0 || i >= (int)g_busNames.size()) return nullptr;
+		return g_busNames[i].c_str();
 	}
 
-	uint8_t *memoryDomainData(int i)
+	int64_t busSize(int i)
 	{
-		return (i >= 0 && i < g_domainCount) ? g_domains[i].data : nullptr;
+		if (i < 0 || i >= (int)g_buses.size()) return 0;
+		return (int64_t)g_buses[i]->size();
 	}
 
-	int64_t memoryDomainSize(int i)
+	int busWritable(int i) { return (i >= 0 && i < (int)g_buses.size()) ? 1 : 0; }
+
+	int busPeek(int bus, int address)
 	{
-		return (i >= 0 && i < g_domainCount) ? g_domains[i].size : 0;
+		if (bus < 0 || bus >= (int)g_buses.size()) return 0;
+		return g_buses[bus]->read((u32)address);
 	}
 
-	int memoryDomainWritable(int i)
+	void busPoke(int bus, int address, int value)
 	{
-		return (i >= 0 && i < g_domainCount) ? g_domains[i].writable : 0;
+		if (bus < 0 || bus >= (int)g_buses.size()) return;
+		g_buses[bus]->write((u32)address, (u8)value);
 	}
 
-	/* Export Save Data hands back whichever save chip this cartridge has. A cart
-	 * with no battery keeps nothing, and says so by having none. */
+	bool captureState(const uint8_t **data, int64_t *size)
+	{
+		static std::vector<uint8_t> blob;
+		if (!g_root) return false;
+		FenvGuard guard(machineFenv());
+		auto s = g_root->serialize(true);
+		if (!s) return false;
+		blob.assign(s.data(), s.data() + s.size());
+		if (data) *data = blob.data();
+		if (size) *size = (int64_t)blob.size();
+		return true;
+	}
+
+	/* Export Save Data hands back whichever save chip a Nintendo 64 cartridge
+	 * has. The other machines save through mia, which this core does not let
+	 * write to a host; their save data is inside the savestate instead. */
 	const uint8_t *saveData(void)
 	{
+		if (!g_isN64) return nullptr;
 		using namespace ares::Nintendo64;
 		if (cartridge.ram.size) return (const uint8_t *)cartridge.ram.data;
 		if (cartridge.eeprom.size) return (const uint8_t *)cartridge.eeprom.data;
@@ -396,6 +433,7 @@ namespace machine
 
 	int64_t saveDataSize(void)
 	{
+		if (!g_isN64) return 0;
 		using namespace ares::Nintendo64;
 		if (cartridge.ram.size) return (int64_t)cartridge.ram.size;
 		if (cartridge.eeprom.size) return (int64_t)cartridge.eeprom.size;
@@ -405,10 +443,26 @@ namespace machine
 
 	const char *saveDataName(void)
 	{
+		if (!g_isN64) return nullptr;
 		using namespace ares::Nintendo64;
 		if (cartridge.ram.size) return "save.ram";
 		if (cartridge.eeprom.size) return "save.eeprom";
 		if (cartridge.flash.size) return "save.flash";
 		return nullptr;
+	}
+
+	bool padReport(int pad, int *x, int *y)
+	{
+		if (!g_isN64 || pad < 0 || pad > 3) return false;
+		ares::Nintendo64::ControllerPort *ports[4] = {
+			&ares::Nintendo64::controllerPort1, &ares::Nintendo64::controllerPort2,
+			&ares::Nintendo64::controllerPort3, &ares::Nintendo64::controllerPort4,
+		};
+		auto *device = ports[pad]->device.get();
+		if (device == nullptr) return false;
+		auto data = device->read();
+		if (x) *x = (int8_t)(uint8_t)(data >> 8 & 0xff);
+		if (y) *y = (int8_t)(uint8_t)(data >> 0 & 0xff);
+		return true;
 	}
 }

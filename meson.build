@@ -68,15 +68,37 @@ ares_cpp = configure_file(
 # ares compiles as a handful of translation units that #include the rest, so
 # this list is short and matches ares' own CMake targets one for one.
 
+# The machines. Every ares system is one translation unit that #includes the
+# rest of itself, with the PC Engine's two video implementations as the one
+# exception. Which of them this core actually offers is waterbox/machines.h;
+# this list is what has to compile.
+ares_systems = [
+  'a26', 'fc', 'gb', 'md', 'ms', 'myvision', 'n64', 'sg', 'spec', 'ws',
+]
+
+# The chips those machines are built out of. Each is one translation unit too,
+# and they are shared - the Z80 in a Master System is the Z80 in an SG-1000 - so
+# they are compiled once whatever is enabled.
+ares_components = [
+  'audio/ay38910', 'audio/msm5205', 'audio/sn76489', 'audio/t6w28',
+  'audio/ym2149', 'audio/ym2413', 'audio/ym2612',
+  'eeprom/m24c', 'eeprom/m93lcx6', 'flash/sst39sf0x0', 'io/i8255',
+  'processor/arm7tdmi', 'processor/armv6m', 'processor/gsu', 'processor/hg51b',
+  'processor/huc6280', 'processor/i8080', 'processor/m68000', 'processor/m68hc05',
+  'processor/mos6502', 'processor/sh2', 'processor/sm5k', 'processor/sm83',
+  'processor/spc700', 'processor/ssp1601', 'processor/tlcs900h', 'processor/upd96050',
+  'processor/v30mz', 'processor/wdc65816', 'processor/z80',
+  'rtc/s3511a', 'video/tms9918', 'video/v9938',
+]
+
 core_sources = [
   ares_dir / 'nall/nall/nall.cpp',
   ares_dir / 'nall/nall/sljitAllocator.cpp',
   ares_dir / 'ares/ares/memory/fixed-allocator.cpp',
-  ares_dir / 'ares/component/processor/sm5k/sm5k.cpp',
-  ares_dir / 'ares/n64/n64.cpp',
   ares_dir / 'mia/mia.cpp',
   ares_dir / 'libco/libco.c',
   ares_dir / 'thirdparty/sljit/sljit_src/sljitLir.c',
+  ares_dir / 'thirdparty/qon/qon.cpp',
   # The software rasteriser, in paraLLEl-RDP's place.
   angrylion_dir / 'angrylion.cpp',
   angrylion_dir / 'n64video.cpp',
@@ -84,12 +106,26 @@ core_sources = [
   files('waterbox/machine.cpp'),
 ]
 
+foreach s : ares_systems
+  core_sources += ares_dir / 'ares' / s / (s + '.cpp')
+endforeach
+
+foreach c : ares_components
+  core_sources += ares_dir / 'ares/component' / c / (c.split('/')[1] + '.cpp')
+endforeach
+
+# The Famicom's expansion audio and the Neo Geo's sound chip are ymfm's.
+foreach y : ['adpcm', 'misc', 'opl', 'opm', 'opn', 'opq', 'opz', 'pcm', 'ssg']
+  core_sources += ares_dir / 'thirdparty/ymfm/src' / ('ymfm_' + y + '.cpp')
+endforeach
+
 # mia reads ZX Spectrum tapes, and TZXFile is a file per block type.
 tzx_sources = run_command('sh', '-c',
   'ls ' + ares_dir / 'thirdparty/TZXFile' + '/*.cpp', check: true).stdout().strip().split('\n')
-
 core_sources += tzx_sources
+
 core_sources += ares_cpp
+
 # ares.cpp #includes its resource.cpp, so only the header is listed - naming an
 # output of the target is what makes meson generate BOTH before anything that
 # needs them compiles. mia compiles its resource.cpp as a unit of its own.
@@ -103,6 +139,8 @@ core_inc = include_directories(
   'extern/ares/mia',
   'extern/ares/thirdparty',
   'extern/ares/thirdparty/TZXFile',
+  'extern/ares/thirdparty/ymfm/src',
+  'extern/ares/thirdparty/qon',
   'extern/ares/thirdparty/sljit/sljit_src',
   'extern/angrylion-rdp/mylittle-nocomment',
   'waterbox',
@@ -122,6 +160,17 @@ core_defines = [
   '-DNDEBUG',
   '-DMIA_LIBRARY',
   '-DANGRYLION',
+  # ares builds each machine one of two ways. A tool-assisted run wants the one
+  # that models the hardware rather than the one that is quick about it.
+  '-DPROFILE_ACCURACY',
+  # Every machine's power-on state comes from a number, not from the host - see
+  # patches/ares/0010. Without it the two flavours disagree, because a sandbox
+  # has no getrandom to call and the reference does.
+  '-DCHIMERA_DETERMINISTIC_SEED',
+  # ares draws on a second thread by default, and hands frames over through a
+  # timed wait. A sandbox has one thread; the reference must have one too, or
+  # the two are not running the same program. See patches/ares/0011.
+  '-DCHIMERA_SINGLE_THREADED',
   '-DSLJIT_HAVE_CONFIG_PRE=1',
   '-DSLJIT_HAVE_CONFIG_POST=1',
   '-DWANT_CPU_INTERPRETER=' + (get_option('cpu_interpreter') ? '1' : '0'),

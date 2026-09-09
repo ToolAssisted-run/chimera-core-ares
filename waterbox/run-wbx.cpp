@@ -18,6 +18,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include "machines-names.h"
 #include "gate-harness.h"
 
 typedef struct { FILE *f; } freader;
@@ -31,7 +32,7 @@ typedef struct { uint8_t *b; size_t len, cap, pos; } membuf;
 static int32_t mem_write(uintptr_t ud, const uint8_t *d, uintptr_t n)
 {
 	membuf *m = (membuf *)ud;
-	if (m->len + n > m->cap) { m->cap = (m->len + n) * 2 + 64; m->b = realloc(m->b, m->cap); }
+	if (m->len + n > m->cap) { m->cap = (m->len + n) * 2 + 64; m->b = (uint8_t *)realloc(m->b, m->cap); }
 	memcpy(m->b + m->len, d, n);
 	m->len += n;
 	return 0;
@@ -54,10 +55,19 @@ typedef void (MB_GUEST_ABI *voidfn_i)(int);
 typedef uintptr_t (MB_GUEST_ABI *ptrfn)(void);
 typedef uintptr_t (MB_GUEST_ABI *ptrfn_i)(int);
 typedef int64_t (MB_GUEST_ABI *i64fn_i)(int);
+typedef int (MB_GUEST_ABI *intfn_i)(int);
+typedef int (MB_GUEST_ABI *intfn_ii)(int, int);
+typedef int64_t (MB_GUEST_ABI *i64fn)(void);
 
 static mb_host *g_host;
 static intfn g_Init, g_GetVideoWidth, g_GetVideoHeight, g_GetAudioSampleCount;
-static intfn g_InputWasRead, g_GetMemoryDomainCount;
+static intfn g_InputWasRead, g_GetMemoryDomainCount, g_GetBusCount;
+static intfn_i g_IsButtonActive, g_IsAxisActive, g_GetBusWritable;
+static ptrfn_i g_GetBusName;
+static i64fn_i g_GetBusSize;
+static intfn_ii g_PeekBus;
+static i64fn g_CaptureState;
+static ptrfn g_GetStateBuffer;
 static ptrfn g_GetLoadError, g_GetVideoBgra, g_GetAudio;
 static setfn g_SetButton, g_SetAxis;
 static framefn g_FrameAdvance;
@@ -77,6 +87,23 @@ static uintptr_t proc(mb_host *h, const char *n)
 }
 
 static int core_init(void) { return 1; }  /* Init ran before Seal */
+static int core_button_count(void) { return machines::buttonCount(); }
+static const char *core_button_name(int i) { return machines::buttonName(i); }
+static int core_axis_count(void) { return machines::axisCount(); }
+static const char *core_axis_name(int i) { return machines::axisName(i); }
+static int core_bus_count(void) { return g_GetBusCount(); }
+static const char *core_bus_name(int i) { return (const char *)g_GetBusName(i); }
+static int64_t core_bus_size(int i) { return g_GetBusSize(i); }
+static int core_bus_peek(int b, int a) { return g_PeekBus(b, a); }
+
+static int core_state(const uint8_t **data, int64_t *size)
+{
+	int64_t n = g_CaptureState();
+	if (n <= 0) return 0;
+	*data = (const uint8_t *)g_GetStateBuffer();
+	*size = n;
+	return *data != NULL;
+}
 static const char *core_load_error(void) { return (const char *)g_GetLoadError(); }
 static void core_set_button(int32_t i, int32_t s) { g_SetButton(i, s); }
 static void core_set_axis(int32_t i, int32_t v) { g_SetAxis(i, v); }
@@ -124,8 +151,15 @@ int main(int argc, char **argv)
 	}
 	const char *wbxPath = argv[1];
 	const char *workdir = argv[2];
+	const char *machineId = "N64";
 	for (int i = 3; i < argc; i++)
+	{
 		if (!strcmp(argv[i], "--rerecord")) g_rerecord = 1;
+		if (!strcmp(argv[i], "--machine") && i + 1 < argc) machineId = argv[i + 1];
+	}
+	/* The guest knows its buttons by index; the gate says --hold Start. Both
+	 * read the same generated table, so the two agree by construction. */
+	machines::useMachine(machineId);
 
 	struct gate_opts opts;
 	if (!gate_parse_opts(argc, argv, 3, &opts)) return 2;
@@ -181,6 +215,13 @@ int main(int argc, char **argv)
 	g_GetMemoryDomainPtr = (ptrfn_i)proc(g_host, "GetMemoryDomainPtr");
 	g_GetMemoryDomainSize = (i64fn_i)proc(g_host, "GetMemoryDomainSize");
 	g_SetRenderingEnabled = (voidfn_i)proc(g_host, "SetRenderingEnabled");
+	g_GetBusCount = (intfn)proc(g_host, "GetBusCount");
+	g_GetBusName = (ptrfn_i)proc(g_host, "GetBusName");
+	g_GetBusSize = (i64fn_i)proc(g_host, "GetBusSize");
+	g_GetBusWritable = (intfn_i)proc(g_host, "GetBusWritable");
+	g_PeekBus = (intfn_ii)proc(g_host, "PeekBus");
+	g_CaptureState = (i64fn)proc(g_host, "CaptureState");
+	g_GetStateBuffer = (ptrfn)proc(g_host, "GetStateBuffer");
 
 	/* Init runs before Seal - the loaded machine is the sealed baseline. */
 	if (g_Init() != 1)
@@ -195,10 +236,12 @@ int main(int argc, char **argv)
 	wbx_activate_host(g_host, &r);
 
 	struct gate_core core = {
-		core_init, core_load_error, core_set_button, core_set_axis, core_frame,
-		core_video, core_audio, core_input_was_read, core_domain_count,
-		core_domain_name, core_domain_ptr, core_domain_size, core_set_rendering,
-		core_pre_frame,
+		core_init, core_load_error, core_button_count, core_button_name,
+		core_axis_count, core_axis_name, core_set_button, core_set_axis, core_frame,
+		core_video, core_audio, core_input_was_read,
+		core_domain_count, core_domain_name, core_domain_ptr, core_domain_size,
+		core_bus_count, core_bus_name, core_bus_size, core_bus_peek, core_state,
+		core_set_rendering, core_pre_frame,
 	};
 	int ret = gate_run(&core, &opts);
 
