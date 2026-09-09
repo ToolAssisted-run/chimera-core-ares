@@ -533,6 +533,135 @@
           ]
         }
       ]
+    },
+    {
+      "id": "A52",
+      "label": "Atari 5200",
+      "extensions": "a52 bin",
+      "maxWidth": 384,
+      "maxHeight": 240,
+      "virtualWidth": 384,
+      "virtualHeight": 240,
+      "regions": ["ntsc"],
+      "bootsWithoutMedium": false,
+      "firmware": {"id": "a52Bios"},
+      "loads": true,
+      "console": [],
+      "ports": [
+        {
+          "name": "Controller Port 1",
+          "devices": [
+            {
+              "name": "Controller",
+              "inputs": [{"name": "X-Axis", "path": "Controller Port 1/Controller/X-Axis", "axis": true}, {"name": "Y-Axis", "path": "Controller Port 1/Controller/Y-Axis", "axis": true}, {"name": "Top Fire", "path": "Controller Port 1/Controller/Top Fire", "axis": false}, {"name": "Bottom Fire", "path": "Controller Port 1/Controller/Bottom Fire", "axis": false}, {"name": "1", "path": "Controller Port 1/Controller/1", "axis": false}, {"name": "2", "path": "Controller Port 1/Controller/2", "axis": false}, {"name": "3", "path": "Controller Port 1/Controller/3", "axis": false}, {"name": "4", "path": "Controller Port 1/Controller/4", "axis": false}, {"name": "5", "path": "Controller Port 1/Controller/5", "axis": false}, {"name": "6", "path": "Controller Port 1/Controller/6", "axis": false}, {"name": "7", "path": "Controller Port 1/Controller/7", "axis": false}, {"name": "8", "path": "Controller Port 1/Controller/8", "axis": false}, {"name": "9", "path": "Controller Port 1/Controller/9", "axis": false}, {"name": "*", "path": "Controller Port 1/Controller/*", "axis": false}, {"name": "0", "path": "Controller Port 1/Controller/0", "axis": false}, {"name": "#", "path": "Controller Port 1/Controller/#", "axis": false}, {"name": "Start", "path": "Controller Port 1/Controller/Start", "axis": false}, {"name": "Pause", "path": "Controller Port 1/Controller/Pause", "axis": false}, {"name": "Reset", "path": "Controller Port 1/Controller/Reset", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Controller Port 2",
+          "devices": [
+            {
+              "name": "Controller",
+              "inputs": [{"name": "X-Axis", "path": "Controller Port 2/Controller/X-Axis", "axis": true}, {"name": "Y-Axis", "path": "Controller Port 2/Controller/Y-Axis", "axis": true}, {"name": "Top Fire", "path": "Controller Port 2/Controller/Top Fire", "axis": false}, {"name": "Bottom Fire", "path": "Controller Port 2/Controller/Bottom Fire", "axis": false}, {"name": "1", "path": "Controller Port 2/Controller/1", "axis": false}, {"name": "2", "path": "Controller Port 2/Controller/2", "axis": false}, {"name": "3", "path": "Controller Port 2/Controller/3", "axis": false}, {"name": "4", "path": "Controller Port 2/Controller/4", "axis": false}, {"name": "5", "path": "Controller Port 2/Controller/5", "axis": false}, {"name": "6", "path": "Controller Port 2/Controller/6", "axis": false}, {"name": "7", "path": "Controller Port 2/Controller/7", "axis": false}, {"name": "8", "path": "Controller Port 2/Controller/8", "axis": false}, {"name": "9", "path": "Controller Port 2/Controller/9", "axis": false}, {"name": "*", "path": "Controller Port 2/Controller/*", "axis": false}, {"name": "0", "path": "Controller Port 2/Controller/0", "axis": false}, {"name": "#", "path": "Controller Port 2/Controller/#", "axis": false}, {"name": "Start", "path": "Controller Port 2/Controller/Start", "axis": false}, {"name": "Pause", "path": "Controller Port 2/Controller/Pause", "axis": false}, {"name": "Reset", "path": "Controller Port 2/Controller/Reset", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Controller Port 3",
+          "devices": [
+            {
+              "name": "Controller",
+              "inputs": [{"name": "X-Axis", "path": "Controller Port 3/Controller/X-Axis", "axis": true}, {"name": "Y-Axis", "path": "Controller Port 3/Controller/Y-Axis", "axis": true}, {"name": "Top Fire", "path": "Controller Port 3/Controller/Top Fire", "axis": false}, {"name": "Bottom Fire", "path": "Controller Port 3/Controller/Bottom Fire", "axis": false}, {"name": "1", "path": "Controller Port 3/Controller/1", "axis": false}, {"name": "2", "path": "Controller Port 3/Controller/2", "axis": false}, {"name": "3", "path": "Controller Port 3/Controller/3", "axis": false}, {"name": "4", "path": "Controller Port 3/Controller/4", "axis": false}, {"name": "5", "path": "Controller Port 3/Controller/5", "axis": false}, {"name": "6", "path": "Controller Port 3/Controller/6", "axis": false}, {"name": "7", "path": "Controller Port 3/Controller/7", "axis": false}, {"name": "8", "path": "Controller Port 3/Controller/8", "axis": false}, {"name": "9", "path": "Controller Port 3/Controller/9", "axis": false}, {"name": "*", "path": "Controller Port 3/Controller/*", "axis": false}, {"name": "0", "path": "Controller Port 3/Controller/0", "axis": false}, {"name": "#", "path": "Controller Port 3/Controller/#", "axis": false}, {"name": "Start", "path": "Controller Port 3/Controller/Start", "axis": false}, {"name": "Pause", "path": "Controller Port 3/Controller/Pause", "axis": false}, {"name": "Reset", "path": "Controller Port 3/Controller/Reset", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Controller Port 4",
+          "devices": [
+            {
+              "name": "Controller",
+              "inputs": [{"name": "X-Axis", "path": "Controller Port 4/Controller/X-Axis", "axis": true}, {"name": "Y-Axis", "path": "Controller Port 4/Controller/Y-Axis", "axis": true}, {"name": "Top Fire", "path": "Controller Port 4/Controller/Top Fire", "axis": false}, {"name": "Bottom Fire", "path": "Controller Port 4/Controller/Bottom Fire", "axis": false}, {"name": "1", "path": "Controller Port 4/Controller/1", "axis": false}, {"name": "2", "path": "Controller Port 4/Controller/2", "axis": false}, {"name": "3", "path": "Controller Port 4/Controller/3", "axis": false}, {"name": "4", "path": "Controller Port 4/Controller/4", "axis": false}, {"name": "5", "path": "Controller Port 4/Controller/5", "axis": false}, {"name": "6", "path": "Controller Port 4/Controller/6", "axis": false}, {"name": "7", "path": "Controller Port 4/Controller/7", "axis": false}, {"name": "8", "path": "Controller Port 4/Controller/8", "axis": false}, {"name": "9", "path": "Controller Port 4/Controller/9", "axis": false}, {"name": "*", "path": "Controller Port 4/Controller/*", "axis": false}, {"name": "0", "path": "Controller Port 4/Controller/0", "axis": false}, {"name": "#", "path": "Controller Port 4/Controller/#", "axis": false}, {"name": "Start", "path": "Controller Port 4/Controller/Start", "axis": false}, {"name": "Pause", "path": "Controller Port 4/Controller/Pause", "axis": false}, {"name": "Reset", "path": "Controller Port 4/Controller/Reset", "axis": false}]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "NGP",
+      "label": "Neo Geo Pocket",
+      "extensions": "ngp",
+      "maxWidth": 160,
+      "maxHeight": 152,
+      "virtualWidth": 160,
+      "virtualHeight": 152,
+      "regions": ["ntsc"],
+      "bootsWithoutMedium": false,
+      "firmware": {"id": "ngpBios"},
+      "loads": true,
+      "console": [{"name": "Up", "path": "Controls/Up", "axis": false}, {"name": "Down", "path": "Controls/Down", "axis": false}, {"name": "Left", "path": "Controls/Left", "axis": false}, {"name": "Right", "path": "Controls/Right", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "Option", "path": "Controls/Option", "axis": false}, {"name": "Debugger", "path": "Controls/Debugger", "axis": false}, {"name": "Power", "path": "Controls/Power", "axis": false}],
+      "ports": [
+
+      ]
+    },
+    {
+      "id": "NGPC",
+      "label": "Neo Geo Pocket Color",
+      "extensions": "ngc ngpc",
+      "maxWidth": 160,
+      "maxHeight": 152,
+      "virtualWidth": 160,
+      "virtualHeight": 152,
+      "regions": ["ntsc"],
+      "bootsWithoutMedium": false,
+      "firmware": {"id": "ngpcBios"},
+      "loads": true,
+      "console": [{"name": "Up", "path": "Controls/Up", "axis": false}, {"name": "Down", "path": "Controls/Down", "axis": false}, {"name": "Left", "path": "Controls/Left", "axis": false}, {"name": "Right", "path": "Controls/Right", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "Option", "path": "Controls/Option", "axis": false}, {"name": "Debugger", "path": "Controls/Debugger", "axis": false}, {"name": "Power", "path": "Controls/Power", "axis": false}],
+      "ports": [
+
+      ]
+    },
+    {
+      "id": "NG",
+      "label": "Neo Geo AES",
+      "extensions": "zip",
+      "maxWidth": 320,
+      "maxHeight": 256,
+      "virtualWidth": 320,
+      "virtualHeight": 224,
+      "regions": ["ntsc"],
+      "bootsWithoutMedium": false,
+      "firmware": {"id": "ngBios"},
+      "loads": true,
+      "console": [],
+      "ports": [
+        {
+          "name": "Controller Port 1",
+          "devices": [
+            {
+              "name": "Arcade Stick",
+              "inputs": [{"name": "Up", "path": "Controller Port 1/Arcade Stick/Up", "axis": false}, {"name": "Down", "path": "Controller Port 1/Arcade Stick/Down", "axis": false}, {"name": "Left", "path": "Controller Port 1/Arcade Stick/Left", "axis": false}, {"name": "Right", "path": "Controller Port 1/Arcade Stick/Right", "axis": false}, {"name": "A", "path": "Controller Port 1/Arcade Stick/A", "axis": false}, {"name": "B", "path": "Controller Port 1/Arcade Stick/B", "axis": false}, {"name": "C", "path": "Controller Port 1/Arcade Stick/C", "axis": false}, {"name": "D", "path": "Controller Port 1/Arcade Stick/D", "axis": false}, {"name": "Select", "path": "Controller Port 1/Arcade Stick/Select", "axis": false}, {"name": "Start", "path": "Controller Port 1/Arcade Stick/Start", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Controller Port 2",
+          "devices": [
+            {
+              "name": "Arcade Stick",
+              "inputs": [{"name": "Up", "path": "Controller Port 2/Arcade Stick/Up", "axis": false}, {"name": "Down", "path": "Controller Port 2/Arcade Stick/Down", "axis": false}, {"name": "Left", "path": "Controller Port 2/Arcade Stick/Left", "axis": false}, {"name": "Right", "path": "Controller Port 2/Arcade Stick/Right", "axis": false}, {"name": "A", "path": "Controller Port 2/Arcade Stick/A", "axis": false}, {"name": "B", "path": "Controller Port 2/Arcade Stick/B", "axis": false}, {"name": "C", "path": "Controller Port 2/Arcade Stick/C", "axis": false}, {"name": "D", "path": "Controller Port 2/Arcade Stick/D", "axis": false}, {"name": "Select", "path": "Controller Port 2/Arcade Stick/Select", "axis": false}, {"name": "Start", "path": "Controller Port 2/Arcade Stick/Start", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Memory Card Slot",
+          "devices": [
+            {
+              "name": "Memory Card",
+              "inputs": []
+            }
+          ]
+        }
+      ]
     }
   ]
 }

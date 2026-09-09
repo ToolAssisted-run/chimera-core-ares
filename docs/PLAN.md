@@ -14,12 +14,13 @@ Chimera has never had - and the reason to start there is that N64 is the
 *hardest* of ares' systems to sandbox, so a port that works for it works for
 the rest.
 
-**Seventeen machines are declared now**: Nintendo 64, Famicom/NES, Game Boy,
+**Twenty-one machines are declared now**: Nintendo 64, Famicom/NES, Game Boy,
 Game Boy Color, Mega Drive, Master System, Game Gear, SG-1000, Atari 2600,
 WonderSwan, WonderSwan Color, ZX Spectrum, MyVision - which need nothing of the
 user but a cartridge - and the Game Boy Advance, ColecoVision and MSX, which
-need a console BIOS the user supplies, and the PlayStation, which loads discs.
-Four of them are validated end to end; the rest are declared, built and enumerated but have never
+need a console BIOS the user supplies, the PlayStation which loads discs, and
+the Atari 5200, Neo Geo, Neo Geo Pocket and Neo Geo Pocket Color. Four are
+validated by the gate and fifteen against real commercial games; the rest are declared, built and enumerated but have never
 run a game here. See "What is proven and what is only declared" below, because
 the difference matters.
 
@@ -283,7 +284,7 @@ flavours, on content anybody may have:
 
 ### Proven against a real game, off the record
 
-Twelve machines have run a real commercial cartridge here with **native ==
+Fifteen machines have run a real commercial cartridge here with **native ==
 sandbox on every digest** - video, audio, memory and the whole serialised
 machine. The ROMs are not this repository's to carry, so the gate cannot say
 this; it is written down instead:
@@ -302,17 +303,22 @@ this; it is written down instead:
 | Atari 2600 | Alien | 307 fps |
 | WonderSwan Color | Saint Seiya | 892 fps |
 | ColecoVision | Carnival | 881 fps |
-
-The PlayStation additionally ran a real disc (a .cue with its .bin) at 23 fps.
+| Neo Geo AES | Samurai Shodown IV | - |
+| Neo Geo Pocket Color | Baseball Stars Color | - |
+| PlayStation | Ganbare Goemon (a .cue disc) | 23 fps |
 
 Super Mario 64 matching byte for byte between the reference and the sandbox is
 the strongest thing anybody has asked of this core so far.
 
+**A Neo Geo romset is identified by its FILE NAME**, not its contents: mia looks
+the set up in its database by the name of the zip. `samsho4.zip` works and
+`game.zip` does not. A project keeps the file's own name, so this is only a trap
+for anybody writing a test.
+
 ### Declared, and not to be trusted yet
 
-- **MSX**: ares cannot load a cartridge for it without `Database/MSX.bml`,
-  which is ares' own data file and lives on a disk a core has not got. It is a
-  kilobyte; compiling it in is the fix, and it is not done.
+- **MSX**: its database is compiled in now, but there is no MSX ROM to hand, so
+  it has still never run anything.
 - **MyVision**: no ROM for it exists anywhere to hand, so it has never run
   anything.
 
@@ -327,11 +333,25 @@ the strongest thing anybody has asked of this core so far.
   whose sound changes between runs cannot carry a movie, so this one is listed
   and disowned rather than counted.
 
+### Different for a reason, and understood
+
+- **Atari 5200**. Its video, memory and whole machine state are identical
+  between the two flavours, and each flavour is perfectly deterministic - but
+  the **audio differs between them**. The POKEY's DAC builds its 325-entry mix
+  table with `exp()`, and musl's `exp` and glibc's do not round identically, so
+  the table differs in its last bits and every sample after it does too.
+
+  That is a libc difference, not a sandbox one, and it is worth stating plainly
+  because it will recur: **any machine that builds a table with libm will do
+  this**. What a movie depends on is the guest, which is self-consistent; what
+  the gate would like is for the reference to agree, and it cannot while the two
+  link different maths libraries. Making it agree means computing that table
+  without libm, which is a patch nobody has written.
+
 ### Absent
 
-Because no BIOS was to hand: the **Atari 5200** (2KB), the **Neo Geo** (AES
-`neo-epo.bin` or MVS `sp-45.sp1`) and the **Neo Geo Pocket** (64KB). Each is a
-table row and a firmware declaration away once one turns up.
+Nothing is now absent for want of a BIOS - Sergio supplied the Atari 5200, Neo
+Geo and Neo Geo Pocket ones and all four machines were added.
 
 The **Saturn** is a stub upstream - one file - so it is not a machine anybody
 could offer. The **Super Famicom** and **PC Engine** build but crash when asked
@@ -350,6 +370,19 @@ Three shims in `waterbox/guest-syscalls.cpp`, each found by a machine failing:
   and then broke every machine that checks the cartridge it was just handed.
   What exists in a core is what the host mounted, so the shim opens the name and
   says whether that worked.
+
+And two things mia itself had to be taught, both because a core has no disk:
+
+- **its game databases travel with it** (`patches/ares/0013`). mia reads
+  `Database/<machine>.bml` off a filesystem, and without it cannot answer
+  questions a game file does not answer for itself: which of two wirings a 16KB
+  Atari 5200 cartridge uses, what board a Famicom cartridge really has, or what
+  a Neo Geo romset is at all. The five those machines need are compiled in;
+  carrying all twelve would be weight for nothing.
+- **an archive that cannot be mapped is read** (`patches/ares/0014`). nall opens
+  a zip by memory-mapping it, and a sandbox has no address space to map a
+  mounted file into - so a Neo Geo romset could not be opened at all. It falls
+  back to reading the file, which costs its size in memory and works anywhere.
 
 ## Firmware
 

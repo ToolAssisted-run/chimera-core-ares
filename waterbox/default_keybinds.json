@@ -168,6 +168,38 @@
       "P1 Right": "Right, J1 POV1R, X1 DpadRight",
       "P1 Select": "Space, J1 B9, X1 Back",
       "P1 Start": "Enter, J1 B10, X1 Start"
+    },
+    "Atari 5200 Controller": {
+      "P1 1": "Z, J1 B3, X1 X",
+      "P1 2": "X, J1 B1, X1 A",
+      "P1 Start": "Enter, J1 B10, X1 Start"
+    },
+    "Neo Geo Pocket Controller": {
+      "Up": "Up, J1 POV1U, X1 DpadUp",
+      "Down": "Down, J1 POV1D, X1 DpadDown",
+      "Left": "Left, J1 POV1L, X1 DpadLeft",
+      "Right": "Right, J1 POV1R, X1 DpadRight",
+      "A": "X, J1 B1, X1 A",
+      "B": "Z, J1 B3, X1 X"
+    },
+    "Neo Geo Pocket Color Controller": {
+      "Up": "Up, J1 POV1U, X1 DpadUp",
+      "Down": "Down, J1 POV1D, X1 DpadDown",
+      "Left": "Left, J1 POV1L, X1 DpadLeft",
+      "Right": "Right, J1 POV1R, X1 DpadRight",
+      "A": "X, J1 B1, X1 A",
+      "B": "Z, J1 B3, X1 X"
+    },
+    "Neo Geo AES Controller": {
+      "P1 Up": "Up, J1 POV1U, X1 DpadUp",
+      "P1 Down": "Down, J1 POV1D, X1 DpadDown",
+      "P1 Left": "Left, J1 POV1L, X1 DpadLeft",
+      "P1 Right": "Right, J1 POV1R, X1 DpadRight",
+      "P1 A": "X, J1 B1, X1 A",
+      "P1 B": "Z, J1 B3, X1 X",
+      "P1 C": "C, J1 B4, X1 Y",
+      "P1 Select": "Space, J1 B9, X1 Back",
+      "P1 Start": "Enter, J1 B10, X1 Start"
     }
   },
   "AllTrollersAutoFire": {},
@@ -179,6 +211,18 @@
         "Deadzone": 0.1
       },
       "P1 Gamepad Y-Axis": {
+        "Value": "X1 LStickY",
+        "Mult": 1.0,
+        "Deadzone": 0.1
+      }
+    },
+    "Atari 5200 Controller": {
+      "P1 X-Axis": {
+        "Value": "X1 LStickX",
+        "Mult": 1.0,
+        "Deadzone": 0.1
+      },
+      "P1 Y-Axis": {
         "Value": "X1 LStickY",
         "Mult": 1.0,
         "Deadzone": 0.1

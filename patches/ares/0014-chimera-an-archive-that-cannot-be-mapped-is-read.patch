@@ -1,0 +1,43 @@
+diff --git a/nall/nall/decode/zip.hpp b/nall/nall/decode/zip.hpp
+index 3fc9a94a1..95c8ab2bd 100644
+--- a/nall/nall/decode/zip.hpp
++++ b/nall/nall/decode/zip.hpp
+@@ -34,12 +34,20 @@ struct ZIP {
+ 
+   auto open(const string& filename) -> bool {
+     close();
+-    if(fm.open(filename, file::mode::read) == false) return false;
+-    if(open(fm.data(), fm.size()) == false) {
++    if(fm.open(filename, file::mode::read)) {
++      if(open(fm.data(), fm.size())) return true;
+       fm.close();
+       return false;
+     }
+-    return true;
++    //Mapping a file is not something every host can do: a sandboxed core has
++    //files mounted by name and no address space to map them into, so an archive
++    //there could not be opened at all. Reading it costs its size in memory and
++    //works anywhere.
++    contents = file::read(filename);
++    if(contents.empty()) return false;
++    if(open(contents.data(), contents.size())) return true;
++    contents.clear();
++    return false;
+   }
+ 
+   auto open(const u8* data, u64 size) -> bool {
+@@ -205,11 +213,14 @@ struct ZIP {
+   }
+ 
+   auto close() -> void {
++    contents.clear();
++    contents.shrink_to_fit();
+     if(fm) fm.close();
+   }
+ 
+ protected:
+   file_map fm;
++  std::vector<u8> contents;  //when the file could not be mapped
+   const u8* filedata;
+   u64 filesize;
+ 

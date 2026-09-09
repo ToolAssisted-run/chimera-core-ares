@@ -8,7 +8,7 @@ deterministic sandbox and packaged as a Chimera core (`core.wbx` +
 [chimera-core-dosbox-x](https://github.com/ToolAssisted-run/chimera-core-dosbox-x)
 and [chimera-core-gpgx](https://github.com/ToolAssisted-run/chimera-core-gpgx).
 
-Status: **seventeen machines declared; four proven by the gate and twelve
+Status: **twenty-one machines declared; four proven by the gate and fifteen
 proven against real commercial games.**
 
 ares emulates about thirty systems from one codebase, which is why this
@@ -20,12 +20,12 @@ the machinery the rest need.
 | | |
 | --- | --- |
 | **Proven by the gate** (free content, every digest compared) | Nintendo 64, Game Boy, Game Boy Advance, PlayStation |
-| **Proven against a real game** (native == sandbox on a commercial cartridge, off the record - the ROM is not ours to ship) | + Famicom/NES, Game Boy Color, Mega Drive, Master System, Game Gear, SG-1000, Atari 2600, WonderSwan Color, ColecoVision |
-| **Declared, untrusted** | MSX (needs ares' own database file), MyVision (no ROM exists to hand) |
+| **Proven against a real game** (native == sandbox on a commercial cartridge, off the record - the ROM is not ours to ship) | + Famicom/NES, Game Boy Color, Mega Drive, Master System, Game Gear, SG-1000, Atari 2600, WonderSwan Color, ColecoVision, Neo Geo AES, Neo Geo Pocket Color |
+| **Declared, untrusted** | MSX and MyVision - no ROM for either exists to hand |
+| **Understood difference** | Atari 5200 - identical machine, but its audio differs between the flavours because its DAC table is built with `exp()` and musl and glibc round differently |
 | **Known broken** | ZX Spectrum - its audio is not reproducible even natively, and it corrupts the heap |
-| **Absent** (no BIOS was to hand) | Neo Geo, Neo Geo Pocket, Atari 5200 |
 
-Twelve machines have run a real commercial game here with the reference and the
+Fifteen machines have run a real commercial game here with the reference and the
 sandbox agreeing byte for byte - Super Mario 64 among them. The gate cannot say
 so, because those ROMs may not be redistributed; `docs/PLAN.md` writes it down
 with the speeds instead.
@@ -100,7 +100,7 @@ table, the package's `machines[]` and the default keybindings from it.
 
 The changes this core needs live in `patches/`, one directory per submodule,
 applied to the pristine pins by `waterbox/apply-patches.sh` (idempotent, and run
-automatically at configure time). There are eleven, all small; six of them are
+automatically at configure time). There are fourteen, all small; six of them are
 plain bugs in ares that only show up in a build like this one - without Vulkan,
 with more than one machine, or inside a sandbox - and are worth offering
 upstream. `docs/PLAN.md` explains every one.

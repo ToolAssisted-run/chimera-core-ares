@@ -123,6 +123,31 @@ FIRMWARE_TEXT = {
         "cartridge checks live in it, and nothing runs without it.",
         "Coleco_Bios.bin",
     ),
+    "a52Bios": (
+        "Atari 5200 BIOS",
+        "The Atari 5200's 2KB boot ROM. Exactly 2048 bytes; anything else is "
+        "refused.",
+        "[BIOS] Atari 5200 (USA).a52",
+    ),
+    "ngBios": (
+        "Neo Geo AES BIOS",
+        "The Neo Geo home console's 128KB boot ROM - `neo-epo.bin`, which is "
+        "usually found inside an `aes.zip` BIOS set and must be handed over on "
+        "its own.",
+        "neo-epo.bin",
+    ),
+    "ngpBios": (
+        "Neo Geo Pocket BIOS",
+        "The 64KB boot ROM of the original monochrome Neo Geo Pocket, usually "
+        "named for its 1998 date to tell it from the Color one.",
+        "SNK Neo-Geo Pocket BIOS (1998)(SNK)(en-ja).bin",
+    ),
+    "ngpcBios": (
+        "Neo Geo Pocket Color BIOS",
+        "The 64KB boot ROM of the Neo Geo Pocket Color. A different ROM from "
+        "the monochrome machine's, and not interchangeable with it.",
+        "SNK Neo-Geo Pocket Color BIOS (1999)(SNK)(en-ja).bin",
+    ),
     "ps1Bios": (
         "PlayStation BIOS",
         "The PlayStation's 512KB boot ROM. It is the console's operating system: "

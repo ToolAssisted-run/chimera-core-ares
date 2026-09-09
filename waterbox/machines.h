@@ -24,6 +24,7 @@
 #undef NCCS
 
 #include <a26/a26.hpp>
+#include <a52/a52.hpp>
 #include <cv/cv.hpp>
 #include <fc/fc.hpp>
 #include <gba/gba.hpp>
@@ -33,6 +34,8 @@
 #include <msx/msx.hpp>
 #include <myvision/myvision.hpp>
 #include <n64/n64.hpp>
+#include <ng/ng.hpp>
+#include <ngp/ngp.hpp>
 #include <ps1/ps1.hpp>
 #include <sg/sg.hpp>
 #include <spec/spec.hpp>
@@ -158,6 +161,22 @@ namespace machines
 			{"PS1", "PlayStation", "PlayStation", "PlayStation", ares::PlayStation::load,
 			 "[Sony] PlayStation (NTSC-U)", "[Sony] PlayStation (PAL)",
 			 640, 512, 640, 480, "cue exe ps-exe", nullptr, "ps1Bios", true},
+
+			{"A52", "Atari 5200", "Atari 5200", "Atari 5200", ares::Atari5200::load,
+			 "[Atari] Atari 5200 (NTSC)", nullptr,
+			 384, 240, 384, 240, "a52 bin", nullptr, "a52Bios", false},
+
+			{"NGP", "Neo Geo Pocket", "Neo Geo Pocket", "Neo Geo Pocket", ares::NeoGeoPocket::load,
+			 "[SNK] Neo Geo Pocket", nullptr,
+			 160, 152, 160, 152, "ngp", nullptr, "ngpBios", false},
+
+			{"NGPC", "Neo Geo Pocket Color", "Neo Geo Pocket Color", "Neo Geo Pocket Color",
+			 ares::NeoGeoPocket::load, "[SNK] Neo Geo Pocket Color", nullptr,
+			 160, 152, 160, 152, "ngc ngpc", nullptr, "ngpcBios", false},
+
+			{"NG", "Neo Geo AES", "Neo Geo AES", "Neo Geo", ares::NeoGeo::load,
+			 "[SNK] Neo Geo AES", nullptr,
+			 320, 256, 320, 224, "zip", nullptr, "ngBios", false},
 		};
 		return specs;
 	}

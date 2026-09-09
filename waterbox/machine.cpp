@@ -315,9 +315,31 @@ namespace machine
 		{
 			g_cartridgePak = mia::Medium::create(g_spec->miaMedium);
 			if (!g_cartridgePak) return fail("ares has no such medium");
-			if (g_cartridgePak->load(config.romFile) != successful)
+			/* mia says WHY, and the reason is the difference between "this file is
+			 * not for this machine" and "this machine wants a database this core
+			 * does not carry". Passing it on costs nothing and saves an hour. */
+			auto result = g_cartridgePak->load(config.romFile);
+			if (result != successful)
 			{
-				return fail("the game would not load");
+				static const char *why[] = {
+					"loaded", "no file was chosen", "its game database is missing",
+					"it is not in the game database", "the file was not found",
+					"the file is not a game this machine takes",
+					"this core does not support that medium",
+					"that file is for a different machine",
+					"its manifest could not be read", "it needs firmware", "it would not load",
+				};
+				int at = (int)result.result;
+				const char *reason = (at >= 0 && at < (int)(sizeof why / sizeof *why))
+					? why[at] : "it would not load";
+				if (result.info)
+				{
+					snprintf(g_error, sizeof g_error, "the game would not load: %s (%s)",
+						reason, (const char *)result.info);
+					return false;
+				}
+				snprintf(g_error, sizeof g_error, "the game would not load: %s", reason);
+				return false;
 			}
 		}
 
