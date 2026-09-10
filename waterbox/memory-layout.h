@@ -8,5 +8,5 @@
 	4u << 20, /* sealed: 4 MiB */ \
 	16u << 20, /* invisible: 16 MiB */ \
 	4u << 20, /* plain: 4 MiB */ \
-	256u << 20, /* mmap: 256 MiB */ \
+	2048u << 20, /* mmap: 2048 MiB */ \
 }

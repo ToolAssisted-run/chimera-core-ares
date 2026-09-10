@@ -743,6 +743,29 @@ recorder writes **640x480** whatever the machine drew, where the Linux one
 writes the machine's own size. quickernes does it too, so it is the frontend's,
 and it is somebody's next bug rather than this core's.
 
+## A PlayStation disc needs an arena, not a cartridge's
+
+mia holds the whole medium in memory while it loads it. That is fine for a
+64MB Nintendo 64 cartridge and it is not fine for a **622MB PlayStation disc**:
+the guest asked for memory the 256MB mmap arena did not have, musl's allocator
+gave up, and the guest called `abort()` - which reaches the host as
+`unimplemented syscall 200`, because `tkill` is how musl raises a signal and the
+sandbox has no signals. From outside, the machine simply died on its first frame
+advance.
+
+It looked like a Windows fault and it is not: it reproduces exactly the same way
+on Linux, in `run-wbx`, with no frontend anywhere near it.
+
+Measured rather than guessed: that 622MB image fails at 512MB and at 768MB, and
+runs at 1024MB - about one and a half times the image, which is the copies mia
+and ares hold between them while loading. The arena is **2048MB** now, which
+covers the largest CD anybody will hand it.
+
+It costs address space and very little else. **The disc pages are never
+written**, so they never become dirty, and a PlayStation savestate with a disc
+loaded is 5.3MB. Streaming the medium instead of holding it is the real fix and
+nobody has written it.
+
 ## Not done
 
 In rough order of what would matter first:
