@@ -83,15 +83,15 @@ one() {
 		--dump-type=ffmpeg --dump-name="$w/o.avi" --dump-length="$frames" --dump-close \
 		>"$w/log.txt" 2>&1
 
-	if [ ! -f "$w/o_1.avi" ]; then
+	if [ ! -f "$w/o.avi" ]; then
 		why="$(grep -m1 'headless\] text:' "$w/log.txt" | sed 's/.*text: //' | cut -c1-120)"
 		[ -n "$why" ] || why="$(tail -3 "$w/log.txt" | tr '\n' ' ' | cut -c1-120)"
 		say_fail "$leg" "Chimera wrote no video: $why"; return
 	fi
 
-	got_rate="$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of csv=p=0 "$w/o_1.avi")"
-	got_size="$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0 "$w/o_1.avi" | tr ',' 'x')"
-	got_aud="$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate,channels -of csv=p=0 "$w/o_1.avi")"
+	got_rate="$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of csv=p=0 "$w/o.avi")"
+	got_size="$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0 "$w/o.avi" | tr ',' 'x')"
+	got_aud="$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate,channels -of csv=p=0 "$w/o.avi")"
 	sbrk="$(grep -c 'sbrk heap exhausted' "$w/log.txt")"
 
 	if [ "$got_rate" != "$want_rate" ]; then
