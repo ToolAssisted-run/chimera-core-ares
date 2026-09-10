@@ -437,6 +437,16 @@ namespace machine
 			                             : "this machine's system pak would not load");
 		}
 
+		/* The reference runner's PIF ROM, if it was given one: the machine then
+		 * boots the way hardware does, which is what the boot leg compares the
+		 * HLE boot against. Nothing in a shipped core ever sets this. */
+		if (config.pifRomFile && *config.pifRomFile && g_isN64)
+		{
+			auto rom = file::read(config.pifRomFile);
+			if (rom.empty()) return fail("the PIF boot ROM would not open");
+			g_systemPak->pak->append(config.pal ? "pif.pal.rom" : "pif.ntsc.rom", rom);
+		}
+
 		bool haveMedium = config.romFile != nullptr && *config.romFile;
 		if (!haveMedium && !g_spec->bootsWithoutMedium) return fail("no cartridge given");
 		if (haveMedium)
@@ -478,6 +488,7 @@ namespace machine
 			angrylion::OutFrameBuffer = g_video;
 			angrylion::OutHeight = g_pal ? 576 : 480;
 			Nintendo64::FastVI = config.fastVI;
+			Nintendo64::cpu.bootProbe = config.bootProbe;
 			Nintendo64::BobDeinterlace = config.bobDeinterlace;
 			Nintendo64::rtcEpoch = config.initTimeUnix;
 			g_videoWidth = 640;

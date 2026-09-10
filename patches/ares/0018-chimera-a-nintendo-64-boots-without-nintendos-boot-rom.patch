@@ -1,0 +1,211 @@
+--- a/ares/n64/pif/pif.hpp
++++ b/ares/n64/pif/pif.hpp
+@@ -43,6 +43,7 @@
+ 
+   //hle.cpp
+   auto mainHLE() -> void;
++  auto bootHLE() -> void;
+   auto addressCRC(u16 address) const -> n5;
+   auto dataCRC(std::span<const u8> data) const -> n8;
+   auto descramble(n4 *buf, int size) -> void;
+@@ -67,6 +68,9 @@
+   //serialization.cpp
+   auto serialize(serializer&) -> void;
+ 
++  //true when no PIF boot ROM was supplied, so the boot was done from here
++  bool hleBoot;
++
+   struct IO {
+     n1  romLockout;
+     n1  resetEnabled;
+--- a/ares/n64/pif/pif.cpp
++++ b/ares/n64/pif/pif.cpp
+@@ -31,6 +31,9 @@
+ 
+ auto PIF::power(bool reset) -> void {
+   Thread::reset();
++  //No boot ROM to run means booting from bootHLE() instead; System::power calls
++  //it once everything else has powered, because it writes to all of them.
++  hleBoot = true;
+ 
+   if(Model::Aleck64()) {
+     string pifrom = "pif.aleck64.rom";
+@@ -41,6 +44,7 @@
+     string pifrom = Region::PAL() ? "pif.pal.rom" : "pif.ntsc.rom";
+     if (auto fp = system.pak->read(pifrom)) {
+       rom.load(fp);
++      hleBoot = false;
+     }
+   }
+ 
+--- a/ares/n64/pif/hle.cpp
++++ b/ares/n64/pif/hle.cpp
+@@ -372,3 +372,108 @@
+     return;
+   }
+ }
++
++//The boot a PIF ROM would have done, without one.
++//
++//A Nintendo 64 starts inside Nintendo's PIF-NUS boot ROM: it talks to the
++//cartridge's CIC, copies the cartridge's OWN boot code - IPL3, the first four
++//kilobytes of the ROM - into the RSP's data memory, and jumps to it. That ROM is
++//not ours to redistribute, so this puts the machine into the state IPL3 is
++//entitled to find, and jumps there.
++//
++//The PIF's half of the boot is not skipped: the handshake below is ares' own
++//state machine above, driven with the processor's half supplied from here, so
++//the CIC is really consulted, the seeds really arrive, and the checksum is
++//really compared. Only the sixteen hundred instructions of Nintendo's ROM that
++//would have done the driving are missing.
++//
++//EVERY VALUE HERE WAS MEASURED, not copied from a table: run-native
++//--boot-probe dumps the machine at the instant the real boot ROM hands over,
++//and run-gate.sh compares this against that dump for any developer who has a
++//PIF ROM to compare against. The same measurement says what an HLE boot cannot
++//reproduce, and this does not pretend to:
++//
++//  - the cycle counter, because the boot it skips takes five million cycles;
++//  - the RSP instruction memory, which the boot ROM uses as scratch space and
++//    IPL3 never reads;
++//  - the registers the boot ROM's checksum loop happened to leave behind (v0,
++//    v1, t4-t7, t9, lo and hi), which are scratch and not part of what it hands
++//    to IPL3;
++//  - a serial transfer caught halfway, and the two extra interrupt lines that
++//    boot leaves pending.
++//
++//So a run recorded on this machine is a run of a machine that started at IPL3.
++//It is not interchangeable with one recorded against the real boot ROM, and
++//nothing here should pretend otherwise.
++auto PIF::bootHLE() -> void {
++  //IPL3, where the boot ROM would have put it. The cartridge's own code: the one
++  //part of the boot that was never Nintendo's to withhold.
++  //
++  //From 0x40, not from 0: the first sixty-four bytes of a cartridge are its
++  //header, the boot ROM does not copy them, and the entry point it jumps to is
++  //0x40 for exactly that reason. Copying them as well leaves the header sitting
++  //in data memory where a real machine has zeros - measured, and the reason this
++  //loop does not start where it looks like it should.
++  for(u32 address = 0x40; address < 0x1000; address += 4) {
++    rsp.dmem.write<Word>(address, cartridge.rom.read<Word>(address));
++  }
++
++  //The PIF's boot handshake, run to the point the processor would have reached
++  //it. mainHLE() bills the PIF thread for the time it takes; that time did not
++  //pass, so the clock is put back - a thread that starts ahead of the others
++  //would change the order everything is scheduled in for the rest of the run.
++  auto clock = Thread::clock;
++  ramWriteCommand(0x00);
++  mainHLE();                                      //CIC hello, region, seeds
++  ramWriteCommand(ramReadCommand() | 0x10);
++  mainHLE();                                      //lock the boot ROM out
++  //The checksum of IPL3, which the boot ROM computes with the CIC's seed and
++  //leaves here for the PIF to check. It is the value the cartridge was
++  //RECOGNISED by - that is what identified this CIC - so ares already knows it.
++  for(auto i : range(6)) ram.write<Byte>(0x32 + i, cic.checksum >> (40 - i * 8));
++  ramWriteCommand(ramReadCommand() | 0x20);
++  mainHLE();                                      //take the checksum inside
++  ramWriteCommand(ramReadCommand() | 0x40);
++  mainHLE();                                      //compare it against the CIC's
++  Thread::clock = clock;
++
++  //And no further. The real handover happens with the command byte at 0xf0 and
++  //the boot not yet terminated: IPL3 sends 0x08 itself, seconds later, and the
++  //timeout that punishes it for not doing so is already ticking. Driving to Run
++  //here would swallow that write and leave a bit set in the joybus command byte.
++
++  bool ntsc = system.region() == System::Region::NTSC;
++  auto& r = cpu.ipu.r;
++  r[ 4].u64 = cic.checksum >> 32;                 //a0: IPL3's checksum, high
++  r[ 5].u64 = s32(cic.checksum);                  //a1: and low, sign extended
++  r[ 6].u64 = s32(0xa400'1f0c);                   //a2
++  r[ 7].u64 = s32(0xa400'1f08);                   //a3
++  r[ 8].u64 = 0x0000'00f0;                        //t0
++  r[10].u64 = 0x0000'0040;                        //t2
++  r[11].u64 = s32(0xa400'0040);                   //t3: where it is about to jump
++  r[20].u64 = ntsc ? 1 : 0;                       //s4: osTvType
++  r[22].u64 = cic.seed;                           //s6: the CIC's seed
++  r[23].u64 = ntsc ? 1 : 7;                       //s7: osVersion
++  r[29].u64 = s32(0xa400'1ff0);                   //sp
++  r[31].u64 = s32(ntsc ? 0xa400'1550 : 0xa400'1554);  //ra: back into the boot ROM
++
++  cpu.setControlRegister(12, 0x3400'0000);        //Status: kernel, 64-bit, masked
++  cpu.setControlRegister(16, 0x0006'e463);        //Config: KSEG0 cacheable
++
++  //The cartridge's own bus timing, which the boot ROM programs out of the first
++  //four bytes of the ROM header before it can read the rest.
++  n8 config = cartridge.rom.read<Byte>(1);
++  pi.bsd1.latency         = cartridge.rom.read<Byte>(3);
++  pi.bsd1.pulseWidth      = cartridge.rom.read<Byte>(2);
++  pi.bsd1.pageSize        = config.bit(0,3);
++  pi.bsd1.releaseDuration = config.bit(4,5);
++  pi.io.pbusAddress       = 0x1000'1000;          //where the IPL3 transfer ended
++  vi.io.coincidence       = 0x3ff;               //no scanline interrupt asked for
++
++  //ares raises every interrupt line at power; a boot leaves three of them.
++  mi.lower(MI::IRQ::SP);
++  mi.lower(MI::IRQ::VI);
++  mi.lower(MI::IRQ::PI);
++
++  cpu.pipeline.setPc(0xffff'ffff'a400'0040ull);
++}
+--- a/ares/n64/system/system.cpp
++++ b/ares/n64/system/system.cpp
+@@ -465,6 +465,10 @@
+   rsp.power(reset);
+   rdp.power(reset);
+   if(model() == Model::Aleck64) aleck64.power(reset);
++
++  //Last, because it writes to almost every one of them: the boot a PIF ROM
++  //would have done, when there is no PIF ROM to do it. See PIF::bootHLE.
++  if(pif.hleBoot) pif.bootHLE();
+ }
+ 
+ }
+--- a/mia/system/nintendo-64.cpp
++++ b/mia/system/nintendo-64.cpp
+@@ -7,9 +7,9 @@
+ auto Nintendo64::load(string location) -> LoadResult {
+   this->location = locate();
+   pak = std::make_shared<vfs::directory>();
+-  pak->append("pif.ntsc.rom", Resource::Nintendo64::PIFNTSC);
+-  pak->append("pif.pal.rom",  Resource::Nintendo64::PIFPAL );
+-  pak->append("pif.sm5.rom",  Resource::Nintendo64::PIFSM5 );
++  //The PIF boot ROM is Nintendo's and does not travel with this core; the
++  //machine boots from PIF::bootHLE instead. A developer comparing the two
++  //supplies their own through run-native --pif-rom, which appends it here.
+   return successful;
+ }
+ 
+--- a/mia/system/nintendo-64dd.cpp
++++ b/mia/system/nintendo-64dd.cpp
+@@ -10,9 +10,9 @@
+ 
+   this->location = locate();
+   pak = std::make_shared<vfs::directory>();
+-  pak->append("pif.ntsc.rom", Resource::Nintendo64::PIFNTSC);
+-  pak->append("pif.pal.rom",  Resource::Nintendo64::PIFPAL );
+-  pak->append("pif.sm5.rom",  Resource::Nintendo64::PIFSM5 );
++  //The PIF boot ROM is Nintendo's and does not travel with this core; the
++  //machine boots from PIF::bootHLE instead. A developer comparing the two
++  //supplies their own through run-native --pif-rom, which appends it here.
+   pak->append("64dd.ipl.rom", bios);
+   pak->append("time.rtc", 0x10);
+ 
+--- a/mia/resource/resource.bml
++++ b/mia/resource/resource.bml
+@@ -13,14 +13,6 @@
+     binary name=Vector file="../Firmware/Mega 32X/vector.rom"
+     binary name=SH2BootM file="../Firmware/Mega 32X/sh2.boot.mrom"
+     binary name=SH2BootS file="../Firmware/Mega 32X/sh2.boot.srom"
+-  namespace name=Nintendo64
+-    binary name=CIC6101 file="../Firmware/Nintendo 64/cic.6101.rom"
+-    binary name=CIC6102 file="../Firmware/Nintendo 64/cic.6102.rom"
+-    binary name=CIC6105 file="../Firmware/Nintendo 64/cic.6105.rom"
+-    binary name=CIC7101 file="../Firmware/Nintendo 64/cic.7101.rom"
+-    binary name=PIFSM5 file="../Firmware/Nintendo 64/pif.sm5.rom"
+-    binary name=PIFNTSC file="../Firmware/Nintendo 64/pif.ntsc.rom"
+-    binary name=PIFPAL file="../Firmware/Nintendo 64/pif.pal.rom"
+   namespace name=SuperFamicom
+     binary name=IPLROM file="../Firmware/Super Famicom/ipl.rom"
+     binary name=Cx4 file="../Firmware/Super Famicom/cx4.rom"

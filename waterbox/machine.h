@@ -31,6 +31,18 @@ namespace machine
 		bool pal;
 		uint64_t initTimeUnix;   /* what a cartridge clock starts at */
 
+		/* A Nintendo 64 PIF boot ROM, by host path, for the REFERENCE RUNNER
+		 * ONLY: the core boots that machine from PIF::bootHLE, and this is how
+		 * run-gate.sh gets a real boot to compare that against on a machine
+		 * where somebody has the ROM. A core is never handed one - it is not
+		 * ours to carry - so this is null there and the HLE boot is the only
+		 * boot the shipped machine has. */
+		const char *pifRomFile;
+
+		/* Print everything the cartridge's boot code can see the moment it is
+		 * handed control, and stop. A Nintendo 64 diagnostic; see BootProbe. */
+		bool bootProbe;
+
 		/* How the machine asks for one of ares' own settings by the key the
 		 * package declares it under - "gb.fastBoot", "ng.settingsMode". The
 		 * guest reads the mounted settings JSON; the reference runner reads its

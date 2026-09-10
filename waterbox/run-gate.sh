@@ -310,6 +310,58 @@ else
 fi
 
 echo
+echo "== the boot the cartridge is handed =="
+# This core has no PIF boot ROM - it is Nintendo's and does not travel here - so
+# a Nintendo 64 is booted by PIF::bootHLE, which puts the machine into the state
+# the cartridge's own boot code is entitled to find. That claim is only worth
+# anything against the real thing, so: boot the same cartridge both ways and
+# require the difference to be EXACTLY what an HLE boot cannot reproduce.
+#
+# Naming the differences rather than counting them is the point. A new one
+# appearing is this leg's whole reason to exist, and a table of "known
+# differences" that nobody reads would hide it.
+pif_rom="$root/tests/firmware/pifNtsc"
+if [ ! -f "$pif_rom" ]; then
+	echo "SKIP the HLE boot against a real one (no PIF ROM in tests/firmware)"
+else
+	"$native" --machine N64 --rom "$content/helloworld-cpu.n64" --quiet --frames 200 \
+		--boot-probe >"$work/boot-hle.txt" 2>&1
+	"$native" --machine N64 --rom "$content/helloworld-cpu.n64" --quiet --frames 200 \
+		--boot-probe --pif-rom "$pif_rom" >"$work/boot-real.txt" 2>&1
+	grep '^BOOTPROBE' "$work/boot-hle.txt"  | sort > "$work/hle.sorted"
+	grep '^BOOTPROBE' "$work/boot-real.txt" | sort > "$work/real.sorted"
+	if [ ! -s "$work/hle.sorted" ] || [ ! -s "$work/real.sorted" ]; then
+		say_fail "the HLE boot against a real one" "one of the two runs never reached the cartridge"
+	else
+		# what the machine hands over that an HLE boot cannot have: the cycle
+		# counter and the two free-running clocks, the boot ROM's scratch space
+		# in RSP instruction memory, the registers its checksum loop left
+		# behind, and a serial transfer caught halfway.
+		expected="r1 r2 r3 r12 r13 r14 r15 r25 lo hi c9 imem"
+		unexpected=""
+		for field in $(diff "$work/real.sorted" "$work/hle.sorted" \
+			| sed -n 's/^[<>] BOOTPROBE \([^ ]*\) .*/\1/p' | sort -u); do
+			case " $expected " in *" $field "*) continue ;; esac
+			case "$field" in io) continue ;; esac
+			unexpected="$unexpected $field"
+		done
+		# the two hardware clocks and the mid-transfer serial interface, by address
+		for line in $(diff "$work/real.sorted" "$work/hle.sorted" \
+			| sed -n 's/^[<>] BOOTPROBE io \([a-z]*\) \([0-9a-f]*\) .*/\1:\2/p' | sort -u); do
+			case "$line" in dp:04100010|si:04800018) continue ;; esac
+			unexpected="$unexpected $line"
+		done
+		if [ -z "$unexpected" ]; then
+			say_pass "the HLE boot hands over what a real boot hands over"
+			echo "     everything but the cycle counter, the boot ROM's scratch and two free-running clocks"
+		else
+			say_fail "the HLE boot hands over what a real boot hands over" \
+				"also differs in:$unexpected"
+		fi
+	fi
+fi
+
+echo
 echo "== the picture is the one the hardware draws =="
 # PeterLemon's repository ships the picture each program produces on a real
 # console. The CPU one is a plain framebuffer, so with the video interface's

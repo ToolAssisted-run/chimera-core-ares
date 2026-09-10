@@ -68,6 +68,13 @@ What the machines have in common:
   need nothing but a cartridge; the Game Boy Advance, ColecoVision, MSX,
   PlayStation, Atari 5200, Neo Geo and Neo Geo Pocket Color need their console
   BIOS, which the user supplies and Chimera pins by hash. None of it ships here.
+- **A Nintendo 64 boots without Nintendo's boot ROM.** ares bundles the PIF and
+  CIC ROMs; this core does not carry them, and starts the cartridge's own boot
+  code the way they would have (`patches/ares/0018`). Every register it hands
+  over was measured off a real boot rather than copied from a table, and a gate
+  leg boots the same cartridge both ways and names every difference that remains.
+  A run recorded here therefore starts at the cartridge, ninety frames earlier
+  than one recorded against a real boot ROM, and the two are not interchangeable.
 - **The refresh rate is the machine's own**, not a nominal 60: a Game Boy
   reports 262144/4389 = 59.7275Hz, taken from ares' own hint and turned back
   into the exact ratio it came from.
@@ -75,18 +82,19 @@ What the machines have in common:
   unchanged - the convention mupen and BizHawk record, so an N64 run made here
   means the same as a run made there.
 
-The equivalence gate (`waterbox/run-gate.sh`) runs thirty-four legs: native
+The equivalence gate (`waterbox/run-gate.sh`) runs thirty-five legs: native
 against sandbox on every digest for all four proven machines, the machine
 round-tripped through a savestate before every frame, every one of the
 twenty-one rebuilt and re-enumerated against its committed declaration, **each
 machine's refresh rate checked against its own clock**, input proven to
 reach the machine, the picture compared **pixel for pixel against real
-hardware**, and **jsmolka's ARM test suite read off the screen**. Its content is
+hardware**, **the HLE boot compared against a real one**, and **jsmolka's ARM
+test suite read off the screen**. Its content is
 [PeterLemon/N64](https://github.com/PeterLemon/N64) (public domain),
 [libbet](https://github.com/pinobatch/libbet) (Zlib) and
 [gba-tests](https://github.com/jsmolka/gba-tests) (MIT), so it runs on a public
 runner with nothing licensed on it - it simply skips the machines whose BIOS is
-not there, and says so. That is twenty of the thirty-four legs, and CI runs
+not there, and says so. That is twenty of the thirty-five legs, and CI runs
 exactly those (`.github/workflows/chimera.yml`); the rest need a BIOS in
 `tests/firmware/` and are run by hand.
 
@@ -121,7 +129,7 @@ table, the package's `machines[]` and the default keybindings from it.
 
 The changes this core needs live in `patches/`, one directory per submodule,
 applied to the pristine pins by `waterbox/apply-patches.sh` (idempotent, and run
-automatically at configure time). There are seventeen, all small; six of them are
+automatically at configure time). There are twenty-one, all small; six of them are
 plain bugs in ares that only show up in a build like this one - without Vulkan,
 with more than one machine, or inside a sandbox - and are worth offering
 upstream. `docs/PLAN.md` explains every one.

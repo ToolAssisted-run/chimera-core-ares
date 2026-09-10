@@ -192,16 +192,57 @@ real detection, not a table of CRCs). It is compiled with `MIA_LIBRARY`, which
 is upstream's own switch for using it without its GUI.
 
 Using mia rather than a hand-rolled loader is the decision that makes a machine
-a table entry. It is also why the Nintendo 64 needs **no firmware**: mia carries
-its PIF and CIC boot ROMs as compiled-in resources, about four kilobytes,
-exactly as ares distributes them.
+a table entry.
 
-That last point deserves saying plainly, because it is inherited rather than
-chosen: those ROMs are Nintendo's, and this package contains them because ares'
-does. The alternative is to drop them and let ares emulate the boot at a high
-level instead (`pif/hle.cpp` - it is what runs when the pak has no PIF ROM),
-which would be less accurate and would need no such argument. That is Sergio's
-call to make, and nothing in the code depends on the answer.
+### The Nintendo 64 boots without Nintendo's boot ROM (user-asked, 2026-09-10)
+
+ares distributes the PIF and CIC boot ROMs as compiled-in resources and mia hands
+them to the machine, so this package used to contain them - inherited, not
+chosen, and Nintendo's. They are gone (`patches/ares/0018`), and the machine
+boots from `PIF::bootHLE` instead.
+
+**What a boot ROM does, and which parts of it were ever Nintendo's.** A Nintendo
+64 starts executing the PIF-NUS ROM: it talks to the cartridge's CIC, then copies
+the cartridge's OWN boot code - IPL3, the first four kilobytes of the ROM - into
+the RSP's data memory and jumps to it. IPL3 does the rest, and IPL3 comes with
+the game. So the only part that had to go was the sixteen hundred instructions
+that do the copying, and the state they leave behind.
+
+**The PIF's half of the boot is not skipped.** `hle.cpp` already had a faithful
+high-level PIF - the CIC handshake, the seeds, the checksum comparison - which
+ran while the boot ROM drove it. `bootHLE` drives that same state machine from
+the other side, so the CIC really is consulted and the checksum really is
+compared. It stops where the real thing stops: with the command byte at 0xf0 and
+the boot not yet terminated, because IPL3 sends the termination itself, seconds
+later, and the timeout that punishes it for not doing so is already ticking.
+
+**Every value in it was measured.** `run-native --boot-probe` prints everything
+the machine can see at the instant the boot hands over. The register set was read
+off a real boot rather than copied from another emulator's table, which is how
+two mistakes were caught that a table would have hidden: the cartridge header is
+NOT copied into data memory (the boot starts at 0x40, which is why the entry
+point is 0x40), and the value the boot ROM writes to Config differs in its top
+nibble from the value that reads back.
+
+**A gate leg keeps it honest.** With a PIF ROM in `tests/firmware/pifNtsc`, the
+gate boots the same cartridge both ways and requires the difference to be exactly
+what an HLE boot cannot reproduce, BY NAME: the cycle counter, the two
+free-running clocks, the boot ROM's scratch space in RSP instruction memory, the
+registers its checksum loop left behind, and a serial transfer caught halfway. A
+new difference appearing is the leg's whole reason to exist. It skips where there
+is no ROM to compare against, which is everywhere but a developer's machine.
+
+**What this costs.** A run recorded here is a run of a machine that started at
+IPL3, about ninety frames earlier than one that started at power. It is not
+interchangeable with a run recorded against a real boot ROM, and no movie made on
+this core predates the change. An HLE boot also starts cartridges whose checksum
+a real console would reject, which is a difference in the useful direction.
+
+**What is still inherited.** ares compiles in firmware for other systems too -
+Game Boy and Game Boy Color boot ROMs, the WonderSwans', the ZX Spectrum's,
+the Mega Drive's TMSS, and a full set of Super Famicom coprocessor ROMs for a
+machine this core does not even offer. The Game Boy and WonderSwan ones are used;
+the rest is weight and inheritance both. Nobody has been through them.
 
 ### How a machine's state is compared
 
@@ -945,7 +986,8 @@ why. Somebody measuring a game that actually leans on the RSP should revisit it.
   times while loading - mia's vector, the pak's copy, and ares' own
   `Memory::Writable`. 256 MB leaves room for the 64 MB carts. Collapsing those
   three copies is the obvious saving and has not been attempted.
-- The Nintendo 64's boot ROM takes about **90 frames** to hand over to the
-  cartridge. Any test that runs fewer than that is testing the PIF, not the game
-  - which cost an hour the first time, when a 30-frame run drew a black screen
-  and looked like a broken renderer.
+- The Nintendo 64's boot ROM took about **90 frames** to hand over to the
+  cartridge, and any test shorter than that was testing the PIF rather than the
+  game - which cost an hour the first time, when a 30-frame run drew a black
+  screen and looked like a broken renderer. The HLE boot hands over on frame
+  zero, so this is now a trap only for anyone comparing against a real boot.

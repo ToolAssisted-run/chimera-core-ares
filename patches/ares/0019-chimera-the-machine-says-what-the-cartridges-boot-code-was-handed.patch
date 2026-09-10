@@ -1,0 +1,80 @@
+--- a/ares/n64/cpu/cpu.hpp
++++ b/ares/n64/cpu/cpu.hpp
+@@ -454,6 +454,15 @@
+     u64 pc;  //program counter
+   } ipu;
+ 
++  //A diagnostic, not a setting. With bootProbe on, the machine prints
++  //everything the cartridge's own boot code can see at the instant it is handed
++  //control, once, and says no more. run-gate.sh runs the machine twice - booted
++  //from a real PIF ROM, and from PIF::bootHLE - and compares the two, which is
++  //the only way to check an HLE boot against the thing it stands in for.
++  //Nothing in a shipped core turns it on.
++  bool bootProbe = false;
++  bool bootProbeDone = false;
++
+   //algorithms.cpp
+   template<typename T> auto roundNearest(f32 f) -> T;
+   template<typename T> auto roundNearest(f64 f) -> T;
+--- a/ares/n64/cpu/cpu.cpp
++++ b/ares/n64/cpu/cpu.cpp
+@@ -154,6 +154,59 @@
+     return true;
+   }
+ 
++  //The moment the boot hands over to the cartridge's own code in the RSP's data
++  //memory - everything the machine can see at that instant. It is how
++  //PIF::bootHLE was written (against a measurement rather than a table copied
++  //from somewhere) and how run-gate.sh checks it still agrees.
++  if(unlikely(bootProbe) && !bootProbeDone && (ipu.pc & 0xffff'ffff) >= 0xa400'0040 && (ipu.pc & 0xffff'ffff) < 0xa400'1000) {
++    bootProbeDone = true;
++    print("BOOTPROBE cic ", cic.model, " seed ", hex(cic.seed, 2L), " checksum ", hex(cic.checksum, 12L), " region ", (u32)cic.region, "\n");
++    print("BOOTPROBE pc ", hex(ipu.pc, 16L), "\n");
++    for(u32 i : range(32)) print("BOOTPROBE r", i, " ", hex(ipu.r[i].u64, 16L), "\n");
++    print("BOOTPROBE lo ", hex(ipu.lo.u64, 16L), "\n");
++    print("BOOTPROBE hi ", hex(ipu.hi.u64, 16L), "\n");
++    for(u32 i : range(32)) {
++      if(i == 1) continue;  //Random counts down freely
++      print("BOOTPROBE c", i, " ", hex(getControlRegister(i), 16L), "\n");
++    }
++    for(u32 i : range(32)) print("BOOTPROBE f", i, " ", hex(fpu.r[i].u64, 16L), "\n");
++    print("BOOTPROBE fcr31 ", hex(getControlRegisterFPU(31), 8L), "\n");
++    {
++      u64 h = 0xcbf29ce484222325ull;
++      for(u32 i : range(0x1000)) { h ^= rsp.dmem.read<Byte>(i); h *= 0x100000001b3ull; }
++      print("BOOTPROBE dmem ", hex(h, 16L), "\n");
++      h = 0xcbf29ce484222325ull;
++      for(u32 i : range(0x1000)) { h ^= rsp.imem.read<Byte>(i); h *= 0x100000001b3ull; }
++      print("BOOTPROBE imem ", hex(h, 16L), "\n");
++      h = 0xcbf29ce484222325ull;
++      for(u32 i : range(0x40)) { h ^= pif.ram.read<Byte>(i); h *= 0x100000001b3ull; }
++      print("BOOTPROBE pifram ", hex(h, 16L), "\n");
++      for(u32 i : range(0x40)) print("BOOTPROBE pif", i, " ", hex(pif.ram.read<Byte>(i), 2L), "\n");
++      h = 0xcbf29ce484222325ull;
++      u32 nonzero = 0;
++      for(u32 i : range(8_MiB)) { u8 b = rdram.ram.Memory::Writable::read<Byte>(i); if(b) nonzero++; h ^= b; h *= 0x100000001b3ull; }
++      print("BOOTPROBE rdram ", hex(h, 16L), " nonzero ", nonzero, "\n");
++    }
++    {
++      //the memory-mapped state of every component, as a game would read it
++      struct { const char* name; u32 lo, hi; } blocks[] = {
++        {"sp",  0x0404'0000, 0x0404'0020}, {"sppc", 0x0408'0000, 0x0408'0008},
++        {"dp",  0x0410'0000, 0x0410'0020}, {"mi",   0x0430'0000, 0x0430'0010},
++        {"vi",  0x0440'0000, 0x0440'0038}, {"ai",   0x0450'0000, 0x0450'0018},
++        {"pi",  0x0460'0000, 0x0460'0034}, {"ri",   0x0470'0000, 0x0470'0020},
++        {"si",  0x0480'0000, 0x0480'0020},
++      };
++      for(auto& b : blocks)
++        for(u32 a = b.lo; a < b.hi; a += 4)
++          print("BOOTPROBE io ", b.name, " ", hex(a, 8L), " ", hex(busRead<Word>(a), 8L), "\n");
++    }
++    for(u32 i = 0; i < 0x60; i += 4)
++      print("BOOTPROBE dm ", hex(i, 4L), " ", hex(rsp.dmem.read<Word>(i), 8L),
++            "  rom ", hex(cartridge.rom.read<Word>(i), 8L), "\n");
++    print("BOOTPROBE clock ", Thread::clock, "\n");
++    print("BOOTPROBE end\n");
++  }
++
+   auto access = devirtualize<Read, Word>(ipu.pc);
+   if(!access) return true;
+ 
