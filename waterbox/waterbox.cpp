@@ -58,12 +58,21 @@ ECL_EXPORT int Init(void)
 	if (!wbx_slot_first("rom", romName, (int)sizeof romName)) snprintf(romName, sizeof romName, "rom");
 
 	/* A machine that boots with nothing in its drive - a PlayStation reaching
-	 * its BIOS shell - is started with no medium at all. Rather than ask which
-	 * machines those are, look: if the host mounted nothing under that name,
-	 * there is nothing to load, and machine::init decides whether that is
-	 * allowed. A cartridge console says so plainly. */
+	 * its BIOS shell, an MSX reaching its own BASIC - is started with no medium
+	 * at all. Rather than ask which machines those are, look.
+	 *
+	 * The test is EMPTY, not absent. Chimera mounts the rom slot whatever the
+	 * project holds, so a project with no game in it still has a file of that
+	 * name and it is zero bytes long; asking only whether it opens finds a
+	 * medium that is not there, and the machine then fails to load a game
+	 * nobody chose. run-wbx mounts real files only, so both runners agree on
+	 * this reading and only this one. */
 	const char *rom = romName;
-	if (FILE *probe = fopen(romName, "rb")) fclose(probe);
+	if (FILE *probe = fopen(romName, "rb"))
+	{
+		if (fseek(probe, 0, SEEK_END) != 0 || ftell(probe) <= 0) rom = nullptr;
+		fclose(probe);
+	}
 	else rom = nullptr;
 
 	static char machineName[32];

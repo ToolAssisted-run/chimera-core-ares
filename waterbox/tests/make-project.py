@@ -40,9 +40,35 @@ def main():
     buttons = inputs.get("buttons") or []
     axes = inputs.get("axes") or []
 
-    # The mnemonic Chimera parses: a column per button, then a field per axis.
-    key = "#" + "".join(b + "|" for b in buttons) + "".join(a["name"] + "|" for a in axes)
-    row = "|" + "." * len(buttons) + "|" + ",".join("    0" for _ in axes) + ("|" if axes else "")
+    # The mnemonic Chimera parses, which is NOT one column per control in
+    # declaration order. It is grouped by player - everything called "P2
+    # something" is the second group - and within a group the AXES come first,
+    # each written as a value padded to five and closed with a comma, then one
+    # character per button. Groups are separated by '|'. See the engine's
+    # EntryLayout::generate, which this mirrors.
+    def player_of(name):
+        if len(name) > 2 and name[0] in "Pp" and name[1].isdigit():
+            return int(name[1])
+        return 0
+
+    groups = max([player_of(a["name"]) for a in axes] + [player_of(b) for b in buttons] + [0]) + 1
+    # The log key is '#' for each GROUP and '|' after each name in it, which is
+    # not the same shape as the entry - see the frontend's GenerateLogKey.
+    row, key = "", ""
+    for g in range(groups):
+        row += "|"
+        key += "#"
+        for a in axes:
+            if player_of(a["name"]) != g:
+                continue
+            row += "%5d," % a.get("neutral", 0)
+            key += a["name"] + "|"
+        for b in buttons:
+            if player_of(b) != g:
+                continue
+            row += "."
+            key += b + "|"
+    row += "|"
     log = "[Input]\nLogKey:" + key + "\n" + "\n".join([row] * frames) + "\n[/Input]\n"
 
     files = []

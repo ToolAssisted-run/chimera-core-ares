@@ -4,7 +4,7 @@
     {
       "id": "rom",
       "title": "Cartridge, disc or tape",
-      "min": 1,
+      "min": 0,
       "max": 1,
       "formats": [
         "n64",
@@ -45,7 +45,7 @@
         "ngpc",
         "zip"
       ],
-      "help": "The thing the machine loads: a cartridge for most of them, a .cue for the PlayStation, a .tzx or .tap for the ZX Spectrum, a .zip romset for the Neo Geo. Which kinds are offered follows the machine chosen above. A Nintendo 64 cartridge may be in any of its three byte orders - .z64 is what a dump of the cartridge actually contains, .n64 and .v64 are the same data shuffled, and the core works out which it was given. Some machines also want their console BIOS, which is asked for separately; the Nintendo 64's boot ROM travels with the core."
+      "help": "The thing the machine loads: a cartridge for most of them, a .cue for the PlayStation, a .tzx or .tape for the ZX Spectrum, a .zip romset for the Neo Geo. Which kinds are offered follows the machine chosen above. A Nintendo 64 cartridge may be in any of its three byte orders - .z64 is what a dump of the cartridge actually contains, .n64 and .v64 are the same data shuffled, and the core works out which it was given. Two machines here run with nothing in the slot and are worth starting that way: a PlayStation reaches its own BIOS menu, and an MSX boots its own BASIC. Every other machine refuses to start without one and says so, which is why this slot asks for no minimum - the machine is what knows, not the form. Some machines also want their console BIOS, which is asked for separately; the Nintendo 64's boot ROM travels with the core."
     },
     {
       "id": "savedata",

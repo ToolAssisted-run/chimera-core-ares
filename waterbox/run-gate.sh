@@ -177,6 +177,10 @@ compare "GBA arm tests, A held" GBA gba-arm.gba     --frames 200 --hold A
 # The PlayStation with nothing in its drive: the BIOS boots, draws its logo and
 # settles into the shell. No content, and still a whole machine to compare.
 compare "PS1 BIOS shell"     PS1 -                  --frames 400
+# An MSX with nothing in its slot boots its own BASIC - a whole machine, and
+# the only content this one has, since nobody has a freely redistributable MSX
+# cartridge here.
+compare "MSX BASIC"          MSX -                  --frames 400
 
 echo
 echo "== the machine survives being saved and reloaded =="
@@ -185,6 +189,7 @@ rerecord "N64 input, A held"  N64 input-cpu.n64      --frames 200 --hold "P1 Gam
 rerecord "GB libbet"          GB  libbet.gb          --frames 200
 rerecord "GBA arm tests"      GBA gba-arm.gba        --frames 200
 rerecord "PS1 BIOS shell"     PS1 -                  --frames 400
+rerecord "MSX BASIC"          MSX -                  --frames 400
 
 echo
 echo "== the same run twice is the same machine =="
@@ -192,6 +197,7 @@ deterministic "N64" N64 helloworld-cpu.n64 --frames 60
 deterministic "GB"  GB  libbet.gb          --frames 120
 deterministic "GBA" GBA gba-arm.gba        --frames 120
 deterministic "PS1" PS1 -                  --frames 300
+deterministic "MSX" MSX -                  --frames 300
 
 echo
 echo "== the refresh rate is the machine's own =="
@@ -242,6 +248,7 @@ refresh_is "GBA" GBA gba-arm.gba  262144/4389 --frames 120
 # a TODO beside it, and 60 is what mupen and BizHawk record N64 movies at.
 refresh_is "N64" N64 helloworld-cpu.n64 60/1 --frames 120
 refresh_is "PS1" PS1 -            60/1 --frames 300
+refresh_is "MSX" MSX -            183843/3068 --frames 300
 
 echo
 echo "== input reaches the machine =="

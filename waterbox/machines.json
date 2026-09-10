@@ -463,7 +463,7 @@
       "virtualWidth": 284,
       "virtualHeight": 192,
       "regions": ["ntsc", "pal"],
-      "bootsWithoutMedium": false,
+      "bootsWithoutMedium": true,
       "firmware": {"id": "msxBios"},
       "loads": true,
       "console": [],

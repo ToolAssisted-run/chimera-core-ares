@@ -178,9 +178,14 @@ namespace machines
 			 "[Coleco] ColecoVision (NTSC)", "[Coleco] ColecoVision (PAL)",
 			 284, 243, 284, 192, "cv col", nullptr, "cvBios"},
 
+			/* An MSX with nothing in its slot boots its own BASIC, which is a
+			 * whole machine to compare and needs no cartridge - the same reason
+			 * the PlayStation is marked this way. It is the only content this
+			 * machine has: nobody has a freely redistributable MSX cartridge
+			 * here. */
 			{"MSX", "MSX", "MSX", "MSX", ares::MSX::load,
 			 "[Microsoft] MSX (NTSC)", "[Microsoft] MSX (PAL)",
-			 284, 243, 284, 192, "msx rom", nullptr, "msxBios"},
+			 284, 243, 284, 192, "msx rom", nullptr, "msxBios", true},
 
 			/* The one machine here that loads a disc rather than a cartridge.
 			 * mia takes a .cue (with its .bin beside it, mounted under the name

@@ -34,6 +34,26 @@ def port_prefix(name):
     return name.replace(" Port", "")
 
 
+def wire_safe(name):
+    """A control name a movie can actually carry.
+
+    A movie's log key is written '#' for each group of controls and '|' after
+    each name in it, so both characters are STRUCTURE and a control whose own
+    name contains one cannot round-trip. The MSX's Japanese keyboard has both:
+    a key legended with a yen sign, a pipe and a long vowel mark, and another
+    legended with a hash. Read back, the hash started a group in the middle of
+    a key's name and split it into two controls - so the frontend believed in
+    one control more than the machine has, and walked off the end of every
+    entry.
+
+    The name here is ours - it is what the package declares and what a movie
+    records; the PATH is what binds it to ares - so the separators are spelt
+    out instead. The gate regenerates this and diffs it, so the substitution
+    cannot quietly drift.
+    """
+    return name.replace("|", "(pipe)").replace("#", "(hash)")
+
+
 def declare(machine):
     """The machine's buttons and axes, in the order that IS the wire format.
 
@@ -45,7 +65,7 @@ def declare(machine):
     buttons, axes = [], []
 
     for i in machine["console"]:
-        (axes if i["axis"] else buttons).append((i["name"], i["path"]))
+        (axes if i["axis"] else buttons).append((wire_safe(i["name"]), i["path"]))
 
     for port in machine["ports"]:
         prefix = port_prefix(port["name"])
@@ -53,7 +73,7 @@ def declare(machine):
         for device in port["devices"]:
             for i in device["inputs"]:
                 name = f"{prefix} {device['name']} {i['name']}" if many else f"{prefix} {i['name']}"
-                (axes if i["axis"] else buttons).append((name, i["path"]))
+                (axes if i["axis"] else buttons).append((wire_safe(name), i["path"]))
 
     return buttons, axes
 
