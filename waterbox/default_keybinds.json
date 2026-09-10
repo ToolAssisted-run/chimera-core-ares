@@ -200,6 +200,22 @@
       "P1 C": "C, J1 B4, X1 Y",
       "P1 Select": "Space, J1 B9, X1 Back",
       "P1 Start": "Enter, J1 B10, X1 Start"
+    },
+    "PC Engine / TurboGrafx-16 Controller": {
+      "Controller Up": "Up, J1 POV1U, X1 DpadUp",
+      "Controller Down": "Down, J1 POV1D, X1 DpadDown",
+      "Controller Left": "Left, J1 POV1L, X1 DpadLeft",
+      "Controller Right": "Right, J1 POV1R, X1 DpadRight",
+      "Controller Select": "Space, J1 B9, X1 Back",
+      "Controller Run": "Enter, J1 B10, X1 Start"
+    },
+    "SuperGrafx Controller": {
+      "Controller Up": "Up, J1 POV1U, X1 DpadUp",
+      "Controller Down": "Down, J1 POV1D, X1 DpadDown",
+      "Controller Left": "Left, J1 POV1L, X1 DpadLeft",
+      "Controller Right": "Right, J1 POV1R, X1 DpadRight",
+      "Controller Select": "Space, J1 B9, X1 Back",
+      "Controller Run": "Enter, J1 B10, X1 Start"
     }
   },
   "AllTrollersAutoFire": {},

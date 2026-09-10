@@ -688,6 +688,56 @@
           ]
         }
       ]
+    },
+    {
+      "id": "PCE",
+      "label": "PC Engine / TurboGrafx-16",
+      "extensions": "pce",
+      "maxWidth": 1176,
+      "maxHeight": 263,
+      "virtualWidth": 258,
+      "virtualHeight": 218,
+      "regions": ["ntsc"],
+      "bootsWithoutMedium": false,
+      "loads": true,
+      "console": [],
+      "settings": [{"name": "Color Emulation", "path": "VDP/Screen/Color Emulation", "type": "bool", "value": "true", "options": ["false", "true"]}],
+      "ports": [
+        {
+          "name": "Controller Port",
+          "devices": [
+            {
+              "name": "Gamepad",
+              "inputs": [{"name": "Up", "path": "Controller Port/Gamepad/Up", "axis": false}, {"name": "Down", "path": "Controller Port/Gamepad/Down", "axis": false}, {"name": "Left", "path": "Controller Port/Gamepad/Left", "axis": false}, {"name": "Right", "path": "Controller Port/Gamepad/Right", "axis": false}, {"name": "II", "path": "Controller Port/Gamepad/II", "axis": false}, {"name": "I", "path": "Controller Port/Gamepad/I", "axis": false}, {"name": "Select", "path": "Controller Port/Gamepad/Select", "axis": false}, {"name": "Run", "path": "Controller Port/Gamepad/Run", "axis": false}]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SGX",
+      "label": "SuperGrafx",
+      "extensions": "sgx",
+      "maxWidth": 1176,
+      "maxHeight": 263,
+      "virtualWidth": 258,
+      "virtualHeight": 218,
+      "regions": ["ntsc"],
+      "bootsWithoutMedium": false,
+      "loads": true,
+      "console": [],
+      "settings": [{"name": "Color Emulation", "path": "VDP/Screen/Color Emulation", "type": "bool", "value": "true", "options": ["false", "true"]}],
+      "ports": [
+        {
+          "name": "Controller Port",
+          "devices": [
+            {
+              "name": "Gamepad",
+              "inputs": [{"name": "Up", "path": "Controller Port/Gamepad/Up", "axis": false}, {"name": "Down", "path": "Controller Port/Gamepad/Down", "axis": false}, {"name": "Left", "path": "Controller Port/Gamepad/Left", "axis": false}, {"name": "Right", "path": "Controller Port/Gamepad/Right", "axis": false}, {"name": "II", "path": "Controller Port/Gamepad/II", "axis": false}, {"name": "I", "path": "Controller Port/Gamepad/I", "axis": false}, {"name": "Select", "path": "Controller Port/Gamepad/Select", "axis": false}, {"name": "Run", "path": "Controller Port/Gamepad/Run", "axis": false}]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

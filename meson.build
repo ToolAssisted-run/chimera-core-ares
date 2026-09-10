@@ -74,7 +74,15 @@ ares_cpp = configure_file(
 # this list is what has to compile.
 ares_systems = [
   'a26', 'a52', 'cv', 'fc', 'gb', 'gba', 'md', 'ms', 'msx', 'myvision', 'n64',
-  'ng', 'ngp', 'ps1', 'sg', 'spec', 'ws',
+  'ng', 'ngp', 'pce', 'ps1', 'sg', 'spec', 'ws',
+]
+
+# The PC Engine is the exception the comment above mentions: its video is two
+# implementations, chosen at run time rather than at compile time, and neither
+# is included by pce.cpp. Both have to be built.
+ares_extra_sources = [
+  'pce/vdp/vdp.cpp',
+  'pce/vdp-performance/vdp.cpp',
 ]
 
 # The chips those machines are built out of. Each is one translation unit too,
@@ -109,6 +117,10 @@ core_sources = [
 
 foreach s : ares_systems
   core_sources += ares_dir / 'ares' / s / (s + '.cpp')
+endforeach
+
+foreach e : ares_extra_sources
+  core_sources += ares_dir / 'ares' / e
 endforeach
 
 foreach c : ares_components

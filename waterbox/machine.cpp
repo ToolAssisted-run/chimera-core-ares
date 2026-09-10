@@ -547,6 +547,20 @@ namespace machine
 			Nintendo64::option("Deterministic Entropy", "true");
 		}
 
+		/* The PC Engine has two video implementations and picks between them at
+		 * RUN time, through an option, rather than at compile time. Until that
+		 * option is set, VDPBase::implementation is a null pointer - and
+		 * System::load calls straight through it, so a machine built without
+		 * this crashes on the spot rather than failing to build. That is the
+		 * whole of what kept this machine out of the core: docs/PLAN.md had it
+		 * down as "crashes when asked to power on with no cartridge", which was
+		 * the symptom rather than the cause.
+		 *
+		 * ares forces the accurate renderer here itself - its own comment says
+		 * the scanline one is too buggy - so the option's VALUE is not read;
+		 * naming it is what chooses an implementation. */
+		if (g_spec->load == PCEngine::load) PCEngine::option("Pixel Accuracy", "true");
+
 		const char *name = g_pal ? g_spec->configPal : g_spec->configNtsc;
 		if (name == nullptr) name = g_spec->configNtsc ? g_spec->configNtsc : g_spec->configPal;
 		if (!g_spec->load(g_root, name)) return fail("ares would not build the machine");

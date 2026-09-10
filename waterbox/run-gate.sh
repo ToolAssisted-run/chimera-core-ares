@@ -65,6 +65,7 @@ with_local() {
 	fi
 	cp "$rom" "$content/.local-$id"
 	case "$kind" in
+		compare) compare "$id local" "$id" ".local-$id" "$@" ;;
 		rerecord) rerecord "$id local" "$id" ".local-$id" "$@" ;;
 		discipline) input_discipline "$id local" "$id" ".local-$id" "$@" ;;
 		rewind) rewind "$id local" "$id" ".local-$id" "$@" ;;
@@ -337,6 +338,13 @@ echo "== the same, on content only this developer has =="
 with_local discipline NGPC --frames 400
 with_local rewind     NGPC 200 --frames 400
 with_local rerecord   NGPC --frames 200
+# The PC Engine and the SuperGrafx have no freely distributable software either.
+with_local compare    PCE  --frames 300
+with_local rerecord   PCE  --frames 200
+with_local rewind     PCE  120 --frames 300
+with_local compare    SGX  --frames 300
+with_local rerecord   SGX  --frames 200
+with_local rewind     SGX  120 --frames 300
 
 echo
 echo "== a machine put back to a frame it has left =="

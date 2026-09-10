@@ -479,9 +479,16 @@ Nothing is now absent for want of a BIOS - Sergio supplied the Atari 5200, Neo
 Geo and Neo Geo Pocket ones and all four machines were added.
 
 The **Saturn** is a stub upstream - one file - so it is not a machine anybody
-could offer. The **Super Famicom** and **PC Engine** build but crash when asked
-to power on with no cartridge, which is probably nothing more than that; they
-are absent until somebody checks.
+could offer.
+
+The **PC Engine** is in, and what kept it out was not what this said. It does
+not crash for want of a cartridge: ares' PC Engine has two video
+implementations and chooses between them at RUN time through an option, so
+until `option("Pixel Accuracy", ...)` names one, `VDPBase::implementation` is a
+null pointer that `System::load` calls straight through. Naming it before the
+load is the whole fix (machine.cpp, and gen-machines which builds every machine
+to ask what it is made of). The **Super Famicom** is still out and is worth
+checking for the same kind of cause rather than the symptom.
 
 ### What a sandbox had to be taught along the way
 
@@ -521,6 +528,34 @@ And one thing libco had to be taught, because a sandbox watches memory:
   what they are. It costs history size on Windows, where a stack is never clean
   and so goes into every delta: 700 frames of Game Boy is 268MB against 110MB
   on Linux.
+
+## The PC Engine, the TurboGrafx-16 and the SuperGrafx
+
+One machine under two names and one that is genuinely different.
+
+A TurboGrafx-16 IS a PC Engine; the only thing ares' NTSC-U and NTSC-J
+configurations disagree about is a pair of registers on the CD system cards,
+which a core offering HuCards never reaches. So they are one entry, `PCE`,
+labelled for both and built as NTSC-U because ares calls that the more
+compatible of the two. The **SuperGrafx** has a second video display controller
+and a chip that mixes the two, reads its own extension and has its own mia
+medium, so it is its own entry - the same relationship the Neo Geo Pocket Color
+has with the Neo Geo Pocket.
+
+Both need no BIOS: a HuCard is the whole machine. The picture is 1176x263 with
+overscan showing, which is the widest buffer ares hands over, and 258x218 is
+what it is meant to be seen as - ares scales this machine's width by a quarter,
+so the numbers follow the Mega Drive's convention rather than the raw buffer's.
+
+Proven on a USA HuCard, a Japanese one and a SuperGrafx title: native against
+sandbox byte for byte, a savestate every frame, a rewind to a frame the machine
+had left, and fifteen rerecord points through the frontend - play, go back,
+edit, replay - all exact. The content is somebody's property, so those legs read
+`tests/local/<machine>/` and are skipped where it is empty.
+
+**The CD is not in.** A PC Engine CD is three paks rather than one - the system,
+a system card HuCard as firmware, and the disc - and it wants a machine table
+that can say so. See "Not done".
 
 ## Firmware
 

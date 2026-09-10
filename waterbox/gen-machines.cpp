@@ -211,6 +211,11 @@ int main(int argc, char **argv)
 		}
 		bool systemOk = !firmwareMissing && g_systemPak && g_systemPak->load(firmware) == successful;
 
+		/* The PC Engine chooses between its two video implementations through an
+		 * option, and until one is chosen its implementation pointer is null -
+		 * which System::load walks straight through. See machine.cpp. */
+		if (spec.load == ares::PCEngine::load) ares::PCEngine::option("Pixel Accuracy", "true");
+
 		Node::System root;
 		bool ok = systemOk && spec.load(root, spec.configNtsc ? spec.configNtsc : spec.configPal);
 

@@ -36,6 +36,7 @@
 #include <n64/n64.hpp>
 #include <ng/ng.hpp>
 #include <ngp/ngp.hpp>
+#include <pce/pce.hpp>
 #include <ps1/ps1.hpp>
 #include <sg/sg.hpp>
 #include <spec/spec.hpp>
@@ -210,6 +211,28 @@ namespace machines
 			{"NG", "Neo Geo AES", "Neo Geo AES", "Neo Geo", ares::NeoGeo::load,
 			 "[SNK] Neo Geo AES", nullptr,
 			 320, 256, 320, 224, "zip", nullptr, "ngBios", false},
+
+			/* One machine under two names: a TurboGrafx-16 IS a PC Engine, and
+			 * the only thing ares' NTSC-U and NTSC-J configurations disagree
+			 * about is a pair of registers on the CD system cards, which a core
+			 * that offers HuCards never reaches. NTSC-U because ares calls it
+			 * the more compatible of the two.
+			 *
+			 * The SuperGrafx is not the same machine - a second video display
+			 * controller and the chip that mixes the two - so it is its own
+			 * entry, reading its own extension, exactly as the Neo Geo Pocket
+			 * Color is separate from the Neo Geo Pocket. */
+			/* 1176x263 is the buffer with overscan showing, which is the widest
+			 * ares ever hands over; 258x218 is the visible picture in display
+			 * units, the same convention the Mega Drive's numbers follow (ares
+			 * scales this machine's width by a quarter). */
+			{"PCE", "PC Engine / TurboGrafx-16", "PC Engine", "PC Engine",
+			 ares::PCEngine::load, "[NEC] TurboGrafx 16 (NTSC-U)", nullptr,
+			 1176, 263, 258, 218, "pce", nullptr, nullptr, false},
+
+			{"SGX", "SuperGrafx", "SuperGrafx", "SuperGrafx",
+			 ares::PCEngine::load, "[NEC] SuperGrafx (NTSC-J)", nullptr,
+			 1176, 263, 258, 218, "sgx", nullptr, nullptr, false},
 		};
 		return specs;
 	}

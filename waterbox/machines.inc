@@ -748,6 +748,38 @@ static const machines::SettingDecl kSettings_NG[] = {
 	{"ng.communicationID", "Communication ID"},
 };
 
+static const machines::InputDecl kButtons_PCE[] = {
+	{"Controller Up", "Controller Port/Gamepad/Up"},
+	{"Controller Down", "Controller Port/Gamepad/Down"},
+	{"Controller Left", "Controller Port/Gamepad/Left"},
+	{"Controller Right", "Controller Port/Gamepad/Right"},
+	{"Controller II", "Controller Port/Gamepad/II"},
+	{"Controller I", "Controller Port/Gamepad/I"},
+	{"Controller Select", "Controller Port/Gamepad/Select"},
+	{"Controller Run", "Controller Port/Gamepad/Run"},
+};
+static const machines::InputDecl kAxes_PCE[] = {
+};
+static const machines::SettingDecl kSettings_PCE[] = {
+	{"pce.colorEmulation", "VDP/Screen/Color Emulation"},
+};
+
+static const machines::InputDecl kButtons_SGX[] = {
+	{"Controller Up", "Controller Port/Gamepad/Up"},
+	{"Controller Down", "Controller Port/Gamepad/Down"},
+	{"Controller Left", "Controller Port/Gamepad/Left"},
+	{"Controller Right", "Controller Port/Gamepad/Right"},
+	{"Controller II", "Controller Port/Gamepad/II"},
+	{"Controller I", "Controller Port/Gamepad/I"},
+	{"Controller Select", "Controller Port/Gamepad/Select"},
+	{"Controller Run", "Controller Port/Gamepad/Run"},
+};
+static const machines::InputDecl kAxes_SGX[] = {
+};
+static const machines::SettingDecl kSettings_SGX[] = {
+	{"sgx.colorEmulation", "VDP/Screen/Color Emulation"},
+};
+
 static const machines::MachineInputs kMachineInputs[] = {
 	{"N64", kButtons_N64, 64, kAxes_N64, 16, nullptr, 0, "Gamepad", false},
 	{"NES", kButtons_NES, 18, nullptr, 0, nullptr, 0, "Gamepad", false},
@@ -770,5 +802,7 @@ static const machines::MachineInputs kMachineInputs[] = {
 	{"NGP", kButtons_NGP, 9, nullptr, 0, kSettings_NGP, 2, nullptr, false},
 	{"NGPC", kButtons_NGPC, 9, nullptr, 0, kSettings_NGPC, 2, nullptr, false},
 	{"NG", kButtons_NG, 20, nullptr, 0, kSettings_NG, 7, "Arcade Stick", false},
+	{"PCE", kButtons_PCE, 8, nullptr, 0, kSettings_PCE, 1, "Gamepad", false},
+	{"SGX", kButtons_SGX, 8, nullptr, 0, kSettings_SGX, 1, "Gamepad", false},
 };
 
