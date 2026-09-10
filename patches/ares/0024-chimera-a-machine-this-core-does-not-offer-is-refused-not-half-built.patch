@@ -1,0 +1,207 @@
+--- a/mia/system/mega-32x.cpp
++++ b/mia/system/mega-32x.cpp
+@@ -5,13 +5,10 @@
+ };
+ 
+ auto Mega32X::load(string location) -> LoadResult {
+-  this->location = locate();
+-  pak = std::make_shared<vfs::directory>();
+-  pak->append("tmss.rom", Resource::MegaDrive::TMSS);
+-  pak->append("vector.rom", Resource::Mega32X::Vector);
+-  pak->append("sh2.boot.mrom", Resource::Mega32X::SH2BootM);
+-  pak->append("sh2.boot.srom", Resource::Mega32X::SH2BootS);
+-  return successful;
++  //This core offers no such machine, and the firmware it would need is not ours
++  //to carry. Refused rather than half-built: a pak missing its boot ROM makes a
++  //machine that runs zeros.
++  return romNotFound;
+ }
+ 
+ auto Mega32X::save(string location) -> bool {
+--- a/mia/system/mega-cd.cpp
++++ b/mia/system/mega-cd.cpp
+@@ -12,24 +12,10 @@
+ };
+ 
+ auto MegaCD::load(string location) -> LoadResult {
+-  auto bios = Pak::read(location);
+-  if(bios.empty()) return romNotFound;
+-
+-  this->location = locate();
+-  pak = std::make_shared<vfs::directory>();
+-  pak->append("tmss.rom", Resource::MegaDrive::TMSS);
+-  pak->append("bios.rom", bios);
+-  pak->append("backup.ram", 8_KiB);
+-
+-  if(auto fp = pak->write("backup.ram")) {
+-    for(auto address : range(fp->size())) fp->write(0xff);
+-    fp->seek(fp->size() - sizeof(bram));
+-    for(auto& byte : bram) fp->write(byte);
+-  }
+-
+-  Pak::load("backup.ram", ".bram");
+-
+-  return successful;
++  //This core offers no such machine, and the firmware it would need is not ours
++  //to carry. Refused rather than half-built: a pak missing its boot ROM makes a
++  //machine that runs zeros.
++  return romNotFound;
+ }
+ 
+ auto MegaCD::save(string location) -> bool {
+--- a/mia/system/mega-cd-32x.cpp
++++ b/mia/system/mega-cd-32x.cpp
+@@ -12,27 +12,10 @@
+ };
+ 
+ auto MegaCD32X::load(string location) -> LoadResult {
+-  auto bios = Pak::read(location);
+-  if(bios.empty()) return romNotFound;
+-
+-  this->location = locate();
+-  pak = std::make_shared<vfs::directory>();
+-  pak->append("tmss.rom", Resource::MegaDrive::TMSS);
+-  pak->append("bios.rom", bios);
+-  pak->append("vector.rom", Resource::Mega32X::Vector);
+-  pak->append("sh2.boot.mrom", Resource::Mega32X::SH2BootM);
+-  pak->append("sh2.boot.srom", Resource::Mega32X::SH2BootS);
+-  pak->append("backup.ram", 8_KiB);
+-
+-  if(auto fp = pak->write("backup.ram")) {
+-    for(auto address : range(fp->size())) fp->write(0xff);
+-    fp->seek(fp->size() - sizeof(bram));
+-    for(auto& byte : bram) fp->write(byte);
+-  }
+-
+-  Pak::load("backup.ram", ".bram");
+-
+-  return successful;
++  //This core offers no such machine, and the firmware it would need is not ours
++  //to carry. Refused rather than half-built: a pak missing its boot ROM makes a
++  //machine that runs zeros.
++  return romNotFound;
+ }
+ 
+ auto MegaCD32X::save(string location) -> bool {
+--- a/mia/system/mega-ld.cpp
++++ b/mia/system/mega-ld.cpp
+@@ -12,24 +12,10 @@
+ };
+ 
+ auto MegaLD::load(string location) -> LoadResult {
+-  auto bios = Pak::read(location);
+-  if(bios.empty()) return romNotFound;
+-
+-  this->location = locate();
+-  pak = std::make_shared<vfs::directory>();
+-  pak->append("tmss.rom", Resource::MegaDrive::TMSS);
+-  pak->append("bios.rom", bios);
+-  pak->append("backup.ram", 8_KiB);
+-
+-  if(auto fp = pak->write("backup.ram")) {
+-    for(auto address : range(fp->size())) fp->write(0xff);
+-    fp->seek(fp->size() - sizeof(bram));
+-    for(auto& byte : bram) fp->write(byte);
+-  }
+-
+-  Pak::load("backup.ram", ".bram");
+-
+-  return successful;
++  //This core offers no such machine, and the firmware it would need is not ours
++  //to carry. Refused rather than half-built: a pak missing its boot ROM makes a
++  //machine that runs zeros.
++  return romNotFound;
+ }
+ 
+ auto MegaLD::save(string location) -> bool {
+--- a/mia/system/super-famicom.cpp
++++ b/mia/system/super-famicom.cpp
+@@ -5,13 +5,10 @@
+ };
+ 
+ auto SuperFamicom::load(string location) -> LoadResult {
+-  this->location = locate();
+-  pak = std::make_shared<vfs::directory>();
+-  pak->append("ipl.rom", Resource::SuperFamicom::IPLROM);
+-  auto romLocation = mia::locate("Database/Super Famicom Boards.bml");
+-  if(!romLocation) return { databaseNotFound, "Super Famicom Boards.bml" };
+-  pak->append("boards.bml", file::read(romLocation));
+-  return successful;
++  //This core offers no such machine, and the firmware it would need is not ours
++  //to carry. Refused rather than half-built: a pak missing its boot ROM makes a
++  //machine that runs zeros.
++  return romNotFound;
+ }
+ 
+ auto SuperFamicom::save(string location) -> bool {
+--- a/mia/medium/super-famicom.cpp
++++ b/mia/medium/super-famicom.cpp
+@@ -39,26 +39,14 @@
+   bool local_firmware = false;
+   bool folder = false;
+   
++  //A cartridge whose coprocessor ROM is missing used to have it supplied from a
++  //compiled-in copy - eleven of them, all somebody else's. This core offers no
++  //Super Famicom, and they are not ours to carry, so a cartridge that needs one
++  //has to bring it. Nothing here calls this any more; it is left as the seam it
++  //would go back into.
+   auto append_missing_firmware = [&](auto document)
+   {
+-    if(auto identifier = document["game/board/memory/identifier"]) {
+-      if(!firmwareRomSize() && !local_firmware) {
+-        auto id = identifier.string();
+-        std::span<const u8> view;
+-        if(id == "Cx4"  ) view = Resource::SuperFamicom::Cx4;
+-        if(id == "DSP1" ) view = Resource::SuperFamicom::DSP1;
+-        if(id == "DSP1B") view = Resource::SuperFamicom::DSP1B;
+-        if(id == "DSP2" ) view = Resource::SuperFamicom::DSP2;
+-        if(id == "DSP3" ) view = Resource::SuperFamicom::DSP3;
+-        if(id == "DSP4" ) view = Resource::SuperFamicom::DSP4;
+-        if(id == "SGB1" ) view = Resource::SuperFamicom::SGB1;
+-        if(id == "SGB2" ) view = Resource::SuperFamicom::SGB2;
+-        if(id == "ST010") view = Resource::SuperFamicom::ST010;
+-        if(id == "ST011") view = Resource::SuperFamicom::ST011;
+-        if(id == "ST018") view = Resource::SuperFamicom::ST018;
+-        for(auto byte : view) rom.push_back(byte);
+-      }
+-	}
++    (void)document;
+   };
+   
+   if(directory::exists(location)) {
+--- a/mia/system/pocket-challenge-v2.cpp
++++ b/mia/system/pocket-challenge-v2.cpp
+@@ -5,11 +5,10 @@
+ };
+ 
+ auto PocketChallengeV2::load(string location) -> LoadResult {
+-  this->location = locate();
+-  pak = std::make_shared<vfs::directory>();
+-  pak->append("boot.rom", Resource::PocketChallengeV2::Boot);
+-
+-  return successful;
++  //This core offers no such machine, and the firmware it would need is not ours
++  //to carry. Refused rather than half-built: a pak missing its boot ROM makes a
++  //machine that runs zeros.
++  return romNotFound;
+ }
+ 
+ auto PocketChallengeV2::save(string location) -> bool {
+--- a/mia/system/zx-spectrum-128.cpp
++++ b/mia/system/zx-spectrum-128.cpp
+@@ -5,11 +5,10 @@
+ };
+ 
+ auto ZXSpectrum128::load(string location) -> LoadResult {
+-  this->location = locate();
+-  pak = std::make_shared<vfs::directory>();
+-  pak->append("bios.rom", Resource::ZXSpectrum128::BIOS);
+-  pak->append("sub.rom", Resource::ZXSpectrum128::Sub);
+-  return successful;
++  //This core offers no such machine, and the firmware it would need is not ours
++  //to carry. Refused rather than half-built: a pak missing its boot ROM makes a
++  //machine that runs zeros.
++  return romNotFound;
+ }
+ 
+ auto ZXSpectrum128::save(string location) -> bool {

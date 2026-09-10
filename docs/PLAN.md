@@ -238,11 +238,49 @@ interchangeable with a run recorded against a real boot ROM, and no movie made o
 this core predates the change. An HLE boot also starts cartridges whose checksum
 a real console would reject, which is a difference in the useful direction.
 
-**What is still inherited.** ares compiles in firmware for other systems too -
-Game Boy and Game Boy Color boot ROMs, the WonderSwans', the ZX Spectrum's,
-the Mega Drive's TMSS, and a full set of Super Famicom coprocessor ROMs for a
-machine this core does not even offer. The Game Boy and WonderSwan ones are used;
-the rest is weight and inheritance both. Nobody has been through them.
+### The core carries no firmware but ares' own (user-asked, 2026-09-10)
+
+The Nintendo 64's was not the only one. ares compiles console boot ROMs in as
+resources and a package built from it carried the lot: Game Boy and Game Boy
+Color, both WonderSwans, the Pocket Challenge V2, the ZX Spectrum and the 128,
+the Mega Drive's TMSS and the SVP chip's ROM, the 32X's three, and thirteen Super
+Famicom coprocessor ROMs for a machine this core does not even offer. Somebody
+else's, every one.
+
+They are gone. `mia/resource/resource.bml` now lists the five game databases and
+nothing else, because those ares wrote itself.
+
+**Three kinds of consequence, and they are not the same.**
+
+- **Machines this core does not offer** - the 32X, the Mega CD, the Mega LD, the
+  Super Famicom, the Pocket Challenge V2, the ZX Spectrum 128 - now refuse to
+  load rather than build a machine out of a boot ROM full of zeros. A pak
+  missing its firmware makes a console that runs nothing and says nothing.
+- **Machines that need one and are offered** - Game Boy, Game Boy Color, both
+  WonderSwans, the ZX Spectrum - ASK for it, the way the Game Boy Advance and
+  the PlayStation always have. Twelve of the twenty-one now do. The package
+  declares each by id, size and SHA-1, and Chimera resolves it and pins it.
+- **One capability actually lost.** Virtua Racing's SVP chip has a 2KB ROM that
+  most cartridge dumps leave out, and mia used to splice in a compiled-in copy.
+  That game now needs a dump that already contains it. The Mega Drive's TMSS
+  went too and costs nothing: this core never turned TMSS on, so the machine
+  read that ROM into a buffer it never mapped.
+
+**What CI can prove got smaller, and it is worth being honest about.** Without a
+Game Boy boot ROM the six Game Boy legs skip on a public runner, so CI proves
+fourteen legs where it proved twenty. Everything the Nintendo 64 proves is
+untouched - equivalence on all four digests, the savestate round trip, the same
+run twice, input, the refresh rate, and the picture pixel-exact against real
+hardware - because that machine needs no firmware at all now. Giving the Game
+Boy an HLE boot the way the Nintendo 64 got one would win those six back, and
+nobody has done it.
+
+**A leg that had been passing for the wrong reason.** Taking the Game Boy's boot
+ROM away made every Game Boy leg fail to initialise, and the gate went on
+reporting PASS - because it compared the native run's output against the
+sandbox's, and both were the same empty failure. `is_digest` now refuses to pass
+a leg whose runs produced no digest. That hole was there from the beginning and
+nothing had ever stepped in it.
 
 ### How a machine's state is compared
 

@@ -35,26 +35,6 @@
       "P1 Select": "Space, J1 B9, X1 Back",
       "P1 Start": "Enter, J1 B10, X1 Start"
     },
-    "Game Boy Controller": {
-      "Up": "Up, J1 POV1U, X1 DpadUp",
-      "Down": "Down, J1 POV1D, X1 DpadDown",
-      "Left": "Left, J1 POV1L, X1 DpadLeft",
-      "Right": "Right, J1 POV1R, X1 DpadRight",
-      "B": "Z, J1 B3, X1 X",
-      "A": "X, J1 B1, X1 A",
-      "Select": "Space, J1 B9, X1 Back",
-      "Start": "Enter, J1 B10, X1 Start"
-    },
-    "Game Boy Color Controller": {
-      "Up": "Up, J1 POV1U, X1 DpadUp",
-      "Down": "Down, J1 POV1D, X1 DpadDown",
-      "Left": "Left, J1 POV1L, X1 DpadLeft",
-      "Right": "Right, J1 POV1R, X1 DpadRight",
-      "B": "Z, J1 B3, X1 X",
-      "A": "X, J1 B1, X1 A",
-      "Select": "Space, J1 B9, X1 Back",
-      "Start": "Enter, J1 B10, X1 Start"
-    },
     "Mega Drive / Genesis Controller": {
       "P1 Up": "Up, J1 POV1U, X1 DpadUp",
       "P1 Down": "Down, J1 POV1D, X1 DpadDown",
@@ -96,6 +76,30 @@
       "P1 Right": "Right, J1 POV1R, X1 DpadRight",
       "P1 Fire": "X, J1 B1, X1 A"
     },
+    "MyVision Controller": {
+      "1": "Z, J1 B3, X1 X",
+      "2": "X, J1 B1, X1 A"
+    },
+    "Game Boy Controller": {
+      "Up": "Up, J1 POV1U, X1 DpadUp",
+      "Down": "Down, J1 POV1D, X1 DpadDown",
+      "Left": "Left, J1 POV1L, X1 DpadLeft",
+      "Right": "Right, J1 POV1R, X1 DpadRight",
+      "B": "Z, J1 B3, X1 X",
+      "A": "X, J1 B1, X1 A",
+      "Select": "Space, J1 B9, X1 Back",
+      "Start": "Enter, J1 B10, X1 Start"
+    },
+    "Game Boy Color Controller": {
+      "Up": "Up, J1 POV1U, X1 DpadUp",
+      "Down": "Down, J1 POV1D, X1 DpadDown",
+      "Left": "Left, J1 POV1L, X1 DpadLeft",
+      "Right": "Right, J1 POV1R, X1 DpadRight",
+      "B": "Z, J1 B3, X1 X",
+      "A": "X, J1 B1, X1 A",
+      "Select": "Space, J1 B9, X1 Back",
+      "Start": "Enter, J1 B10, X1 Start"
+    },
     "WonderSwan Controller": {
       "Y1": "T",
       "Y2": "H",
@@ -130,10 +134,6 @@
       "Keyboard X": "S, J1 B4, X1 Y",
       "Keyboard R": "W, J1 B6, X1 RightShoulder",
       "Keyboard Y": "A, J1 B2, X1 B"
-    },
-    "MyVision Controller": {
-      "1": "Z, J1 B3, X1 X",
-      "2": "X, J1 B1, X1 A"
     },
     "Game Boy Advance Controller": {
       "Up": "Up, J1 POV1U, X1 DpadUp",

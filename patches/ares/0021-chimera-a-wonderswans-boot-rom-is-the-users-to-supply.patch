@@ -1,0 +1,36 @@
+--- a/mia/system/wonderswan.cpp
++++ b/mia/system/wonderswan.cpp
+@@ -5,9 +5,14 @@
+ };
+ 
+ auto WonderSwan::load(string location) -> LoadResult {
++  //The boot ROM is the console maker's and does not travel with this core; the
++  //user supplies it and Chimera pins it by hash. See waterbox/machines.h.
++  auto boot = Pak::read(location);
++  if(boot.empty()) return romNotFound;
++
+   this->location = locate();
+   pak = std::make_shared<vfs::directory>();
+-  pak->append("boot.rom", Resource::WonderSwan::Boot);
++  pak->append("boot.rom", boot);
+   pak->append("save.eeprom", 128);
+ 
+   Pak::load("save.eeprom", ".eeprom");
+--- a/mia/system/wonderswan-color.cpp
++++ b/mia/system/wonderswan-color.cpp
+@@ -5,9 +5,14 @@
+ };
+ 
+ auto WonderSwanColor::load(string location) -> LoadResult {
++  //The boot ROM is the console maker's and does not travel with this core; the
++  //user supplies it and Chimera pins it by hash. See waterbox/machines.h.
++  auto boot = Pak::read(location);
++  if(boot.empty()) return romNotFound;
++
+   this->location = locate();
+   pak = std::make_shared<vfs::directory>();
+-  pak->append("boot.rom", Resource::WonderSwanColor::Boot);
++  pak->append("boot.rom", boot);
+   pak->append("save.eeprom", 2048);
+ 
+   Pak::load("save.eeprom", ".eeprom");

@@ -112,14 +112,6 @@ namespace machines
 			 "[Nintendo] Famicom (NTSC-J)", "[Nintendo] Famicom (PAL)",
 			 512, 480, 293, 240, "fc nes unf unif", nullptr, nullptr},
 
-			{"GB", "Game Boy", "Game Boy", "Game Boy", ares::GameBoy::load,
-			 "[Nintendo] Game Boy", nullptr,
-			 160, 144, 160, 144, "gb", nullptr, nullptr},
-
-			{"GBC", "Game Boy Color", "Game Boy Color", "Game Boy Color", ares::GameBoy::load,
-			 "[Nintendo] Game Boy Color", nullptr,
-			 160, 144, 160, 144, "gbc", nullptr, nullptr},
-
 			{"GEN", "Mega Drive / Genesis", "Mega Drive", "Mega Drive", ares::MegaDrive::load,
 			 "[Sega] Mega Drive (NTSC-U)", "[Sega] Mega Drive (PAL)",
 			 1280, 480, 292, 224, "md gen smd bin", nullptr, nullptr},
@@ -145,20 +137,6 @@ namespace machines
 			 160, 312, 292, 222, "a26 bin", nullptr, nullptr, false,
 			 27325, 456, 3546894, 71136},
 
-			{"WS", "WonderSwan", "WonderSwan", "WonderSwan", ares::WonderSwan::load,
-			 "[Bandai] WonderSwan", nullptr,
-			 224, 224, 224, 144, "ws", nullptr, nullptr, false,
-			 4000, 53, 0, 0},
-
-			{"WSC", "WonderSwan Color", "WonderSwan Color", "WonderSwan Color", ares::WonderSwan::load,
-			 "[Bandai] WonderSwan Color", nullptr,
-			 224, 224, 224, 144, "wsc", nullptr, nullptr, false,
-			 4000, 53, 0, 0},
-
-			{"ZXS", "ZX Spectrum", "ZX Spectrum", "ZX Spectrum", ares::ZXSpectrum::load,
-			 "[Sinclair] ZX Spectrum", nullptr,
-			 352, 296, 352, 296, "z80 tap tzx", nullptr, nullptr},
-
 			{"MYV", "MyVision", "MyVision", "MyVision", ares::MyVision::load,
 			 "[Nichibutsu] MyVision", nullptr,
 			 284, 243, 284, 192, "myvision", nullptr, nullptr},
@@ -169,6 +147,28 @@ namespace machines
 			 * they were, and mounts each under the id named here. Nothing of the
 			 * kind ships in this package, and the machines below simply do not
 			 * appear in a project until their firmware has been found. */
+
+			{"GB", "Game Boy", "Game Boy", "Game Boy", ares::GameBoy::load,
+			 "[Nintendo] Game Boy", nullptr,
+			 160, 144, 160, 144, "gb", nullptr, "gbBoot"},
+
+			{"GBC", "Game Boy Color", "Game Boy Color", "Game Boy Color", ares::GameBoy::load,
+			 "[Nintendo] Game Boy Color", nullptr,
+			 160, 144, 160, 144, "gbc", nullptr, "gbcBoot"},
+
+			{"WS", "WonderSwan", "WonderSwan", "WonderSwan", ares::WonderSwan::load,
+			 "[Bandai] WonderSwan", nullptr,
+			 224, 224, 224, 144, "ws", nullptr, "wsBoot", false,
+			 4000, 53, 0, 0},
+
+			{"WSC", "WonderSwan Color", "WonderSwan Color", "WonderSwan Color", ares::WonderSwan::load,
+			 "[Bandai] WonderSwan Color", nullptr,
+			 224, 224, 224, 144, "wsc", nullptr, "wscBoot", false,
+			 4000, 53, 0, 0},
+
+			{"ZXS", "ZX Spectrum", "ZX Spectrum", "ZX Spectrum", ares::ZXSpectrum::load,
+			 "[Sinclair] ZX Spectrum", nullptr,
+			 352, 296, 352, 296, "z80 tap tzx", nullptr, "zxsBios"},
 
 			{"GBA", "Game Boy Advance", "Game Boy Advance", "Game Boy Advance", ares::GameBoyAdvance::load,
 			 "[Nintendo] Game Boy Advance", nullptr,

@@ -10,6 +10,8 @@ and [chimera-core-gpgx](https://github.com/ToolAssisted-run/chimera-core-gpgx).
 
 Status: **twenty-one machines declared; five proven by the gate, fifteen proven
 against real commercial games, and four run end to end inside Chimera.** It
+carries no firmware but ares' own: twelve of the twenty-one ask the user for a
+console BIOS, and nine need nothing but a cartridge. It
 runs on Windows as well as Linux, but only with **miniBox ab677a2 or newer**:
 libco takes its coroutine stacks from `mmap(MAP_STACK)` rather than from malloc
 so that the sandbox knows what they are, and an older miniBox either kills this
@@ -64,10 +66,14 @@ What the machines have in common:
   asks the emulator what each machine is made of and `gen-config.py` writes the
   declaration, so a newer ares that renames a button fails the gate rather than
   renumbering somebody's movie.
-- **Firmware only where the console truly needs it.** Fourteen of the twenty-one
-  need nothing but a cartridge; the Game Boy Advance, ColecoVision, MSX,
-  PlayStation, Atari 5200, Neo Geo and Neo Geo Pocket Color need their console
-  BIOS, which the user supplies and Chimera pins by hash. None of it ships here.
+- **This core ships no firmware but ares' own.** ares compiles console boot ROMs
+  in as resources - Nintendo's, Sega's, Bandai's, Amstrad's - and a package built
+  from it carried all of them. It carries none of them now (`patches/ares/0020`
+  and the five after it): nine of the twenty-one machines need nothing but a
+  cartridge, and the other twelve ask for their console BIOS, which the user
+  supplies and Chimera pins by hash. ares' own material - the game databases it
+  wrote - stays. Checked by searching the built `core.wbx` for every firmware
+  file ares ships: not one twenty-four byte run of any of them survives.
 - **A Nintendo 64 boots without Nintendo's boot ROM.** ares bundles the PIF and
   CIC ROMs; this core does not carry them, and starts the cartridge's own boot
   code the way they would have (`patches/ares/0018`). Every register it hands
@@ -94,7 +100,7 @@ test suite read off the screen**. Its content is
 [libbet](https://github.com/pinobatch/libbet) (Zlib) and
 [gba-tests](https://github.com/jsmolka/gba-tests) (MIT), so it runs on a public
 runner with nothing licensed on it - it simply skips the machines whose BIOS is
-not there, and says so. That is twenty of the thirty-five legs, and CI runs
+not there, and says so. That is fourteen of the thirty-five legs, and CI runs
 exactly those (`.github/workflows/chimera.yml`); the rest need a BIOS in
 `tests/firmware/` and are run by hand.
 

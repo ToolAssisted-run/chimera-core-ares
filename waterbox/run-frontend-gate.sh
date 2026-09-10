@@ -48,6 +48,7 @@ core_says() {
 	set -- --machine "$id" --quiet --report-refresh --frames "$1"
 	[ "$rom" = "-" ] || set -- "$@" --rom "$content/$rom"
 	case "$id" in
+		GB)  [ -f "$firmware/gbBoot" ] || return 1; set -- "$@" --firmware "$firmware/gbBoot";;
 		GBA) [ -f "$firmware/gbaBios" ] || return 1; set -- "$@" --firmware "$firmware/gbaBios";;
 		PS1) [ -f "$firmware/ps1Bios" ] || return 1; set -- "$@" --firmware "$firmware/ps1Bios";;
 	esac
@@ -68,6 +69,7 @@ one() {
 	set -- --project "$w/p.chimeraProject"
 	if [ "$rom" != "-" ]; then cp "$content/$rom" "$w/$rom"; fi
 	case "$id" in
+		GB)  set -- "$@" --firmware "gbBoot=$firmware/gbBoot";;
 		GBA) set -- "$@" --firmware "gbaBios=$firmware/gbaBios";;
 		PS1) set -- "$@" --firmware "ps1Bios=$firmware/ps1Bios";;
 	esac

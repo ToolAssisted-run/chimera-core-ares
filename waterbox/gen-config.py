@@ -189,6 +189,40 @@ def render_inc(machines):
 # actually built the machine with, so the package pins what was verified rather
 # than what somebody hoped would work.
 FIRMWARE_TEXT = {
+    "gbBoot": (
+        "Game Boy boot ROM",
+        "The Game Boy's 256-byte boot ROM - the one that scrolls the logo and "
+        "checks it. ares executes it, and the machine it hands to a cartridge "
+        "is what the boot ROM left behind, so it is not optional. Nintendo's, "
+        "and yours to supply. Any of the DMG revisions will do; DMG-CPU A is "
+        "what ares assumes for a plain Game Boy.",
+        "dmg_boot.bin",
+    ),
+    "gbcBoot": (
+        "Game Boy Color boot ROM",
+        "The Game Boy Color's 2KB boot ROM. Larger than the Game Boy's because "
+        "it also picks the palette an original Game Boy cartridge is coloured "
+        "with, which is part of what a game looks like.",
+        "cgb_boot.bin",
+    ),
+    "wsBoot": (
+        "WonderSwan boot ROM",
+        "The WonderSwan's boot ROM. It draws the startup animation, sets the "
+        "machine up, and reads the owner's name out of the internal EEPROM.",
+        "ws_boot.rom",
+    ),
+    "wscBoot": (
+        "WonderSwan Color boot ROM",
+        "The WonderSwan Color's boot ROM, the colour machine's own.",
+        "wsc_boot.rom",
+    ),
+    "zxsBios": (
+        "ZX Spectrum BIOS",
+        "The 16KB ROM that IS a ZX Spectrum: its BASIC, its editor and its "
+        "loader. Amstrad's, who permit redistribution with emulators, but not "
+        "this core's to decide that for you.",
+        "spectrum.rom",
+    ),
     "gbaBios": (
         "Game Boy Advance BIOS",
         "The Game Boy Advance's 16KB boot ROM. ares needs the real one: it is "

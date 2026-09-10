@@ -42,10 +42,28 @@ say_fail() { echo "FAIL $1"; echo "     $2"; fail=$((fail + 1)); }
 # echoes the file, or nothing.
 firmware_for() {
 	case "$1" in
+		GB)  echo "$root/tests/firmware/gbBoot" ;;
+		GBC) echo "$root/tests/firmware/gbcBoot" ;;
+		WS)  echo "$root/tests/firmware/wsBoot" ;;
+		WSC) echo "$root/tests/firmware/wscBoot" ;;
+		ZXS) echo "$root/tests/firmware/zxsBios" ;;
 		GBA) echo "$root/tests/firmware/gbaBios" ;;
 		CV)  echo "$root/tests/firmware/cvBios" ;;
 		MSX) echo "$root/tests/firmware/msxBios" ;;
 		PS1) echo "$root/tests/firmware/ps1Bios" ;;
+	esac
+}
+
+# A run that produced no digest proves nothing, and two of them prove nothing
+# TWICE - which is worse, because the leg passes. It happened: the Game Boy's
+# boot ROM stopped being carried in the package, every Game Boy leg started
+# failing to init, and the gate went on reporting PASS because both halves
+# failed identically. A digest is a line of key/value pairs; anything else is
+# not an answer.
+is_digest() {
+	case "$1" in
+		*video\ *audio\ *memory\ *state\ *) return 0 ;;
+		*) return 1 ;;
 	esac
 }
 
@@ -84,6 +102,12 @@ compare() {
 	[ -z "$nativefw" ] || set -- "$@" --firmware "$nativefw"
 	a="$("$native" --machine "$id" --quiet "$@" | tail -1)"
 	b="$("$runwbx" "$wbx" "$work/w" --machine "$id" --quiet "$@" | tail -1)"
+	if ! is_digest "$a" || ! is_digest "$b"; then
+		say_fail "$leg (native == sandbox)" "a run produced no digest:
+     native  $a
+     sandbox $b"
+		return
+	fi
 	if [ "$a" = "$b" ]; then
 		say_pass "$leg (native == sandbox)"
 		echo "     $a"
@@ -103,6 +127,12 @@ rerecord() {
 	fi
 	a="$("$runwbx" "$wbx" "$work/w" --machine "$id" --quiet "$@" | tail -1)"
 	b="$("$runwbx" "$wbx" "$work/w" --machine "$id" --quiet --rerecord "$@" | tail -1)"
+	if ! is_digest "$a" || ! is_digest "$b"; then
+		say_fail "$leg (survives a savestate every frame)" "a run produced no digest:
+     straight  $a
+     rerecord  $b"
+		return
+	fi
 	if [ "$a" = "$b" ]; then
 		say_pass "$leg (survives a savestate every frame)"
 	else
@@ -127,6 +157,12 @@ deterministic() {
 	fi
 	a="$("$native" --machine "$id" --quiet "$@" | tail -1)"
 	b="$("$native" --machine "$id" --quiet "$@" | tail -1)"
+	if ! is_digest "$a" || ! is_digest "$b"; then
+		say_fail "$leg is the same machine twice running" "a run produced no digest:
+     first   $a
+     second  $b"
+		return
+	fi
 	if [ "$a" = "$b" ]; then
 		say_pass "$leg is the same machine twice running"
 	else
@@ -275,15 +311,23 @@ else
      half   $stick2"
 fi
 
-gbidle="$("$native" --machine GB --rom "$content/libbet.gb" --quiet --frames 200 | tail -1)"
-gba="$("$native" --machine GB --rom "$content/libbet.gb" --quiet --frames 200 --hold A | tail -1)"
-gbstart="$("$native" --machine GB --rom "$content/libbet.gb" --quiet --frames 200 --hold Start | tail -1)"
-if [ "$gbidle" != "$gba" ] && [ "$gba" != "$gbstart" ]; then
+gbfw="$(firmware_for GB)"
+if [ ! -f "$gbfw" ]; then
+	echo "SKIP GB buttons (no console BIOS in tests/firmware)"
+	gbidle=skip; gba=skip; gbstart=skip
+else
+gbidle="$("$native" --machine GB --firmware "$gbfw" --rom "$content/libbet.gb" --quiet --frames 200 | tail -1)"
+gba="$("$native" --machine GB --firmware "$gbfw" --rom "$content/libbet.gb" --quiet --frames 200 --hold A | tail -1)"
+gbstart="$("$native" --machine GB --firmware "$gbfw" --rom "$content/libbet.gb" --quiet --frames 200 --hold Start | tail -1)"
+if ! is_digest "$gbidle"; then
+	say_fail "GB buttons" "a run produced no digest: $gbidle"
+elif [ "$gbidle" != "$gba" ] && [ "$gba" != "$gbstart" ]; then
 	say_pass "GB buttons (idle, A and Start each make a different machine)"
 else
 	say_fail "GB buttons" "idle  $gbidle
      A     $gba
      Start $gbstart"
+fi
 fi
 
 echo

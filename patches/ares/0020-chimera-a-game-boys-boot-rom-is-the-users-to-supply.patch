@@ -1,0 +1,36 @@
+--- a/mia/system/game-boy.cpp
++++ b/mia/system/game-boy.cpp
+@@ -5,9 +5,14 @@
+ };
+ 
+ auto GameBoy::load(string location) -> LoadResult {
++  //The boot ROM is the console maker's and does not travel with this core; the
++  //user supplies it and Chimera pins it by hash. See waterbox/machines.h.
++  auto boot = Pak::read(location);
++  if(boot.empty()) return romNotFound;
++
+   this->location = locate();
+   pak = std::make_shared<vfs::directory>();
+-  pak->append("boot.rom", Resource::GameBoy::BootDMG1);
++  pak->append("boot.rom", boot);
+   return successful;
+ }
+ 
+--- a/mia/system/game-boy-color.cpp
++++ b/mia/system/game-boy-color.cpp
+@@ -5,9 +5,14 @@
+ };
+ 
+ auto GameBoyColor::load(string location) -> LoadResult {
++  //The boot ROM is the console maker's and does not travel with this core; the
++  //user supplies it and Chimera pins it by hash. See waterbox/machines.h.
++  auto boot = Pak::read(location);
++  if(boot.empty()) return romNotFound;
++
+   this->location = locate();
+   pak = std::make_shared<vfs::directory>();
+-  pak->append("boot.rom", Resource::GameBoyColor::BootCGB0);
++  pak->append("boot.rom", boot);
+   return successful;
+ }
+ 

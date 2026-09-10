@@ -192,20 +192,3 @@
    pak->append("64dd.ipl.rom", bios);
    pak->append("time.rtc", 0x10);
  
---- a/mia/resource/resource.bml
-+++ b/mia/resource/resource.bml
-@@ -13,14 +13,6 @@
-     binary name=Vector file="../Firmware/Mega 32X/vector.rom"
-     binary name=SH2BootM file="../Firmware/Mega 32X/sh2.boot.mrom"
-     binary name=SH2BootS file="../Firmware/Mega 32X/sh2.boot.srom"
--  namespace name=Nintendo64
--    binary name=CIC6101 file="../Firmware/Nintendo 64/cic.6101.rom"
--    binary name=CIC6102 file="../Firmware/Nintendo 64/cic.6102.rom"
--    binary name=CIC6105 file="../Firmware/Nintendo 64/cic.6105.rom"
--    binary name=CIC7101 file="../Firmware/Nintendo 64/cic.7101.rom"
--    binary name=PIFSM5 file="../Firmware/Nintendo 64/pif.sm5.rom"
--    binary name=PIFNTSC file="../Firmware/Nintendo 64/pif.ntsc.rom"
--    binary name=PIFPAL file="../Firmware/Nintendo 64/pif.pal.rom"
-   namespace name=SuperFamicom
-     binary name=IPLROM file="../Firmware/Super Famicom/ipl.rom"
-     binary name=Cx4 file="../Firmware/Super Famicom/cx4.rom"
