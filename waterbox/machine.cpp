@@ -83,6 +83,44 @@ namespace
 	 * an input the machine does not have this time - a port left empty. */
 	std::vector<Node::Input::Button> g_buttons;
 	std::vector<Node::Input::Axis> g_axes;
+
+	/* What was last pushed into each node.
+	 *
+	 * A frontend pushes a button only when it CHANGES - crossing the boundary
+	 * every frame for every button of four controllers is not free - and after
+	 * loading a state it pushes all of them again, because the state rewrote
+	 * whatever the guest believed was held. That resend is correct and cannot
+	 * be given up: without it the machine would keep the buttons the state
+	 * carried rather than the ones the movie asks for.
+	 *
+	 * It is also, for one machine, destructive. ares presses the Neo Geo
+	 * Pocket's power button ITSELF - the BIOS halts and CPU::main() calls
+	 * setValue(true) on that node to boot the machine on the user's behalf -
+	 * and CPU::pollPowerButton() then drives the NMI line from the same node.
+	 * The node is machine state as much as it is an input. A frontend resending
+	 * "power not held" over ares' own value asserts that NMI, and the machine
+	 * that comes back from a state is not the machine that was saved: 12KB of
+	 * RAM diverges within a frame, and it fails as a desync a long way from
+	 * here.
+	 *
+	 * So the change detection lives HERE, below the boundary, where it is guest
+	 * memory and travels in the savestate. A push that says what the last push
+	 * said is dropped, whatever the machine has done to the node since; a push
+	 * that says something new goes through as it always did. After a state load
+	 * these hold what they held at that frame, so the frontend's resend is
+	 * exactly the no-op it should be.
+	 *
+	 * It starts at what the nodes hold when they are bound - released, every
+	 * one - rather than at "nothing yet". A frontend does not push a button
+	 * that is already released, so "nothing yet" would still be the answer for
+	 * the power button when the first state load forces a resend, and that
+	 * resend would go through and undo the machine's own press. Released is not
+	 * a guess: ares builds every button node holding false.
+	 *
+	 * Buttons only: an axis is a value rather than a latch, no machine here
+	 * writes one behind the frontend's back, and the frontend sends them every
+	 * frame regardless. */
+	std::vector<unsigned char> g_buttonPushed;
 	std::vector<Node::Audio::Stream> g_streams;
 
 	struct ChimeraPlatform : ares::Platform
@@ -332,6 +370,7 @@ namespace
 	{
 		g_buttons.clear();
 		g_axes.clear();
+		g_buttonPushed.clear();
 		if (g_inputs == nullptr) return;
 		for (int i = 0; i < g_inputs->buttonCount; i++)
 		{
@@ -340,6 +379,11 @@ namespace
 		for (int i = 0; i < g_inputs->axisCount; i++)
 		{
 			g_axes.push_back(g_root->find<Node::Input::Axis>(g_inputs->axes[i].path));
+		}
+		g_buttonPushed.assign(g_buttons.size(), 0);
+		for (size_t i = 0; i < g_buttons.size(); i++)
+		{
+			if (auto &node = g_buttons[i]) g_buttonPushed[i] = node->value() ? 1 : 0;
 		}
 	}
 
@@ -530,6 +574,12 @@ namespace machine
 	void setButton(int index, bool held)
 	{
 		if (index < 0 || index >= (int)g_buttons.size()) return;
+		if (index < (int)g_buttonPushed.size())
+		{
+			/* said before, and nothing new to say: see g_buttonPushed */
+			if (g_buttonPushed[index] == (unsigned char)held) return;
+			g_buttonPushed[index] = (unsigned char)held;
+		}
 		if (auto &node = g_buttons[index]) node->setValue(held);
 	}
 
@@ -674,6 +724,18 @@ namespace machine
 		if (data) *data = blob.data();
 		if (size) *size = (int64_t)blob.size();
 		return true;
+	}
+
+	/* The other half of captureState, for the gate's --rewind-at: ares' own
+	 * serializer put back. Only the reference runner uses it - the sandbox has
+	 * a savestate of its own, of the whole arena - and it is what tells the two
+	 * apart when a machine comes back from a state subtly wrong. */
+	bool restoreState(const uint8_t *data, int64_t size)
+	{
+		if (!g_root || data == nullptr || size <= 0) return false;
+		FenvGuard guard(machineFenv());
+		serializer s(data, (uint32_t)size);
+		return g_root->unserialize(s);
 	}
 
 	/* Export Save Data hands back whichever save chip a Nintendo 64 cartridge

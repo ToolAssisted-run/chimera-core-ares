@@ -144,6 +144,7 @@ namespace machine
 	 * Asking costs a synchronisation - ares runs its threads to a clean boundary
 	 * first - so it is something the gate does, not something a frame does. */
 	bool captureState(const uint8_t **data, int64_t *size);
+	bool restoreState(const uint8_t *data, int64_t size);
 
 	/* What the cartridge has saved, for Export Save Data. Empty when it has no
 	 * battery. */

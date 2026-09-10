@@ -40,6 +40,38 @@ say_fail() { echo "FAIL $1"; echo "     $2"; fail=$((fail + 1)); }
 # A machine that needs a console BIOS is skipped when the developer has not put
 # one in tests/firmware/ - it is not this repository's to carry. `firmware_for`
 # echoes the file, or nothing.
+# Content a developer may have and this repository may not carry. tests/local/
+# is gitignored, exactly as tests/firmware/ is: a leg that needs a commercial
+# ROM runs for whoever owns one and is skipped everywhere else, which is the
+# only honest way to gate a machine whose only content is somebody's property.
+# `local_content <machine>` echoes the first file for it, or nothing.
+local_content() {
+	dir="$root/tests/local/$1"
+	[ -d "$dir" ] || return 0
+	for f in "$dir"/*; do
+		[ -f "$f" ] && { echo "$f"; return 0; }
+	done
+	return 0
+}
+
+# The same legs, on content only the developer has. `setup_work` takes a name
+# inside tests/content, so this copies the file in and calls the leg by hand.
+with_local() {
+	kind="$1"; id="$2"; shift 2
+	rom="$(local_content "$id")"
+	if [ -z "$rom" ]; then
+		echo "SKIP $id $kind (nothing in tests/local/$id)"
+		return
+	fi
+	cp "$rom" "$content/.local-$id"
+	case "$kind" in
+		rerecord) rerecord "$id local" "$id" ".local-$id" "$@" ;;
+		discipline) input_discipline "$id local" "$id" ".local-$id" "$@" ;;
+		rewind) rewind "$id local" "$id" ".local-$id" "$@" ;;
+	esac
+	rm -f "$content/.local-$id"
+}
+
 firmware_for() {
 	case "$1" in
 		GB)  echo "$root/tests/firmware/gbBoot" ;;
@@ -51,6 +83,8 @@ firmware_for() {
 		CV)  echo "$root/tests/firmware/cvBios" ;;
 		MSX) echo "$root/tests/firmware/msxBios" ;;
 		PS1) echo "$root/tests/firmware/ps1Bios" ;;
+		NGP) echo "$root/tests/firmware/ngpBios" ;;
+		NGPC) echo "$root/tests/firmware/ngpcBios" ;;
 	esac
 }
 
@@ -141,6 +175,65 @@ rerecord() {
 	fi
 }
 
+# A machine that is told the same thing twice must not notice, and a machine put
+# back to a frame it has already left must be the machine that left it.
+#
+# These two go together because the bug they were written for needed both. A
+# frontend pushes a button only when it CHANGES, and after loading a state it
+# pushes every one again, because the state rewrote what the guest believed was
+# held. ares presses the Neo Geo Pocket's power button itself - the BIOS halts
+# and the CPU presses it on the user's behalf - so that resend landed on top of
+# the machine's own value and asserted the power NMI. Twelve kilobytes of RAM
+# diverged one frame later.
+#
+# The old rerecord leg could not see it: it pushes every button every frame, so
+# a resend is nothing new, and it reloads the SAME frame, so state a savestate
+# leaves out still holds the right value. --set-on-change is the frontend's
+# discipline and --rewind-at goes back to a frame the machine has left.
+input_discipline() {
+	leg="$1"; id="$2"; rom="$3"; shift 3
+	if ! setup_work "$id" "$rom"; then
+		echo "SKIP $leg (no console BIOS in tests/firmware)"
+		return
+	fi
+	a="$("$runwbx" "$wbx" "$work/w" --machine "$id" --quiet "$@" | tail -1)"
+	b="$("$runwbx" "$wbx" "$work/w" --machine "$id" --quiet --set-on-change "$@" | tail -1)"
+	if ! is_digest "$a" || ! is_digest "$b"; then
+		say_fail "$leg (told twice is told once)" "a run produced no digest:
+     every frame $a
+     on change   $b"
+		return
+	fi
+	if [ "$a" = "$b" ]; then
+		say_pass "$leg (told twice is told once)"
+	else
+		say_fail "$leg (told twice is told once)" "every frame $a
+     on change   $b"
+	fi
+}
+
+rewind() {
+	leg="$1"; id="$2"; rom="$3"; at="$4"; shift 4
+	if ! setup_work "$id" "$rom"; then
+		echo "SKIP $leg (no console BIOS in tests/firmware)"
+		return
+	fi
+	a="$("$runwbx" "$wbx" "$work/w" --machine "$id" --quiet --set-on-change "$@" | tail -1)"
+	b="$("$runwbx" "$wbx" "$work/w" --machine "$id" --quiet --set-on-change --rewind-at "$at" "$@" | tail -1)"
+	if ! is_digest "$a" || ! is_digest "$b"; then
+		say_fail "$leg (goes back to a frame it left)" "a run produced no digest:
+     straight $a
+     rewound  $b"
+		return
+	fi
+	if [ "$a" = "$b" ]; then
+		say_pass "$leg (goes back to a frame it left)"
+	else
+		say_fail "$leg (goes back to a frame it left)" "straight $a
+     rewound  $b"
+	fi
+}
+
 # Two runs of the same thing have to be the same machine. Real hardware powers
 # on with random memory and ares models that from the host's entropy unless it
 # is told not to; without the pin this leg fails and every movie is
@@ -226,6 +319,33 @@ rerecord "GB libbet"          GB  libbet.gb          --frames 200
 rerecord "GBA arm tests"      GBA gba-arm.gba        --frames 200
 rerecord "PS1 BIOS shell"     PS1 -                  --frames 400
 rerecord "MSX BASIC"          MSX -                  --frames 400
+
+echo
+echo "== a machine told the same thing twice does not notice =="
+input_discipline "N64 helloworld-cpu" N64 helloworld-cpu.n64 --frames 130
+input_discipline "N64 input, A held"  N64 input-cpu.n64      --frames 200 --hold "P1 Gamepad A"
+input_discipline "GB libbet"          GB  libbet.gb          --frames 200
+input_discipline "GBA arm tests"      GBA gba-arm.gba        --frames 200
+input_discipline "PS1 BIOS shell"     PS1 -                  --frames 400
+input_discipline "MSX BASIC"          MSX -                  --frames 400
+
+# The Neo Geo Pocket is the machine this was written for: ares presses its power
+# button itself when the BIOS halts, and it will not boot without a cartridge, so
+# the leg can only run for somebody who owns one.
+echo
+echo "== the same, on content only this developer has =="
+with_local discipline NGPC --frames 400
+with_local rewind     NGPC 200 --frames 400
+with_local rerecord   NGPC --frames 200
+
+echo
+echo "== a machine put back to a frame it has left =="
+rewind "N64 helloworld-cpu" N64 helloworld-cpu.n64 60  --frames 130
+rewind "N64 input, A held"  N64 input-cpu.n64      120 --frames 200 --hold "P1 Gamepad A"
+rewind "GB libbet"          GB  libbet.gb          120 --frames 200
+rewind "GBA arm tests"      GBA gba-arm.gba        120 --frames 200
+rewind "PS1 BIOS shell"     PS1 -                  200 --frames 400
+rewind "MSX BASIC"          MSX -                  200 --frames 400
 
 echo
 echo "== the same run twice is the same machine =="

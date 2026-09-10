@@ -44,6 +44,12 @@ struct gate_core
 	/* Run before every frame. The sandbox driver round-trips the machine
 	 * through save/load here when --rerecord is given. */
 	void (*pre_frame)(void);
+	/* Save the machine aside (save != 0) or put the saved one back. NULL for a
+	 * driver with no savestates of its own; only --rewind-at needs it. */
+	void (*snapshot)(int save);
+	/* The sandbox's own savestate, to and from a file: --state-out/--state-in.
+	 * NULL for a driver that has none. Returns 1 on success. */
+	int (*state_file)(const char *path, int save);
 };
 
 struct gate_press
@@ -60,6 +66,10 @@ struct gate_opts
 	int quiet;
 	int render;
 	int stick_x, stick_y;
+	int rewind_at;
+	int set_on_change;
+	const char *state_out;
+	const char *state_in;
 	char hold[16][48];
 	int hold_count;
 	struct gate_press press[16];
@@ -83,6 +93,10 @@ static void gate_usage(void)
 		"  --dump-state PATH write the whole serialised machine there at the end\n"
 		"  --dump-bus PATH   write every bus there, one file per bus, at the end\n"
 		"  --no-render       run with drawing off (turbo)\n"
+		"  --rewind-at F     save at frame F, run a frame, put the save back\n"
+		"  --set-on-change   push a button only when it changes, as a frontend does\n"
+		"  --state-out PATH  write the sandbox's own savestate at the end\n"
+		"  --state-in PATH   start from one instead of from power-on\n"
 		"  --list-inputs     print what this machine declares, and stop\n"
 		"  --quiet           only the final digest line\n"
 		"Button names are the machine's own: run --list-inputs to see them.\n");
@@ -94,6 +108,10 @@ static int gate_parse_opts(int argc, char **argv, int from, struct gate_opts *o)
 	o->frames = 60;
 	o->dump_frame = -1;
 	o->render = 1;
+	o->rewind_at = -1;
+	o->set_on_change = 0;
+	o->state_out = 0;
+	o->state_in = 0;
 	o->dump_path = "frame.ppm";
 
 	for (int i = from; i < argc; i++)
@@ -107,6 +125,10 @@ static int gate_parse_opts(int argc, char **argv, int from, struct gate_opts *o)
 		else if (!strcmp(a, "--dump-state")) o->dump_state = GATE_NEXT();
 		else if (!strcmp(a, "--dump-bus")) o->dump_bus = GATE_NEXT();
 		else if (!strcmp(a, "--no-render")) o->render = 0;
+		else if (!strcmp(a, "--rewind-at")) o->rewind_at = atoi(GATE_NEXT());
+		else if (!strcmp(a, "--set-on-change")) o->set_on_change = 1;
+		else if (!strcmp(a, "--state-out")) o->state_out = GATE_NEXT();
+		else if (!strcmp(a, "--state-in")) o->state_in = GATE_NEXT();
 		else if (!strcmp(a, "--quiet")) o->quiet = 1;
 		else if (!strcmp(a, "--list-inputs")) o->list_inputs = 1;
 		else if (!strcmp(a, "--stick")) { o->stick_x = atoi(GATE_NEXT()); o->stick_y = atoi(GATE_NEXT()); }
@@ -207,6 +229,53 @@ static uint64_t gate_state_digest(const struct gate_core *c)
 	return gate_hash_feed(gate_hash_init(), data, (size_t)size);
 }
 
+/* What the guest was last told, for --set-on-change: exactly the record a
+ * frontend keeps so that it can push a button only when it moves.
+ *
+ * It starts RELEASED, because a machine that has just been built holds nothing
+ * down and the frontend knows it - Chimera's own record starts that way. After
+ * a state load it becomes UNKNOWN (-1), because the state rewrote whatever the
+ * guest believed and the record cannot be trusted; every button is then pushed
+ * again. Both halves matter: the first is why an untouched button is never
+ * pushed at all, and the second is why the load makes it pushed for the first
+ * time. That combination is what the Neo Geo Pocket's power button broke on. */
+static signed char gate_sent[256];
+
+static void gate_start_sent(void)
+{
+	for (int i = 0; i < 256; i++) gate_sent[i] = 0;
+}
+
+static void gate_forget_sent(void)
+{
+	for (int i = 0; i < 256; i++) gate_sent[i] = -1;
+}
+
+static void gate_set_inputs(const struct gate_core *c, const struct gate_opts *o,
+	const int *held, const int *pressed, int f)
+{
+	for (int b = 0; b < c->button_count(); b++)
+	{
+		int on = 0;
+		for (int i = 0; i < o->hold_count; i++) if (held[i] == b) on = 1;
+		for (int i = 0; i < o->press_count; i++)
+			if (pressed[i] == b && f >= o->press[i].from) on = 1;
+		/* A frontend does not push what has not changed - Chimera keeps a
+		 * per-button record and only crosses the boundary when it moves. A
+		 * machine that behaves differently for being told the same thing twice
+		 * (or for never being told at all) desyncs the moment a state is
+		 * loaded, because a load forces the next push. */
+		if (o->set_on_change && b < 256)
+		{
+			if (gate_sent[b] == (signed char)on) continue;
+			gate_sent[b] = (signed char)on;
+		}
+		c->set_button(b, on);
+	}
+	if (c->axis_count() > 0) c->set_axis(0, o->stick_x);
+	if (c->axis_count() > 1) c->set_axis(1, o->stick_y);
+}
+
 static int gate_run(const struct gate_core *c, const struct gate_opts *o)
 {
 	if (c->init() != 1)
@@ -215,6 +284,12 @@ static int gate_run(const struct gate_core *c, const struct gate_opts *o)
 		return 1;
 	}
 	c->set_rendering(o->render);
+	gate_start_sent();
+	if (o->state_in && c->state_file)
+	{
+		if (!c->state_file(o->state_in, 0)) { fprintf(stderr, "could not load %s\n", o->state_in); return 2; }
+		gate_forget_sent();
+	}
 
 	if (o->list_inputs)
 	{
@@ -252,19 +327,30 @@ static int gate_run(const struct gate_core *c, const struct gate_opts *o)
 
 	for (int f = 0; f < o->frames; f++)
 	{
-		for (int b = 0; b < c->button_count(); b++)
-		{
-			int on = 0;
-			for (int i = 0; i < o->hold_count; i++) if (held[i] == b) on = 1;
-			for (int i = 0; i < o->press_count; i++)
-				if (pressed[i] == b && f >= o->press[i].from) on = 1;
-			c->set_button(b, on);
-		}
-		if (c->axis_count() > 0) c->set_axis(0, o->stick_x);
-		if (c->axis_count() > 1) c->set_axis(1, o->stick_y);
+		gate_set_inputs(c, o, held, pressed, f);
 
 		c->pre_frame();
 		c->frame();
+
+		/* A state put back after the machine has moved ON.
+		 *
+		 * --rerecord saves and loads the SAME machine, which cannot see state a
+		 * savestate leaves out: what it left out still holds the right value.
+		 * Going back to a frame the machine has already left is what a seek in
+		 * the frontend does, and it is the only way to catch that. So: save
+		 * here, run the next frame, put the save back, and let the loop run
+		 * that frame again. A machine whose state is complete cannot tell the
+		 * difference, and the digests must match a straight run's exactly. */
+		if (o->rewind_at >= 0 && f == o->rewind_at && c->snapshot)
+		{
+			c->snapshot(1);
+			gate_set_inputs(c, o, held, pressed, f + 1);
+			c->frame();
+			c->snapshot(0);
+			/* the state just rewrote what the guest believes is held, so the
+			 * frontend resends everything: do the same here */
+			gate_forget_sent();
+		}
 
 		if (!c->input_was_read()) lag++;
 
@@ -292,6 +378,11 @@ static int gate_run(const struct gate_core *c, const struct gate_opts *o)
 				(unsigned long long)mem, (unsigned long long)state, w, h, samples);
 			fflush(stdout);
 		}
+	}
+
+	if (o->state_out && c->state_file)
+	{
+		if (!c->state_file(o->state_out, 1)) { fprintf(stderr, "could not write %s\n", o->state_out); return 2; }
 	}
 
 	if (o->dump_bus)

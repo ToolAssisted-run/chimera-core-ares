@@ -1014,6 +1014,58 @@ as the accurate path (its Reference profile forces it), and there was nothing to
 buy with that difference. The flag is off, with a comment in `meson.build` saying
 why. Somebody measuring a game that actually leans on the RSP should revisit it.
 
+## The Neo Geo Pocket presses its own power button
+
+The rerecord suite - play to X, go back, edit, replay - failed every point on
+the Neo Geo Pocket Color and nowhere else. Twelve kilobytes of CPU RAM diverged,
+starting on the FIRST frame after the machine was put back, and only through
+Chimera; the gate's own save-and-reload leg was clean.
+
+The cause is a node that is both an input and machine state. `CPU::main()`, when
+the machine halts inside the BIOS, presses the power button on the user's
+behalf - `system.controls.power->setValue(true)` - so that a Neo Geo Pocket boots
+without anybody holding a switch, and `CPU::pollPowerButton()` then drives the
+NMI line from that same node. ares writes it; the frontend also writes it.
+
+A frontend pushes a button only when it CHANGES. Chimera keeps a record of what
+the guest was last told and crosses the boundary only when it moves, because
+four controllers of buttons every frame is not free. Two consequences meet here:
+a button that starts released and is never pressed is never pushed AT ALL, and
+after loading a state every button is pushed again, because the state rewrote
+whatever the guest believed was held and the record cannot be trusted. So the
+first push the power button ever received was the resend after a state load -
+"not held" - landing on top of ares' own press and asserting the NMI.
+
+**The change detection moved into the adapter**, below the boundary, where it is
+guest memory and travels in the savestate (`g_buttonPushed` in machine.cpp). A
+push that says what the last push said is dropped, whatever the machine has done
+to the node since; a push that says something new goes through. After a state
+load the record holds what it held at that frame, so the frontend's resend is
+exactly the no-op it should be. It starts at what the nodes hold when they are
+bound - released, every one - rather than at "nothing yet", which is the half
+that makes the power button's first resend a no-op too.
+
+Nothing else changes for any other machine: ares writes no other button node, so
+the record always matches the node and every push goes through as before.
+
+**Why the gate could not see it.** Its rerecord leg pushes every button every
+frame, so a resend is nothing new; and it saves and reloads the SAME frame, so
+state a savestate leaves out still holds the right value. Both blind spots are
+now legs of their own:
+
+- `--set-on-change` makes the runner push a button only when it moves, and
+  forget its record after a state load, which is exactly Chimera's discipline.
+  A machine told the same thing twice must not notice.
+- `--rewind-at F` saves at F, runs a frame, puts the save back, and lets the
+  loop run that frame again - going back to a frame the machine has LEFT, which
+  is what a seek does and what the old leg never did.
+
+Both run for every machine in the gate. The Neo Geo Pocket needs a cartridge to
+boot at all, and the only ones that exist are somebody's property, so its legs
+read from `tests/local/<machine>/` - gitignored, exactly as `tests/firmware/`
+is - and are skipped where that is empty. With a cartridge there they fail
+without the fix and pass with it.
+
 ## Numbers, as of the twenty-one-machine build
 
 - `core.wbx` is 20.2 MB with every machine in it - it was 9.3 MB with only the

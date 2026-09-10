@@ -7,3 +7,7 @@ minibox-diag.log
 # tests/firmware/ is where a developer puts their own for the gate legs that
 # need them; nothing here is distributable and nothing here is committed.
 tests/firmware/
+
+# Content a developer owns and this repository may not carry - see
+# waterbox/run-gate.sh (local_content). One directory per machine id.
+tests/local/

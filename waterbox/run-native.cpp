@@ -3,6 +3,7 @@
  * change the answer?" and get a number rather than an opinion.
  */
 #include "machine.h"
+#include <vector>
 #include "machines-names.h"
 #include "gate-harness.h"
 
@@ -42,6 +43,26 @@ namespace
 	int core_state(const uint8_t **d, int64_t *n) { return machine::captureState(d, n) ? 1 : 0; }
 	void core_set_rendering(int on) { machine::setRenderingEnabled(on != 0); }
 	void core_pre_frame(void) { }
+
+	/* --rewind-at on the reference: ares' own serializer, saved aside and put
+	 * back. No sandbox anywhere near it, so a divergence here is the machine's
+	 * serialization and nothing else. */
+	std::vector<uint8_t> g_nativeState;
+	void core_snapshot(int save)
+	{
+		if (save)
+		{
+			const uint8_t *d = nullptr; int64_t n = 0;
+			if (!machine::captureState(&d, &n)) { fprintf(stderr, "run-native: could not serialise\n"); exit(1); }
+			g_nativeState.assign(d, d + n);
+			return;
+		}
+		if (!machine::restoreState(g_nativeState.data(), (int64_t)g_nativeState.size()))
+		{
+			fprintf(stderr, "run-native: could not unserialise\n");
+			exit(1);
+		}
+	}
 }
 
 /* --set key=value, for ares' own machine settings. Small and fixed: a machine
@@ -169,7 +190,7 @@ int main(int argc, char **argv)
 		core_video, core_audio, core_input_was_read,
 		core_domain_count, core_domain_name, core_domain_ptr, core_domain_size,
 		core_bus_count, core_bus_name, core_bus_size, core_bus_peek, core_state,
-		core_set_rendering, core_pre_frame,
+		core_set_rendering, core_pre_frame, core_snapshot, nullptr,
 	};
 	int rc = gate_run(&core, &opts);
 	if (reportRefresh)

@@ -130,6 +130,78 @@ static const char *core_domain_name(int i) { return (const char *)g_GetMemoryDom
 static const uint8_t *core_domain_ptr(int i) { return (const uint8_t *)g_GetMemoryDomainPtr(i); }
 static int64_t core_domain_size(int i) { return g_GetMemoryDomainSize(i); }
 
+/* The machine set aside and put back, for --rewind-at: the same save and load
+ * the frontend's greenzone uses, driven by hand. A buffer of its own, so a
+ * --rerecord round trip cannot tread on it. */
+static membuf g_rewind;
+
+static void core_snapshot(int save)
+{
+	mb_return r;
+	if (save)
+	{
+		g_rewind.len = 0;
+		wbx_save_state(g_host, mem_write, (uintptr_t)&g_rewind, &r);
+		if (r.error_message[0]) { fprintf(stderr, "save_state: %s\n", r.error_message); exit(1); }
+		return;
+	}
+	g_rewind.pos = 0;
+	wbx_load_state(g_host, mem_read, (uintptr_t)&g_rewind, &r);
+	if (r.error_message[0]) { fprintf(stderr, "load_state: %s\n", r.error_message); exit(1); }
+
+	/* The strongest thing a savestate can be asked: put one back and take
+	 * another, and the two must be the same bytes. A state carries the dirty
+	 * pages and their map, so a machine that came back exactly right produces
+	 * exactly the same state again - and one that did not says so HERE, at the
+	 * load, rather than as a desync some frames later. */
+	static membuf again;
+	again.len = 0;
+	wbx_save_state(g_host, mem_write, (uintptr_t)&again, &r);
+	if (r.error_message[0]) { fprintf(stderr, "save_state: %s\n", r.error_message); exit(1); }
+	if (again.len != g_rewind.len || memcmp(again.b, g_rewind.b, again.len) != 0)
+	{
+		size_t n = again.len < g_rewind.len ? again.len : g_rewind.len;
+		size_t at = 0;
+		while (at < n && again.b[at] == g_rewind.b[at]) at++;
+		fprintf(stderr, "state round trip: %zu bytes back, %zu bytes saved again,"
+			" first difference at %zu\n", g_rewind.len, again.len, at);
+		exit(3);
+	}
+}
+
+static int core_state_file(const char *path, int save)
+{
+	mb_return r;
+	if (save)
+	{
+		membuf out = { 0 };
+		wbx_save_state(g_host, mem_write, (uintptr_t)&out, &r);
+		if (r.error_message[0]) { fprintf(stderr, "save_state: %s\n", r.error_message); return 0; }
+		FILE *f = fopen(path, "wb");
+		if (!f) return 0;
+		int ok = fwrite(out.b, 1, out.len, f) == out.len;
+		fclose(f);
+		free(out.b);
+		return ok;
+	}
+	FILE *f = fopen(path, "rb");
+	if (!f) return 0;
+	membuf in = { 0 };
+	fseek(f, 0, SEEK_END);
+	long n = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	in.b = (uint8_t *)malloc((size_t)n);
+	in.cap = in.len = (size_t)n;
+	int got = fread(in.b, 1, (size_t)n, f) == (size_t)n;
+	fclose(f);
+	if (!got) { free(in.b); return 0; }
+	in.pos = 0;
+	wbx_load_state(g_host, mem_read, (uintptr_t)&in, &r);
+	free(in.b);
+	if (r.error_message[0]) { fprintf(stderr, "load_state: %s\n", r.error_message); return 0; }
+	return 1;
+}
+
 static void core_pre_frame(void)
 {
 	if (!g_rerecord) return;
@@ -243,7 +315,7 @@ int main(int argc, char **argv)
 		core_video, core_audio, core_input_was_read,
 		core_domain_count, core_domain_name, core_domain_ptr, core_domain_size,
 		core_bus_count, core_bus_name, core_bus_size, core_bus_peek, core_state,
-		core_set_rendering, core_pre_frame,
+		core_set_rendering, core_pre_frame, core_snapshot, core_state_file,
 	};
 	int ret = gate_run(&core, &opts);
 
