@@ -538,28 +538,18 @@ namespace machine
 			g_videoWidth = 640;
 			g_videoHeight = g_pal ? 576 : 480;
 
-			/* Real hardware powers on with genuinely random RDRAM timings, and
-			 * ares models that by seeding its RNG from the host clock. A movie
-			 * cannot be replayed against a machine that starts differently every
-			 * time, so the seed is pinned. Without it the same run produces a
-			 * different machine on every boot, and only the picture happens to
-			 * agree. */
-			Nintendo64::option("Deterministic Entropy", "true");
 		}
 
-		/* The PC Engine has two video implementations and picks between them at
-		 * RUN time, through an option, rather than at compile time. Until that
-		 * option is set, VDPBase::implementation is a null pointer - and
-		 * System::load calls straight through it, so a machine built without
-		 * this crashes on the spot rather than failing to build. That is the
-		 * whole of what kept this machine out of the core: docs/PLAN.md had it
-		 * down as "crashes when asked to power on with no cartridge", which was
-		 * the symptom rather than the cause.
-		 *
-		 * ares forces the accurate renderer here itself - its own comment says
-		 * the scanline one is too buggy - so the option's VALUE is not read;
-		 * naming it is what chooses an implementation. */
-		if (g_spec->load == PCEngine::load) PCEngine::option("Pixel Accuracy", "true");
+		/* Whatever this machine has to be told before it is built - which
+		 * implementation of a chip to use, that its power-on state is to be
+		 * pinned rather than drawn from the host. See machines.h. */
+		if (g_spec->option != nullptr && g_spec->options != nullptr)
+		{
+			for (const machines::Option *o = g_spec->options; o->name != nullptr; o++)
+			{
+				g_spec->option(o->name, o->value);
+			}
+		}
 
 		const char *name = g_pal ? g_spec->configPal : g_spec->configNtsc;
 		if (name == nullptr) name = g_spec->configNtsc ? g_spec->configNtsc : g_spec->configPal;

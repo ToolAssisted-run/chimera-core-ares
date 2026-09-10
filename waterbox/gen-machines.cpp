@@ -211,10 +211,17 @@ int main(int argc, char **argv)
 		}
 		bool systemOk = !firmwareMissing && g_systemPak && g_systemPak->load(firmware) == successful;
 
-		/* The PC Engine chooses between its two video implementations through an
-		 * option, and until one is chosen its implementation pointer is null -
-		 * which System::load walks straight through. See machine.cpp. */
-		if (spec.load == ares::PCEngine::load) ares::PCEngine::option("Pixel Accuracy", "true");
+		/* What this machine has to be told before it is built. A machine that
+		 * chooses between two implementations of a chip through an option has a
+		 * null pointer until it is told, and System::load walks straight through
+		 * it - so skipping this crashes rather than failing. See machines.h. */
+		if (spec.option != nullptr && spec.options != nullptr)
+		{
+			for (const machines::Option *o = spec.options; o->name != nullptr; o++)
+			{
+				spec.option(o->name, o->value);
+			}
+		}
 
 		Node::System root;
 		bool ok = systemOk && spec.load(root, spec.configNtsc ? spec.configNtsc : spec.configPal);

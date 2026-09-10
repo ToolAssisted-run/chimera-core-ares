@@ -47,6 +47,12 @@
 namespace machines
 {
 	using LoadFn = bool (*)(ares::Node::System &, nall::string);
+	/* ares::<Machine>::option, which several machines must be given before they
+	 * are built rather than after. */
+	using OptionFn = bool (*)(nall::string, nall::string);
+
+	/* One of those, as the table spells it. A null name ends the list. */
+	struct Option { const char *name; const char *value; };
 
 	struct Spec
 	{
@@ -99,15 +105,49 @@ namespace machines
 		 * 3579575/(228*262), a WonderSwan 3072000/(256*159). */
 		int refreshNtscNum, refreshNtscDen;
 		int refreshPalNum, refreshPalDen;
+
+		/* Settings that have to be applied BEFORE ares builds the machine.
+		 *
+		 * Two kinds, and both are load-bearing. A machine with two
+		 * implementations of a chip picks between them here - the PC Engine's
+		 * video and the Super Famicom's are pointers that are null until an
+		 * option names one, and System::load calls straight through them - so a
+		 * machine can crash for want of a setting rather than fail to build. And
+		 * a machine that models its power-on state from the host's entropy is
+		 * not replayable until that is pinned, which is a movie's whole
+		 * contract.
+		 *
+		 * Applied by whoever builds a machine: machine.cpp for a run, and
+		 * gen-machines, which builds every one of them to ask what it is made
+		 * of and would otherwise hit exactly the same crash. */
+		OptionFn option;
+		const Option *options;
 	};
 
 	/* Ordered as a person would look for them, not as ares stores them. */
+	/* The PC Engine's video implementation, which is a null pointer until an
+	 * option names one. ares forces the accurate renderer itself here - its own
+	 * comment says the scanline one is too buggy - so the value is not read. */
+	inline constexpr Option kPCEngineOptions[] = {
+		{"Pixel Accuracy", "true"},
+		{nullptr, nullptr},
+	};
+
+	/* Real hardware powers on with genuinely random RDRAM timings, and ares
+	 * models that from the host clock. A movie cannot be replayed against a
+	 * machine that starts differently every time. */
+	inline constexpr Option kNintendo64Options[] = {
+		{"Deterministic Entropy", "true"},
+		{nullptr, nullptr},
+	};
+
 	inline auto all() -> const std::vector<Spec> &
 	{
 		static const std::vector<Spec> specs = {
 			{"N64", "Nintendo 64", "Nintendo 64", "Nintendo 64", ares::Nintendo64::load,
 			 "[Nintendo] Nintendo 64 (NTSC)", "[Nintendo] Nintendo 64 (PAL)",
-			 640, 576, 640, 480, "n64 v64 z64", "Gamepad Mouse", nullptr},
+			 640, 576, 640, 480, "n64 v64 z64", "Gamepad Mouse", nullptr, false,
+			 0, 0, 0, 0, ares::Nintendo64::option, kNintendo64Options},
 
 			{"NES", "Famicom / NES", "Famicom", "Famicom", ares::Famicom::load,
 			 "[Nintendo] Famicom (NTSC-J)", "[Nintendo] Famicom (PAL)",
@@ -212,27 +252,15 @@ namespace machines
 			 "[SNK] Neo Geo AES", nullptr,
 			 320, 256, 320, 224, "zip", nullptr, "ngBios", false},
 
-			/* One machine under two names: a TurboGrafx-16 IS a PC Engine, and
-			 * the only thing ares' NTSC-U and NTSC-J configurations disagree
-			 * about is a pair of registers on the CD system cards, which a core
-			 * that offers HuCards never reaches. NTSC-U because ares calls it
-			 * the more compatible of the two.
-			 *
-			 * The SuperGrafx is not the same machine - a second video display
-			 * controller and the chip that mixes the two - so it is its own
-			 * entry, reading its own extension, exactly as the Neo Geo Pocket
-			 * Color is separate from the Neo Geo Pocket. */
-			/* 1176x263 is the buffer with overscan showing, which is the widest
-			 * ares ever hands over; 258x218 is the visible picture in display
-			 * units, the same convention the Mega Drive's numbers follow (ares
-			 * scales this machine's width by a quarter). */
 			{"PCE", "PC Engine / TurboGrafx-16", "PC Engine", "PC Engine",
 			 ares::PCEngine::load, "[NEC] TurboGrafx 16 (NTSC-U)", nullptr,
-			 1176, 263, 258, 218, "pce", nullptr, nullptr, false},
+			 1176, 263, 258, 218, "pce", nullptr, nullptr, false,
+			 0, 0, 0, 0, ares::PCEngine::option, kPCEngineOptions},
 
 			{"SGX", "SuperGrafx", "SuperGrafx", "SuperGrafx",
 			 ares::PCEngine::load, "[NEC] SuperGrafx (NTSC-J)", nullptr,
-			 1176, 263, 258, 218, "sgx", nullptr, nullptr, false},
+			 1176, 263, 258, 218, "sgx", nullptr, nullptr, false,
+			 0, 0, 0, 0, ares::PCEngine::option, kPCEngineOptions},
 		};
 		return specs;
 	}
