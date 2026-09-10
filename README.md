@@ -9,9 +9,11 @@ deterministic sandbox and packaged as a Chimera core (`core.wbx` +
 and [chimera-core-gpgx](https://github.com/ToolAssisted-run/chimera-core-gpgx).
 
 Status: **twenty-one machines declared; four proven by the gate, fifteen proven
-against real commercial games, and four run end to end inside Chimera - on
-Linux. It does not run on Windows yet**, which is a miniBox bug rather than an
-ares one; `docs/PLAN.md` has the diagnosis.
+against real commercial games, and four run end to end inside Chimera.** It
+runs on Windows as well as Linux, but only with **miniBox 9f1c533 or newer** -
+anything older cannot deliver a fault on a page a coroutine is using as its
+stack, and this core dies on its first frame there. `docs/PLAN.md` has the
+whole story.
 
 ares emulates about thirty systems from one codebase, which is why this
 repository is named for the emulator rather than for a console. The Nintendo 64

@@ -665,12 +665,14 @@ monaural channel would have shown up. That wants a free Mega Drive or Famicom
 ROM more than it wants more code.
 
 
-## It does not run on Windows
+## Windows, and the sandbox bug it found
 
-Everything above was measured on Linux. **On Windows the core loads and then
-dies on its first frame**, on every machine, and it always has - the commit
-before any of this work (`40e1559`) crashes identically, so nothing here caused
-it.
+Everything above was measured on Linux. **On Windows the core used to load and
+then die on its first frame**, on every machine, and it always had - the commit
+before any of this work (`40e1559`) crashed identically, so nothing here caused
+it. It was a miniBox bug, it is fixed (miniBox `9f1c533`), and this core needs
+that version or newer. What follows is how it was found, because the way it
+died left nothing to read.
 
 What is known, all of it by experiment:
 
@@ -708,6 +710,38 @@ To reproduce without a frontend: cross-build `chimera-run.exe` from Chimera's
 movie - driven from a `.cmd` file, so the exit code survives.
 `waterbox/tests/make-project.py` writes the project, and its `input` field is
 the movie log.
+
+### What it turned out to be
+
+Windows delivers an exception by pushing a context record onto the faulting
+thread's **own stack**. miniBox protects a clean writable page read-only so that
+its first write faults - that is how dirty tracking works - and when that page
+is the one the stack pointer is in, the kernel's own write fails too. There is
+nowhere to deliver to, so the process is terminated outright: no handler, no
+diagnostic, an access violation for an exit code.
+
+ares walks into this every time. libco takes each component's coroutine stack
+from `malloc`, so they are ordinary read-write pages rather than anything the
+sandbox knows is a stack; sealing marks them clean; and the first `push` after
+that is a write fault on the page the stack pointer is in. Linux never showed it
+because the handler there runs on a `sigaltstack`.
+
+The fix (miniBox `9f1c533`) makes a clean writable page a **guard page** on
+Windows instead of a read-only one. The kernel clears the guard bit *before* it
+raises, so the page is writable by the time the context record lands on it; the
+first touch still traps, which is all dirty tracking wanted. miniBox's own
+`test_write_with_sp_in_a_clean_page` reproduces it in five lines of assembly and
+dies with `0xC0000005` without the change.
+
+Measured after: ares runs on Windows and its picture is **byte-identical to the
+Linux run**, with saving and reloading before every frame changing nothing.
+quickernes, gpgx and stella are unaffected and still byte-identical across the
+two hosts.
+
+One thing that is *not* fixed and is nothing to do with this: Chimera's Windows
+recorder writes **640x480** whatever the machine drew, where the Linux one
+writes the machine's own size. quickernes does it too, so it is the frontend's,
+and it is somebody's next bug rather than this core's.
 
 ## Not done
 
