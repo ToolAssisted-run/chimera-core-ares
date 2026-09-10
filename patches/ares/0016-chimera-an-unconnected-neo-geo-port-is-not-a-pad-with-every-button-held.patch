@@ -1,0 +1,20 @@
+--- a/ares/ng/controller/port.hpp
++++ b/ares/ng/controller/port.hpp
+@@ -11,8 +11,15 @@
+   auto connect(Node::Peripheral) -> void;
+   auto disconnect() -> void;
+ 
+-  auto readButtons() -> n8 { if(device) return device->readButtons(); return 0; }
+-  auto readControls() -> n2 { if(device) return device->readControls(); return 0; }
++  /* An empty port reads as NOTHING PRESSED, not everything.
++   *
++   * The Neo Geo's controller lines are active low - an Arcade Stick returns
++   * ~data - so an unconnected port with pull-ups reads all ones. Returning zero
++   * told the machine every button on that pad was held down, and the BIOS,
++   * seeing an impossible pad, went into its controller test instead of booting
++   * the game. */
++  auto readButtons() -> n8 { if(device) return device->readButtons(); return 0xff; }
++  auto readControls() -> n2 { if(device) return device->readControls(); return 3; }
+   auto writeOutputs(n3 data) -> void { if(device) return device->writeOutputs(data); }
+ 
+   auto power() -> void;

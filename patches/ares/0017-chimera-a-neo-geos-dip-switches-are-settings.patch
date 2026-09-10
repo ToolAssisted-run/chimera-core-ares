@@ -1,0 +1,63 @@
+--- a/ares/ng/system/system.hpp
++++ b/ares/ng/system/system.hpp
+@@ -1,5 +1,19 @@
+ struct System {
+   Node::System node;
++
++  /* REG_DIPSW, the eight switches the hardware reads at 0x300000. ares held
++   * them all high, and bit 0 high is "settings mode" - which is why a Neo Geo
++   * booted into the BIOS controller test instead of the game. They are settings
++   * now, so a person can choose, and the defaults are what plays a game. */
++  struct Dip {
++    Node::Setting::Boolean settingsMode;
++    Node::Setting::Boolean twoCoinChutes;
++    Node::Setting::Boolean normalController;
++    Node::Setting::Boolean multiplayer;
++    Node::Setting::Boolean freePlay;
++    Node::Setting::Boolean freeze;
++    Node::Setting::Natural  communicationId;
++  } dip;
+   VFS::Pak pak;
+   Memory::Readable<n16> bios;
+   Memory::Readable<n16> srom;
+--- a/ares/ng/system/system.cpp
++++ b/ares/ng/system/system.cpp
+@@ -58,6 +58,15 @@
+   root = node;
+   if(!node->setPak(pak = platform->pak(node))) return false;
+ 
++  dip.settingsMode = node->append<Node::Setting::Boolean>("Settings Mode", false);
++  dip.twoCoinChutes = node->append<Node::Setting::Boolean>("Two Coin Chutes", true);
++  dip.normalController = node->append<Node::Setting::Boolean>("Normal Controller", true);
++  dip.multiplayer = node->append<Node::Setting::Boolean>("Multiplayer", true);
++  dip.freePlay = node->append<Node::Setting::Boolean>("Free Play", true);
++  dip.freeze = node->append<Node::Setting::Boolean>("Freeze", true);
++  dip.communicationId = node->append<Node::Setting::Natural>("Communication ID", 3);
++  dip.communicationId->setAllowedValues({0, 1, 2, 3});
++
+   wram.allocate(64_KiB >> 1);
+   if(NeoGeo::Model::NeoGeoMVS()) {
+     sram.allocate(64_KiB >> 1);
+--- a/ares/ng/cpu/memory.cpp
++++ b/ares/ng/cpu/memory.cpp
+@@ -121,13 +121,13 @@
+ 
+   //REG_DIPSW
+   if((address & 0xfe0080) == 0x300000 && lower) {
+-    data.bit(0)   = 1;  //settings mode
+-    data.bit(1)   = 1;  //0 = 1 chute; 1 = 2 chutes (TODO: Verify)
+-    data.bit(2)   = 1;  //1 = normal controller; 0 = mahjong keyboard
+-    data.bit(3,4) = 1;  //communication ID code
+-    data.bit(5)   = 1;  //enable multiplayer
+-    data.bit(6)   = 1;  //freeplay
+-    data.bit(7)   = 1;  //freeze
++    data.bit(0)   = system.dip.settingsMode->latch();
++    data.bit(1)   = system.dip.twoCoinChutes->latch();     //0 = 1 chute; 1 = 2 chutes (TODO: Verify)
++    data.bit(2)   = system.dip.normalController->latch();  //1 = normal controller; 0 = mahjong keyboard
++    data.bit(3,4) = system.dip.communicationId->latch();   //communication ID code
++    data.bit(5)   = system.dip.multiplayer->latch();
++    data.bit(6)   = system.dip.freePlay->latch();
++    data.bit(7)   = system.dip.freeze->latch();
+   }
+ 
+   //REG_SYSTYPE
