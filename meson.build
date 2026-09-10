@@ -172,6 +172,11 @@ core_defines = [
   # timed wait. A sandbox has one thread; the reference must have one too, or
   # the two are not running the same program. See patches/ares/0011.
   '-DCHIMERA_SINGLE_THREADED=1',
+  # libco hands every emulated component its own stack. Out of malloc, that
+  # stack is memory the sandbox believes is ordinary, and a write-tracking
+  # sandbox cannot report a fault on the page the stack pointer lives in the
+  # ordinary way. Asking for it with MAP_STACK says what it is.
+  '-DCO_MMAP_STACKS=1',
   '-DSLJIT_HAVE_CONFIG_PRE=1',
   '-DSLJIT_HAVE_CONFIG_POST=1',
   '-DWANT_CPU_INTERPRETER=' + (get_option('cpu_interpreter') ? '1' : '0'),

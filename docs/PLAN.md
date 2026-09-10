@@ -430,6 +430,19 @@ And two things mia itself had to be taught, both because a core has no disk:
   mounted file into - so a Neo Geo romset could not be opened at all. It falls
   back to reading the file, which costs its size in memory and works anywhere.
 
+And one thing libco had to be taught, because a sandbox watches memory:
+
+- **a coroutine stack says it is a stack** (`patches/ares/0015`). libco gives
+  every emulated component its own stack and took them from `malloc`, which
+  makes them memory the sandbox believes is ordinary. It protects ordinary
+  memory to see what a frame writes, and on Windows a protected page that the
+  stack pointer is in cannot report its own fault - the kernel delivers an
+  exception by writing to that very page - so ares died on its first frame
+  there. `co_create` asks for `MAP_STACK` now and the sandbox handles them as
+  what they are. It costs history size on Windows, where a stack is never clean
+  and so goes into every delta: 700 frames of Game Boy is 268MB against 110MB
+  on Linux.
+
 ## Firmware
 
 Four machines need a console BIOS - the Game Boy Advance, the ColecoVision, the

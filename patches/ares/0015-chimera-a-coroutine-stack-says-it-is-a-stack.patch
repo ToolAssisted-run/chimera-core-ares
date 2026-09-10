@@ -1,0 +1,59 @@
+diff --git a/libco/amd64.c b/libco/amd64.c
+index ad55781ab..888f15397 100644
+--- a/libco/amd64.c
++++ b/libco/amd64.c
+@@ -160,15 +160,46 @@ cothread_t co_derive(void* memory, unsigned int size, void (*entrypoint)(void))
+   return handle;
+ }
+ 
+-cothread_t co_create(unsigned int size, void (*entrypoint)(void)) {
+-  void* memory = malloc(size);
+-  if(!memory) return (cothread_t)0;
+-  return co_derive(memory, size, entrypoint);
+-}
++#if defined(CO_MMAP_STACKS)
++  #include <sys/mman.h>
++
++  /* A cothread stack asks the system for a STACK, not for heap.
++   *
++   * It matters to a sandbox that tracks writes by protecting pages: memory it
++   * has been told is a stack is handled differently from memory it believes is
++   * ordinary, because a fault ON the page the stack pointer is in is a fault
++   * that cannot be reported the ordinary way. Taking these out of malloc told
++   * the sandbox they were ordinary, and they are not.
++   *
++   * The size is kept in a page of its own below the block, so co_delete can
++   * give it back. */
++  cothread_t co_create(unsigned int size, void (*entrypoint)(void)) {
++    unsigned long page = 4096;
++    unsigned long total = ((unsigned long)size + page * 2 - 1) & ~(page - 1);
++    total += page;
++    void* base = mmap(0, total, PROT_READ | PROT_WRITE,
++                      MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
++    if(base == MAP_FAILED) return (cothread_t)0;
++    *(unsigned long*)base = total;
++    return co_derive((char*)base + page, size, entrypoint);
++  }
+ 
+-void co_delete(cothread_t handle) {
+-  free(handle);
+-}
++  void co_delete(cothread_t handle) {
++    if(!handle) return;
++    char* base = (char*)handle - 4096;
++    munmap(base, *(unsigned long*)base);
++  }
++#else
++  cothread_t co_create(unsigned int size, void (*entrypoint)(void)) {
++    void* memory = malloc(size);
++    if(!memory) return (cothread_t)0;
++    return co_derive(memory, size, entrypoint);
++  }
++
++  void co_delete(cothread_t handle) {
++    free(handle);
++  }
++#endif
+ 
+ void co_switch(cothread_t handle) {
+   register cothread_t co_previous_handle = co_active_handle;
