@@ -815,6 +815,39 @@ respectively, in both flavours identically. `interframeBlending` was measured on
 moving content and **changes nothing this core hands over**; it is declared
 because ares declares it, and it is worth knowing it is inert here.
 
+
+## The Neo Geo booted into its controller test
+
+Reported as a DIP switch, and it was not one - but the reporter was right that
+it was a switch-shaped problem, and looking for the switch is what found it.
+
+**An unconnected controller port read as every button held down.** The Neo Geo's
+controller lines are active low - an Arcade Stick returns `~data` - so an empty
+port with pull-ups reads all ones. ares returned zero, which told the machine
+that all eight buttons and both controls on that pad were pressed, and the BIOS,
+seeing an impossible pad, went into its controller test instead of booting the
+game. It is visible in the test screen itself: the P2 column reads 1 on every
+row.
+
+Fixed where it was wrong: an empty port answers `0xff` and `3`. A Neo Geo with
+one controller in port 1 now boots the game, and its digests are **identical** to
+one with both ports filled - which is the right answer, because an empty port
+and an idle one are the same thing to the machine.
+
+### The DIP switches, since they were asked about
+
+`REG_DIPSW` was eight hardcoded ones in ares, one of which is "settings mode".
+They are settings now - Settings Mode, Two Coin Chutes, Normal Controller,
+Multiplayer, Free Play, Freeze and a Communication ID - defaulting to what plays
+a game rather than to what ares had.
+
+They change nothing on the machine that was reported, and that is worth writing
+down: **`REG_DIPSW` is an MVS register**, and the BIOS here is an AES one, which
+never reads it. Traced, not assumed - a counter on the read showed it is not
+touched in six hundred frames. They are exposed because they are real hardware
+switches that ares was answering for nobody, and they will matter the day an MVS
+BIOS is used.
+
 ## Not done
 
 In rough order of what would matter first:
