@@ -664,6 +664,51 @@ free content for is stereo with a single stream, so neither the mixing nor the
 monaural channel would have shown up. That wants a free Mega Drive or Famicom
 ROM more than it wants more code.
 
+
+## It does not run on Windows
+
+Everything above was measured on Linux. **On Windows the core loads and then
+dies on its first frame**, on every machine, and it always has - the commit
+before any of this work (`40e1559`) crashes identically, so nothing here caused
+it.
+
+What is known, all of it by experiment:
+
+- The core **loads**. A zero-frame run reports `frames=0` and exits cleanly:
+  machine setup, mia, the cartridge and the console BIOSes are all fine.
+- It dies on the **first frame**. `--frames 1` fails exactly as `--frames 120`.
+- `0xC0000005`, an access violation. Run through WSL it looks like exit code
+  **5**, which is the low byte and thoroughly misleading; a `.cmd` file's
+  `ERRORLEVEL` gives the real number.
+- **miniBox writes no diagnostic**, which is itself the clue.
+
+The Windows Event Log gives a faulting RIP whose module is "unknown". It is in
+the guest: the guest's base is `0x36f00000000`, so `nm -n core.wbx` resolves it
+to **`co_entrypoint` in libco.c, at its first instruction** - `push %rax`. A
+push faults only when **`%rsp` is invalid**, so the cothread switch is arriving
+on a stack the Windows host will not let the guest write. And a bad `%rsp` is
+also why nothing is logged: Windows cannot dispatch an exception handler onto a
+broken stack, so the VEH that would have explained it never runs.
+
+Ruled out, by trying them rather than by arguing:
+
+| tried | result |
+| --- | --- |
+| cothread stacks 128KB -> 2MB (`Thread::Size`) | no change |
+| `MB_STACK_GUARD=0` | no change |
+| the arena being too big (312MB) | rpcs3 asks for 42GB and works |
+| the host being broken generally | quickernes runs 120 frames, exits 0 |
+
+So it reads as a **miniBox bug on the Windows host**, not an ares bug - and
+ares is the only core here that switches stacks, which is why it is the only
+one that shows it. Fixing it touches a component every Chimera core shares.
+
+To reproduce without a frontend: cross-build `chimera-run.exe` from Chimera's
+`build/meson-windows`, put the `*.dll` beside it, and run the package with a
+movie - driven from a `.cmd` file, so the exit code survives.
+`waterbox/tests/make-project.py` writes the project, and its `input` field is
+the movie log.
+
 ## Not done
 
 In rough order of what would matter first:
