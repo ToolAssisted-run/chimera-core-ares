@@ -8,12 +8,13 @@ deterministic sandbox and packaged as a Chimera core (`core.wbx` +
 [chimera-core-dosbox-x](https://github.com/ToolAssisted-run/chimera-core-dosbox-x)
 and [chimera-core-gpgx](https://github.com/ToolAssisted-run/chimera-core-gpgx).
 
-Status: **twenty-one machines declared; four proven by the gate, fifteen proven
+Status: **twenty-one machines declared; five proven by the gate, fifteen proven
 against real commercial games, and four run end to end inside Chimera.** It
-runs on Windows as well as Linux, but only with **miniBox 9f1c533 or newer** -
-anything older cannot deliver a fault on a page a coroutine is using as its
-stack, and this core dies on its first frame there. `docs/PLAN.md` has the
-whole story.
+runs on Windows as well as Linux, but only with **miniBox ab677a2 or newer**:
+libco takes its coroutine stacks from `mmap(MAP_STACK)` rather than from malloc
+so that the sandbox knows what they are, and an older miniBox either kills this
+core on its first frame or quietly loses what those stacks write. `docs/PLAN.md`
+has the whole story.
 
 ares emulates about thirty systems from one codebase, which is why this
 repository is named for the emulator rather than for a console. The Nintendo 64
@@ -23,9 +24,9 @@ the machinery the rest need.
 
 | | |
 | --- | --- |
-| **Proven by the gate** (free content, every digest compared) | Nintendo 64, Game Boy, Game Boy Advance, PlayStation |
+| **Proven by the gate** (every digest compared) | Nintendo 64, Game Boy, Game Boy Advance, PlayStation, MSX |
 | **Proven against a real game** (native == sandbox on a commercial cartridge, off the record - the ROM is not ours to ship) | + Famicom/NES, Game Boy Color, Mega Drive, Master System, Game Gear, SG-1000, Atari 2600, WonderSwan Color, ColecoVision, Neo Geo AES, Neo Geo Pocket Color |
-| **Declared, untrusted** | MSX and MyVision - no ROM for either exists to hand |
+| **Declared, untrusted** | MyVision - no ROM for it exists to hand |
 | **Understood difference** | Atari 5200 - identical machine, but its audio differs between the flavours because its DAC table is built with `exp()` and musl and glibc round differently |
 | **Known broken** | ZX Spectrum - its audio is not reproducible even natively, and it corrupts the heap |
 
@@ -74,7 +75,7 @@ What the machines have in common:
   unchanged - the convention mupen and BizHawk record, so an N64 run made here
   means the same as a run made there.
 
-The equivalence gate (`waterbox/run-gate.sh`) runs thirty legs: native
+The equivalence gate (`waterbox/run-gate.sh`) runs thirty-four legs: native
 against sandbox on every digest for all four proven machines, the machine
 round-tripped through a savestate before every frame, every one of the
 twenty-one rebuilt and re-enumerated against its committed declaration, **each
@@ -83,9 +84,11 @@ reach the machine, the picture compared **pixel for pixel against real
 hardware**, and **jsmolka's ARM test suite read off the screen**. Its content is
 [PeterLemon/N64](https://github.com/PeterLemon/N64) (public domain),
 [libbet](https://github.com/pinobatch/libbet) (Zlib) and
-[gba-tests](https://github.com/jsmolka/gba-tests) (MIT), so the whole gate runs
-on a public runner with nothing licensed on it - it simply skips the seven
-machines whose BIOS is not there, and says so.
+[gba-tests](https://github.com/jsmolka/gba-tests) (MIT), so it runs on a public
+runner with nothing licensed on it - it simply skips the machines whose BIOS is
+not there, and says so. That is twenty of the thirty-four legs, and CI runs
+exactly those (`.github/workflows/chimera.yml`); the rest need a BIOS in
+`tests/firmware/` and are run by hand.
 
 ## Building
 
@@ -118,7 +121,7 @@ table, the package's `machines[]` and the default keybindings from it.
 
 The changes this core needs live in `patches/`, one directory per submodule,
 applied to the pristine pins by `waterbox/apply-patches.sh` (idempotent, and run
-automatically at configure time). There are fourteen, all small; six of them are
+automatically at configure time). There are seventeen, all small; six of them are
 plain bugs in ares that only show up in a build like this one - without Vulkan,
 with more than one machine, or inside a sandbox - and are worth offering
 upstream. `docs/PLAN.md` explains every one.

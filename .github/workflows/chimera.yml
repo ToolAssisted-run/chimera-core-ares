@@ -1,0 +1,230 @@
+name: chimera waterbox core
+
+# The core as Chimera ships it: a sandboxed core.wbx package, twenty-one
+# machines inside it.
+#
+# Seven of those machines need a console BIOS and none of it may be
+# distributed, so what runs here is everything that does not: the Nintendo 64
+# and Game Boy legs, over PeterLemon's public-domain N64 demos and libbet
+# (Zlib), which between them cover every claim this core makes - native against
+# sandbox on all four digests, the savestate round trip, the same run twice,
+# input reaching the machine, the refresh rate being the machine's own, the
+# picture compared pixel for pixel against real hardware, and the declared
+# machines matching what ares reports. The gate skips the BIOS machines and
+# says so; run it by hand with tests/firmware populated to prove those.
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: 'dev (rolling) or nightly (dated). Blank means dev.'
+        required: false
+        default: ''
+        type: string
+  schedule:
+    # 04:00 UTC. A nightly is published only when main moved since the last one;
+    # the reusable workflow checks, so an unchanged core costs one idle run.
+    - cron: '0 4 * * *'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CHIMERA_REF: main
+
+jobs:
+
+  core-gate:
+    # The fast half: the sandboxed core must emulate byte-identically to the
+    # same sources built for the host, and survive a savestate round-trip
+    # around every frame. No .NET, Mono or X involved.
+    name: core gate (native == sandbox)
+    runs-on: ubuntu-latest
+    # ares is twenty-one machines and both flavours are built from scratch.
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Check out Chimera (for the miniBox waterbox host and toolchain)
+        uses: actions/checkout@v6
+        with:
+          repository: ToolAssisted-run/chimera
+          ref: ${{ env.CHIMERA_REF }}
+          path: chimera-checkout
+          submodules: false
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends meson ninja-build build-essential python3
+
+      - name: Check out miniBox
+        working-directory: chimera-checkout
+        run: git submodule update --init extern/chimera-common-minibox
+
+      - name: Cache the guest toolchain
+        uses: actions/cache@v4
+        with:
+          path: |
+            chimera-checkout/extern/chimera-common-minibox/build/meson-linux
+            chimera-checkout/extern/chimera-common-minibox/build/meson-cpp
+          key: guest-cpp-${{ runner.os }}-${{ hashFiles('chimera-checkout/extern/chimera-common-minibox/.git') }}-${{ hashFiles('chimera-checkout/extern/chimera-common-minibox/meson.build') }}
+
+      - name: Build miniBox (host + C++ guest toolchain)
+        run: |
+          mb="$PWD/chimera-checkout/extern/chimera-common-minibox"
+          # ares throws for machine control flow, so the guest needs libstdc++
+          [ -f "$mb/build/meson-linux/build.ninja" ] || meson setup "$mb/build/meson-linux" "$mb"
+          meson compile -C "$mb/build/meson-linux"
+          [ -f "$mb/build/meson-cpp/build.ninja" ] || meson setup "$mb/build/meson-cpp" "$mb" -Dguest_cpp=true
+          meson compile -C "$mb/build/meson-cpp"
+
+      - name: Build the native reference and the sandbox driver
+        run: |
+          meson setup build/meson-native -Dwaterbox=true -Dminibox_dir="$PWD/chimera-checkout/extern/chimera-common-minibox"
+          ninja -C build/meson-native
+
+      - name: Build the waterbox core
+        run: |
+          ./waterbox/setup-guest.sh -m "$PWD/chimera-checkout/extern/chimera-common-minibox"
+          ninja -C build/meson-guest
+
+      - name: Core gate over the free content
+        run: ./waterbox/run-gate.sh
+
+      - name: Upload core.wbx
+        uses: actions/upload-artifact@v7
+        with:
+          name: core-wbx
+          path: build/meson-guest/waterbox/core.wbx
+          retention-days: 90
+
+  frontend-gate:
+    # The other half: the package running inside the real frontend (Chimera
+    # headless under Mono + Xvfb, through the generic waterbox adapter). It
+    # exists because the gate above structurally cannot see the frontend, and
+    # four faults were living in that gap at once - see docs/PLAN.md.
+    name: frontend gate (Chimera)
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Check out Chimera
+        uses: actions/checkout@v6
+        with:
+          repository: ToolAssisted-run/chimera
+          ref: ${{ env.CHIMERA_REF }}
+          path: chimera-checkout
+          submodules: recursive
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            meson ninja-build build-essential cmake pkg-config python3 \
+            mono-complete xvfb ffmpeg \
+            libgl1-mesa-dev libx11-dev libxext-dev libasound2-dev
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0'
+
+      - name: Build Chimera native dependencies
+        working-directory: chimera-checkout
+        run: |
+          meson setup build/meson-linux --prefix "$PWD/build" --libdir dll
+          meson compile -C build/meson-linux
+          meson install -C build/meson-linux
+
+      - name: Build the Chimera solution
+        working-directory: chimera-checkout
+        run: dotnet build source/gui/Chimera.sln -c Release /nodeReuse:false -p:UseSharedCompilation=false
+
+      - name: Build the native reference
+        run: |
+          meson setup build/meson-native -Dwaterbox=true -Dminibox_dir="$PWD/chimera-checkout/extern/chimera-common-minibox"
+          # run-native only: the frontend gate compares Chimera against the
+          # native reference and never runs the sandbox driver.
+          ninja -C build/meson-native waterbox/run-native
+
+      - name: Cache the guest toolchain
+        uses: actions/cache@v4
+        with:
+          path: |
+            chimera-checkout/extern/chimera-common-minibox/build/meson-linux
+            chimera-checkout/extern/chimera-common-minibox/build/meson-cpp
+          key: guest-cpp-${{ runner.os }}-${{ hashFiles('chimera-checkout/extern/chimera-common-minibox/.git') }}-${{ hashFiles('chimera-checkout/extern/chimera-common-minibox/meson.build') }}
+
+      - name: Build miniBox (host + C++ guest toolchain)
+        run: |
+          mb="$PWD/chimera-checkout/extern/chimera-common-minibox"
+          [ -f "$mb/build/meson-linux/build.ninja" ] || meson setup "$mb/build/meson-linux" "$mb"
+          meson compile -C "$mb/build/meson-linux"
+          [ -f "$mb/build/meson-cpp/build.ninja" ] || meson setup "$mb/build/meson-cpp" "$mb" -Dguest_cpp=true
+          meson compile -C "$mb/build/meson-cpp"
+
+      - name: Build and install the waterbox core package
+        # The commit is the core's authoritative version: this build is the one
+        # that publishes the artifact, so what it stamps is what a movie can
+        # cite. A package built by hand stamps "+local" instead.
+        env:
+          CORE_VERSION: ${{ github.sha }}
+        run: ./waterbox/build-package.sh -m "$PWD/chimera-checkout/extern/chimera-common-minibox" -r "$PWD/chimera-checkout"
+
+      - name: Frontend gate
+        env:
+          CHIMERA_BUILD: ${{ github.workspace }}/chimera-checkout/build
+        run: ./waterbox/run-frontend-gate.sh
+
+      - name: The package through Chimera's contract tests
+        # Readable, built for an ABI this frontend runs, becomes a working
+        # factory, binds only buttons its controllers declare, and stamps a
+        # version. Twenty-one machines is twenty-one controllers, and no two of
+        # a controller's mnemonics may collide - a movie log is read by eye.
+        working-directory: chimera-checkout
+        env:
+          CHIMERA_CORES_DIR: ${{ github.workspace }}/chimera-checkout/build/Cores
+        run: |
+          dotnet test source/gui/Chimera.Tests.Client.Common/Chimera.Tests.Client.Common.csproj \
+            -c Release --nologo \
+            --filter "FullyQualifiedName~InstalledCorePackagesTests|FullyQualifiedName~MnemonicUniquenessTests"
+
+      - name: Publish the core package
+        # one core.wbx, one package, twenty-one machines inside it
+        uses: actions/upload-artifact@v7
+        with:
+          name: ares-${{ github.sha }}
+          path: chimera-checkout/build/Cores/ares.chimeraCore
+          if-no-files-found: error
+
+  publish:
+    # What the gates passed, published as this core's own release: a rolling
+    # `dev` on every green push to main, an immutable `nightly-YYYY-MM-DD` from
+    # the scheduled run. Chimera ships no cores; its Core Manager downloads
+    # them from here.
+    #
+    # The logic is Chimera's tools/publish-core.sh, called through one reusable
+    # workflow, so every core publishes the same way and there is one place to
+    # change it.
+    name: publish
+    needs: [ core-gate, frontend-gate ]
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: write
+    uses: ToolAssisted-run/chimera/.github/workflows/publish-core.yml@main
+    with:
+      core-id: ares
+      artifact: ares-${{ github.sha }}
+      package: ares.chimeraCore
+      kind: ${{ github.event.inputs.kind }}
