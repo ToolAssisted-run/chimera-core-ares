@@ -766,6 +766,55 @@ written**, so they never become dirty, and a PlayStation savestate with a disc
 loaded is 5.3MB. Streaming the medium instead of holding it is the real fix and
 nobody has written it.
 
+
+## The machine's own settings
+
+ares gives each of its machines settings of its own - a Game Boy's DMG
+revision, a WonderSwan's headphones, whether the boot ROM is skipped - and this
+core used to offer none of them. They are not decoration: **each one changes
+what the machine does or what it draws**, so each one is something a movie has
+to pin, which means the package has to declare it.
+
+They are taken from ares rather than typed. `gen-machines` walks each machine's
+node graph for `Node::Setting` the same way it already walks it for inputs, and
+`gen-config.py` turns that into three things: the package's declaration, the
+guest's key-to-node table in `machines.inc`, and the gate's check that the two
+still match. **Thirty-eight** of them across eleven machines, and adding a
+machine that has more costs a regenerate.
+
+Every ares setting type reads and writes through one string-shaped interface on
+its base - `readValue`, `readAllowedValues`, `writeValue` - so the value travels
+as text and the machine converts it. Nothing in this core knows what any
+individual setting means.
+
+### They are scoped to the machine
+
+A package's settings are one flat list, and twenty-one machines' worth at once
+is a list nobody can read and a set of choices most of which do nothing. So a
+declaration now says which machine it belongs to (`when`, the same shape the
+machines already use), and Chimera shows a machine only its own. The three the
+core wrote itself that were always the Nintendo 64's - the real-time clock, the
+video interface, the deinterlacer - say so now too, and `region` is offered only
+on the nine machines that have a PAL form.
+
+Keys are machine-scoped for the same reason: `gb.version` is a DMG revision and
+`gbc.version` is a CGB one, same word and different lists, and a movie records
+the value forever.
+
+### One that resolves to nothing
+
+`find<Node::Setting::Setting>(path)` matches a node's **exact** identity, and
+Setting is the base - a Boolean answers to `setting.boolean` and never to
+`setting` - so asking for the base finds nothing at all and every setting
+silently did nothing. Each concrete kind is asked in turn instead.
+
+### What was measured
+
+`gb.fastBoot` and `gb.colorEmulation` change the machine and the picture
+respectively, in both flavours identically. `interframeBlending` was measured on
+moving content and **changes nothing this core hands over**; it is declared
+because ares declares it, and it is worth knowing it is inert here.
+
 ## Not done
 
 In rough order of what would matter first:

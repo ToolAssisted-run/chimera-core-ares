@@ -130,6 +130,7 @@ static int gate_parse_opts(int argc, char **argv, int from, struct gate_opts *o)
 		else if (!strcmp(a, "--pal") || !strcmp(a, "--fast-vi") || !strcmp(a, "--rerecord")
 			|| !strcmp(a, "--report-stick")
 			|| !strcmp(a, "--report-refresh")) { }
+		else if (!strcmp(a, "--set")) { i++; }
 		else { fprintf(stderr, "unknown option '%s'\n", a); gate_usage(); return 0; }
 		#undef GATE_NEXT
 	}

@@ -239,6 +239,39 @@ namespace
 		}
 	}
 
+	/* Writes back whatever the project said about ares' own settings.
+	 *
+	 * These are not decoration. A Game Boy's DMG revision, a Master System's VDP
+	 * revision, whether the boot ROM is skipped, whether frames are blended into
+	 * each other - each changes what the machine does or what it draws, so each
+	 * has to be part of what a movie pins. The package declares them (they are
+	 * enumerated out of ares by gen-machines), the frontend offers the ones that
+	 * belong to the machine being loaded, and this puts them back.
+	 *
+	 * Before power(), because that is when ares latches a setting into the
+	 * hardware it configures. */
+	void applySettings(const machine::Config &config)
+	{
+		if (config.lookupSetting == nullptr || g_inputs == nullptr) return;
+		for (int i = 0; i < g_inputs->settingCount; i++)
+		{
+			const auto &decl = g_inputs->settings[i];
+			char value[128];
+			if (!config.lookupSetting(decl.key, value, (int)sizeof value)) continue;
+
+			/* find() matches a node's EXACT identity, and Setting is the base -
+			 * a Boolean answers to "setting.boolean" and never to "setting", so
+			 * asking for the base finds nothing at all. Each concrete kind is
+			 * asked in turn; writeValue is the shared interface once one
+			 * answers, so nothing here needs to know which it was. */
+			if (auto n = g_root->find<Node::Setting::Boolean>(decl.path)) { n->writeValue(value); continue; }
+			if (auto n = g_root->find<Node::Setting::Natural>(decl.path)) { n->writeValue(value); continue; }
+			if (auto n = g_root->find<Node::Setting::Integer>(decl.path)) { n->writeValue(value); continue; }
+			if (auto n = g_root->find<Node::Setting::Real>(decl.path))    { n->writeValue(value); continue; }
+			if (auto n = g_root->find<Node::Setting::String>(decl.path))  { n->writeValue(value); continue; }
+		}
+	}
+
 	/* Plugs in whatever the config asked for, port by port, and binds the
 	 * declared inputs to the nodes that now exist. */
 	bool connectPorts(const machine::Config &config)
@@ -473,6 +506,7 @@ namespace machine
 		}
 
 		if (!connectPorts(config)) return false;
+		applySettings(config);
 
 		FenvGuard guard(machineFenv());
 		g_root->power();

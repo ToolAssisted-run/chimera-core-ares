@@ -31,6 +31,16 @@ namespace machine
 		bool pal;
 		uint64_t initTimeUnix;   /* what a cartridge clock starts at */
 
+		/* How the machine asks for one of ares' own settings by the key the
+		 * package declares it under - "gb.fastBoot", "ng.settingsMode". The
+		 * guest reads the mounted settings JSON; the reference runner reads its
+		 * own --set flags. Null means nobody can be asked, and every setting
+		 * keeps the value ares powers on with.
+		 *
+		 * A string for every type, because that is the one interface all of
+		 * ares' setting nodes share. */
+		bool (*lookupSetting)(const char *key, char *out, int outSize);
+
 		/* What to plug into each of the machine's ports, by ares' own name for
 		 * the device - which differs between machines: a Mega Drive port takes a
 		 * "Control Pad" and a PlayStation's a "Digital Gamepad". The order is the

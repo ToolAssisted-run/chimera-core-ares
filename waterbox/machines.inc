@@ -125,6 +125,12 @@ static const machines::InputDecl kButtons_GB[] = {
 };
 static const machines::InputDecl kAxes_GB[] = {
 };
+static const machines::SettingDecl kSettings_GB[] = {
+	{"gb.fastBoot", "Fast Boot"},
+	{"gb.version", "CPU/Version"},
+	{"gb.colorEmulation", "PPU/Screen/Color Emulation"},
+	{"gb.interframeBlending", "PPU/Screen/Interframe Blending"},
+};
 
 static const machines::InputDecl kButtons_GBC[] = {
 	{"Up", "Controls/Up"},
@@ -137,6 +143,12 @@ static const machines::InputDecl kButtons_GBC[] = {
 	{"Start", "Controls/Start"},
 };
 static const machines::InputDecl kAxes_GBC[] = {
+};
+static const machines::SettingDecl kSettings_GBC[] = {
+	{"gbc.fastBoot", "Fast Boot"},
+	{"gbc.version", "CPU/Version"},
+	{"gbc.colorEmulation", "PPU/Screen/Color Emulation"},
+	{"gbc.interframeBlending", "PPU/Screen/Interframe Blending"},
 };
 
 static const machines::InputDecl kButtons_GEN[] = {
@@ -187,6 +199,10 @@ static const machines::InputDecl kButtons_SMS[] = {
 };
 static const machines::InputDecl kAxes_SMS[] = {
 };
+static const machines::SettingDecl kSettings_SMS[] = {
+	{"sms.colorEmulation", "VDP/Screen/Color Emulation"},
+	{"sms.revision", "VDP/Revision"},
+};
 
 static const machines::InputDecl kButtons_GG[] = {
 	{"Up", "Controls/Up"},
@@ -210,6 +226,10 @@ static const machines::InputDecl kButtons_GG[] = {
 	{"P2 2", "Controller Port 2/Gamepad/2"},
 };
 static const machines::InputDecl kAxes_GG[] = {
+};
+static const machines::SettingDecl kSettings_GG[] = {
+	{"gg.interframeBlending", "VDP/Screen/Interframe Blending"},
+	{"gg.revision", "VDP/Revision"},
 };
 
 static const machines::InputDecl kButtons_SG[] = {
@@ -248,6 +268,9 @@ static const machines::InputDecl kButtons_A26[] = {
 };
 static const machines::InputDecl kAxes_A26[] = {
 };
+static const machines::SettingDecl kSettings_A26[] = {
+	{"a26.phosphor", "TIA/Screen/Phosphor"},
+};
 
 static const machines::InputDecl kButtons_WS[] = {
 	{"Y1", "Controls/Y1"},
@@ -266,6 +289,13 @@ static const machines::InputDecl kButtons_WS[] = {
 };
 static const machines::InputDecl kAxes_WS[] = {
 };
+static const machines::SettingDecl kSettings_WS[] = {
+	{"ws.headphones", "Headphones"},
+	{"ws.colorEmulation", "PPU/Screen/Color Emulation"},
+	{"ws.interframeBlending", "PPU/Screen/Interframe Blending"},
+	{"ws.orientation", "PPU/Screen/Orientation"},
+	{"ws.showIcons", "PPU/Screen/Show Icons"},
+};
 
 static const machines::InputDecl kButtons_WSC[] = {
 	{"Y1", "Controls/Y1"},
@@ -283,6 +313,13 @@ static const machines::InputDecl kButtons_WSC[] = {
 	{"Power", "Controls/Power"},
 };
 static const machines::InputDecl kAxes_WSC[] = {
+};
+static const machines::SettingDecl kSettings_WSC[] = {
+	{"wsc.headphones", "Headphones"},
+	{"wsc.colorEmulation", "PPU/Screen/Color Emulation"},
+	{"wsc.interframeBlending", "PPU/Screen/Interframe Blending"},
+	{"wsc.orientation", "PPU/Screen/Orientation"},
+	{"wsc.showIcons", "PPU/Screen/Show Icons"},
 };
 
 static const machines::InputDecl kButtons_ZXS[] = {
@@ -367,6 +404,11 @@ static const machines::InputDecl kButtons_GBA[] = {
 	{"Start", "Controls/Start"},
 };
 static const machines::InputDecl kAxes_GBA[] = {
+};
+static const machines::SettingDecl kSettings_GBA[] = {
+	{"gba.colorEmulation", "PPU/Screen/Color Emulation"},
+	{"gba.interframeBlending", "PPU/Screen/Interframe Blending"},
+	{"gba.orientation", "PPU/Screen/Orientation"},
 };
 
 static const machines::InputDecl kButtons_CV[] = {
@@ -551,6 +593,9 @@ static const machines::InputDecl kButtons_PS1[] = {
 };
 static const machines::InputDecl kAxes_PS1[] = {
 };
+static const machines::SettingDecl kSettings_PS1[] = {
+	{"ps1.fastBoot", "Fast Boot"},
+};
 
 static const machines::InputDecl kButtons_A52[] = {
 	{"P1 Top Fire", "Controller Port 1/Controller/Top Fire"},
@@ -646,6 +691,10 @@ static const machines::InputDecl kButtons_NGP[] = {
 };
 static const machines::InputDecl kAxes_NGP[] = {
 };
+static const machines::SettingDecl kSettings_NGP[] = {
+	{"ngp.fastBoot", "Fast Boot"},
+	{"ngp.interframeBlending", "KGE/Screen/Interframe Blending"},
+};
 
 static const machines::InputDecl kButtons_NGPC[] = {
 	{"Up", "Controls/Up"},
@@ -659,6 +708,10 @@ static const machines::InputDecl kButtons_NGPC[] = {
 	{"Power", "Controls/Power"},
 };
 static const machines::InputDecl kAxes_NGPC[] = {
+};
+static const machines::SettingDecl kSettings_NGPC[] = {
+	{"ngpc.fastBoot", "Fast Boot"},
+	{"ngpc.interframeBlending", "KGE/Screen/Interframe Blending"},
 };
 
 static const machines::InputDecl kButtons_NG[] = {
@@ -685,28 +738,37 @@ static const machines::InputDecl kButtons_NG[] = {
 };
 static const machines::InputDecl kAxes_NG[] = {
 };
+static const machines::SettingDecl kSettings_NG[] = {
+	{"ng.settingsMode", "Settings Mode"},
+	{"ng.twoCoinChutes", "Two Coin Chutes"},
+	{"ng.normalController", "Normal Controller"},
+	{"ng.multiplayer", "Multiplayer"},
+	{"ng.freePlay", "Free Play"},
+	{"ng.freeze", "Freeze"},
+	{"ng.communicationID", "Communication ID"},
+};
 
 static const machines::MachineInputs kMachineInputs[] = {
-	{"N64", kButtons_N64, 64, kAxes_N64, 16, "Gamepad", false},
-	{"NES", kButtons_NES, 18, nullptr, 0, "Gamepad", false},
-	{"GB", kButtons_GB, 8, nullptr, 0, nullptr, false},
-	{"GBC", kButtons_GBC, 8, nullptr, 0, nullptr, false},
-	{"GEN", kButtons_GEN, 25, nullptr, 0, "Control Pad", false},
-	{"SMS", kButtons_SMS, 14, nullptr, 0, "Gamepad", false},
-	{"GG", kButtons_GG, 19, nullptr, 0, "Gamepad", false},
-	{"SG", kButtons_SG, 12, nullptr, 0, "Gamepad", false},
-	{"A26", kButtons_A26, 15, nullptr, 0, "Gamepad", false},
-	{"WS", kButtons_WS, 13, nullptr, 0, nullptr, false},
-	{"WSC", kButtons_WSC, 13, nullptr, 0, nullptr, false},
-	{"ZXS", kButtons_ZXS, 40, nullptr, 0, "Original", false},
-	{"MYV", kButtons_MYV, 19, nullptr, 0, nullptr, false},
-	{"GBA", kButtons_GBA, 10, nullptr, 0, nullptr, false},
-	{"CV", kButtons_CV, 37, nullptr, 0, "Gamepad", false},
-	{"MSX", kButtons_MSX, 103, nullptr, 0, "Japanese", false},
-	{"PS1", kButtons_PS1, 28, nullptr, 0, "Digital Gamepad", true},
-	{"A52", kButtons_A52, 68, kAxes_A52, 8, "Controller", false},
-	{"NGP", kButtons_NGP, 9, nullptr, 0, nullptr, false},
-	{"NGPC", kButtons_NGPC, 9, nullptr, 0, nullptr, false},
-	{"NG", kButtons_NG, 20, nullptr, 0, "Arcade Stick", false},
+	{"N64", kButtons_N64, 64, kAxes_N64, 16, nullptr, 0, "Gamepad", false},
+	{"NES", kButtons_NES, 18, nullptr, 0, nullptr, 0, "Gamepad", false},
+	{"GB", kButtons_GB, 8, nullptr, 0, kSettings_GB, 4, nullptr, false},
+	{"GBC", kButtons_GBC, 8, nullptr, 0, kSettings_GBC, 4, nullptr, false},
+	{"GEN", kButtons_GEN, 25, nullptr, 0, nullptr, 0, "Control Pad", false},
+	{"SMS", kButtons_SMS, 14, nullptr, 0, kSettings_SMS, 2, "Gamepad", false},
+	{"GG", kButtons_GG, 19, nullptr, 0, kSettings_GG, 2, "Gamepad", false},
+	{"SG", kButtons_SG, 12, nullptr, 0, nullptr, 0, "Gamepad", false},
+	{"A26", kButtons_A26, 15, nullptr, 0, kSettings_A26, 1, "Gamepad", false},
+	{"WS", kButtons_WS, 13, nullptr, 0, kSettings_WS, 5, nullptr, false},
+	{"WSC", kButtons_WSC, 13, nullptr, 0, kSettings_WSC, 5, nullptr, false},
+	{"ZXS", kButtons_ZXS, 40, nullptr, 0, nullptr, 0, "Original", false},
+	{"MYV", kButtons_MYV, 19, nullptr, 0, nullptr, 0, nullptr, false},
+	{"GBA", kButtons_GBA, 10, nullptr, 0, kSettings_GBA, 3, nullptr, false},
+	{"CV", kButtons_CV, 37, nullptr, 0, nullptr, 0, "Gamepad", false},
+	{"MSX", kButtons_MSX, 103, nullptr, 0, nullptr, 0, "Japanese", false},
+	{"PS1", kButtons_PS1, 28, nullptr, 0, kSettings_PS1, 1, "Digital Gamepad", true},
+	{"A52", kButtons_A52, 68, kAxes_A52, 8, nullptr, 0, "Controller", false},
+	{"NGP", kButtons_NGP, 9, nullptr, 0, kSettings_NGP, 2, nullptr, false},
+	{"NGPC", kButtons_NGPC, 9, nullptr, 0, kSettings_NGPC, 2, nullptr, false},
+	{"NG", kButtons_NG, 20, nullptr, 0, kSettings_NG, 7, "Arcade Stick", false},
 };
 

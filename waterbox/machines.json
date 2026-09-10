@@ -13,6 +13,7 @@
       "bootsWithoutMedium": false,
       "loads": true,
       "console": [],
+      "settings": [],
       "ports": [
         {
           "name": "Controller Port 1",
@@ -80,6 +81,7 @@
       "bootsWithoutMedium": false,
       "loads": true,
       "console": [{"name": "Reset", "path": "Controls/Reset", "axis": false}, {"name": "Microphone", "path": "Controls/Microphone", "axis": false}],
+      "settings": [],
       "ports": [
         {
           "name": "Controller Port 1",
@@ -122,6 +124,7 @@
       "bootsWithoutMedium": false,
       "loads": true,
       "console": [{"name": "Up", "path": "Controls/Up", "axis": false}, {"name": "Down", "path": "Controls/Down", "axis": false}, {"name": "Left", "path": "Controls/Left", "axis": false}, {"name": "Right", "path": "Controls/Right", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "Select", "path": "Controls/Select", "axis": false}, {"name": "Start", "path": "Controls/Start", "axis": false}],
+      "settings": [{"name": "Fast Boot", "path": "Fast Boot", "type": "bool", "value": "false", "options": ["false", "true"]}, {"name": "Version", "path": "CPU/Version", "type": "enum", "value": "DMG-CPU B", "options": ["DMG-CPU", "DMG-CPU A", "DMG-CPU B", "DMG-CPU C", "CPU MGB"]}, {"name": "Color Emulation", "path": "PPU/Screen/Color Emulation", "type": "enum", "value": "Game Boy", "options": ["Game Boy", "Game Boy Pocket", "RGB"]}, {"name": "Interframe Blending", "path": "PPU/Screen/Interframe Blending", "type": "bool", "value": "true", "options": ["false", "true"]}],
       "ports": [
 
       ]
@@ -138,6 +141,7 @@
       "bootsWithoutMedium": false,
       "loads": true,
       "console": [{"name": "Up", "path": "Controls/Up", "axis": false}, {"name": "Down", "path": "Controls/Down", "axis": false}, {"name": "Left", "path": "Controls/Left", "axis": false}, {"name": "Right", "path": "Controls/Right", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "Select", "path": "Controls/Select", "axis": false}, {"name": "Start", "path": "Controls/Start", "axis": false}],
+      "settings": [{"name": "Fast Boot", "path": "Fast Boot", "type": "bool", "value": "false", "options": ["false", "true"]}, {"name": "Version", "path": "CPU/Version", "type": "enum", "value": "CPU CGB", "options": ["CPU CGB", "CPU CGB A", "CPU CGB B", "CPU CGB C", "CPU CGB D", "CPU CGB E"]}, {"name": "Color Emulation", "path": "PPU/Screen/Color Emulation", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Interframe Blending", "path": "PPU/Screen/Interframe Blending", "type": "bool", "value": "true", "options": ["false", "true"]}],
       "ports": [
 
       ]
@@ -154,6 +158,7 @@
       "bootsWithoutMedium": false,
       "loads": true,
       "console": [{"name": "Reset", "path": "Controls/Reset", "axis": false}],
+      "settings": [],
       "ports": [
         {
           "name": "Controller Port 1",
@@ -196,6 +201,7 @@
       "bootsWithoutMedium": false,
       "loads": true,
       "console": [{"name": "Reset", "path": "Controls/Reset", "axis": false}, {"name": "Pause", "path": "Controls/Pause", "axis": false}],
+      "settings": [{"name": "Color Emulation", "path": "VDP/Screen/Color Emulation", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Revision", "path": "VDP/Revision", "type": "enum", "value": "2", "options": ["1", "2"]}],
       "ports": [
         {
           "name": "Controller Port 1",
@@ -229,6 +235,7 @@
       "bootsWithoutMedium": false,
       "loads": true,
       "console": [{"name": "Up", "path": "Controls/Up", "axis": false}, {"name": "Down", "path": "Controls/Down", "axis": false}, {"name": "Left", "path": "Controls/Left", "axis": false}, {"name": "Right", "path": "Controls/Right", "axis": false}, {"name": "1", "path": "Controls/1", "axis": false}, {"name": "2", "path": "Controls/2", "axis": false}, {"name": "Start", "path": "Controls/Start", "axis": false}],
+      "settings": [{"name": "Interframe Blending", "path": "VDP/Screen/Interframe Blending", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Revision", "path": "VDP/Revision", "type": "enum", "value": "2", "options": ["1", "2"]}],
       "ports": [
         {
           "name": "Controller Port 1",
@@ -262,6 +269,7 @@
       "bootsWithoutMedium": false,
       "loads": true,
       "console": [],
+      "settings": [],
       "ports": [
         {
           "name": "Controller Port 1",
@@ -295,6 +303,7 @@
       "bootsWithoutMedium": false,
       "loads": true,
       "console": [{"name": "Reset", "path": "Controls/Reset", "axis": false}, {"name": "Select", "path": "Controls/Select", "axis": false}, {"name": "Left Difficulty", "path": "Controls/Left Difficulty", "axis": false}, {"name": "Right Difficulty", "path": "Controls/Right Difficulty", "axis": false}, {"name": "TV Type", "path": "Controls/TV Type", "axis": false}],
+      "settings": [{"name": "Phosphor", "path": "TIA/Screen/Phosphor", "type": "bool", "value": "false", "options": ["false", "true"]}],
       "ports": [
         {
           "name": "Controller Port 1",
@@ -328,6 +337,7 @@
       "bootsWithoutMedium": false,
       "loads": true,
       "console": [{"name": "Y1", "path": "Controls/Y1", "axis": false}, {"name": "Y2", "path": "Controls/Y2", "axis": false}, {"name": "Y3", "path": "Controls/Y3", "axis": false}, {"name": "Y4", "path": "Controls/Y4", "axis": false}, {"name": "X1", "path": "Controls/X1", "axis": false}, {"name": "X2", "path": "Controls/X2", "axis": false}, {"name": "X3", "path": "Controls/X3", "axis": false}, {"name": "X4", "path": "Controls/X4", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "Start", "path": "Controls/Start", "axis": false}, {"name": "Volume", "path": "Controls/Volume", "axis": false}, {"name": "Power", "path": "Controls/Power", "axis": false}],
+      "settings": [{"name": "Headphones", "path": "Headphones", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Color Emulation", "path": "PPU/Screen/Color Emulation", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Interframe Blending", "path": "PPU/Screen/Interframe Blending", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Orientation", "path": "PPU/Screen/Orientation", "type": "enum", "value": "Automatic", "options": ["Automatic", "Horizontal", "Vertical"]}, {"name": "Show Icons", "path": "PPU/Screen/Show Icons", "type": "bool", "value": "true", "options": ["false", "true"]}],
       "ports": [
 
       ]
@@ -344,6 +354,7 @@
       "bootsWithoutMedium": false,
       "loads": true,
       "console": [{"name": "Y1", "path": "Controls/Y1", "axis": false}, {"name": "Y2", "path": "Controls/Y2", "axis": false}, {"name": "Y3", "path": "Controls/Y3", "axis": false}, {"name": "Y4", "path": "Controls/Y4", "axis": false}, {"name": "X1", "path": "Controls/X1", "axis": false}, {"name": "X2", "path": "Controls/X2", "axis": false}, {"name": "X3", "path": "Controls/X3", "axis": false}, {"name": "X4", "path": "Controls/X4", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "Start", "path": "Controls/Start", "axis": false}, {"name": "Volume", "path": "Controls/Volume", "axis": false}, {"name": "Power", "path": "Controls/Power", "axis": false}],
+      "settings": [{"name": "Headphones", "path": "Headphones", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Color Emulation", "path": "PPU/Screen/Color Emulation", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Interframe Blending", "path": "PPU/Screen/Interframe Blending", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Orientation", "path": "PPU/Screen/Orientation", "type": "enum", "value": "Automatic", "options": ["Automatic", "Horizontal", "Vertical"]}, {"name": "Show Icons", "path": "PPU/Screen/Show Icons", "type": "bool", "value": "true", "options": ["false", "true"]}],
       "ports": [
 
       ]
@@ -360,6 +371,7 @@
       "bootsWithoutMedium": false,
       "loads": true,
       "console": [],
+      "settings": [],
       "ports": [
         {
           "name": "Keyboard",
@@ -384,6 +396,7 @@
       "bootsWithoutMedium": false,
       "loads": true,
       "console": [{"name": "UP [B]", "path": "Controls/UP [B]", "axis": false}, {"name": "DOWN [C]", "path": "Controls/DOWN [C]", "axis": false}, {"name": "LEFT [A]", "path": "Controls/LEFT [A]", "axis": false}, {"name": "RIGHT [D]", "path": "Controls/RIGHT [D]", "axis": false}, {"name": "ACTION [E]", "path": "Controls/ACTION [E]", "axis": false}, {"name": "1", "path": "Controls/1", "axis": false}, {"name": "2", "path": "Controls/2", "axis": false}, {"name": "3", "path": "Controls/3", "axis": false}, {"name": "4", "path": "Controls/4", "axis": false}, {"name": "5", "path": "Controls/5", "axis": false}, {"name": "6", "path": "Controls/6", "axis": false}, {"name": "7", "path": "Controls/7", "axis": false}, {"name": "8", "path": "Controls/8", "axis": false}, {"name": "9", "path": "Controls/9", "axis": false}, {"name": "10", "path": "Controls/10", "axis": false}, {"name": "11", "path": "Controls/11", "axis": false}, {"name": "12", "path": "Controls/12", "axis": false}, {"name": "13", "path": "Controls/13", "axis": false}, {"name": "14", "path": "Controls/14", "axis": false}],
+      "settings": [],
       "ports": [
 
       ]
@@ -401,6 +414,7 @@
       "firmware": {"id": "gbaBios"},
       "loads": true,
       "console": [{"name": "Up", "path": "Controls/Up", "axis": false}, {"name": "Down", "path": "Controls/Down", "axis": false}, {"name": "Left", "path": "Controls/Left", "axis": false}, {"name": "Right", "path": "Controls/Right", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "L", "path": "Controls/L", "axis": false}, {"name": "R", "path": "Controls/R", "axis": false}, {"name": "Select", "path": "Controls/Select", "axis": false}, {"name": "Start", "path": "Controls/Start", "axis": false}],
+      "settings": [{"name": "Color Emulation", "path": "PPU/Screen/Color Emulation", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Interframe Blending", "path": "PPU/Screen/Interframe Blending", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Orientation", "path": "PPU/Screen/Orientation", "type": "enum", "value": "0°", "options": ["0°", "90°", "180°", "270°"]}],
       "ports": [
 
       ]
@@ -418,6 +432,7 @@
       "firmware": {"id": "cvBios"},
       "loads": true,
       "console": [{"name": "Reset", "path": "Controls/Reset", "axis": false}],
+      "settings": [],
       "ports": [
         {
           "name": "Controller Port 1",
@@ -452,6 +467,7 @@
       "firmware": {"id": "msxBios"},
       "loads": true,
       "console": [],
+      "settings": [],
       "ports": [
         {
           "name": "Keyboard",
@@ -495,6 +511,7 @@
       "firmware": {"id": "ps1Bios"},
       "loads": true,
       "console": [],
+      "settings": [{"name": "Fast Boot", "path": "Fast Boot", "type": "bool", "value": "false", "options": ["false", "true"]}],
       "ports": [
         {
           "name": "Controller Port 1",
@@ -547,6 +564,7 @@
       "firmware": {"id": "a52Bios"},
       "loads": true,
       "console": [],
+      "settings": [],
       "ports": [
         {
           "name": "Controller Port 1",
@@ -599,6 +617,7 @@
       "firmware": {"id": "ngpBios"},
       "loads": true,
       "console": [{"name": "Up", "path": "Controls/Up", "axis": false}, {"name": "Down", "path": "Controls/Down", "axis": false}, {"name": "Left", "path": "Controls/Left", "axis": false}, {"name": "Right", "path": "Controls/Right", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "Option", "path": "Controls/Option", "axis": false}, {"name": "Debugger", "path": "Controls/Debugger", "axis": false}, {"name": "Power", "path": "Controls/Power", "axis": false}],
+      "settings": [{"name": "Fast Boot", "path": "Fast Boot", "type": "bool", "value": "false", "options": ["false", "true"]}, {"name": "Interframe Blending", "path": "KGE/Screen/Interframe Blending", "type": "bool", "value": "true", "options": ["false", "true"]}],
       "ports": [
 
       ]
@@ -616,6 +635,7 @@
       "firmware": {"id": "ngpcBios"},
       "loads": true,
       "console": [{"name": "Up", "path": "Controls/Up", "axis": false}, {"name": "Down", "path": "Controls/Down", "axis": false}, {"name": "Left", "path": "Controls/Left", "axis": false}, {"name": "Right", "path": "Controls/Right", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "Option", "path": "Controls/Option", "axis": false}, {"name": "Debugger", "path": "Controls/Debugger", "axis": false}, {"name": "Power", "path": "Controls/Power", "axis": false}],
+      "settings": [{"name": "Fast Boot", "path": "Fast Boot", "type": "bool", "value": "false", "options": ["false", "true"]}, {"name": "Interframe Blending", "path": "KGE/Screen/Interframe Blending", "type": "bool", "value": "true", "options": ["false", "true"]}],
       "ports": [
 
       ]
@@ -633,6 +653,7 @@
       "firmware": {"id": "ngBios"},
       "loads": true,
       "console": [],
+      "settings": [{"name": "Settings Mode", "path": "Settings Mode", "type": "bool", "value": "false", "options": ["false", "true"]}, {"name": "Two Coin Chutes", "path": "Two Coin Chutes", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Normal Controller", "path": "Normal Controller", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Multiplayer", "path": "Multiplayer", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Free Play", "path": "Free Play", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Freeze", "path": "Freeze", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Communication ID", "path": "Communication ID", "type": "enum", "value": "3", "options": ["0", "1", "2", "3"]}],
       "ports": [
         {
           "name": "Controller Port 1",

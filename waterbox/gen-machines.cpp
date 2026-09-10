@@ -75,6 +75,64 @@ namespace
 		}
 	}
 
+	/* A machine's own settings, as ares declares them. Every setting type shares
+	 * one string-shaped interface on the base - readValue, readAllowedValues,
+	 * writeValue - so this needs to know nothing about which kind each is beyond
+	 * saying so, and the guest applies them back the same way. */
+	struct Setting
+	{
+		std::string path;
+		std::string name;
+		std::string type;     /* bool, int or enum */
+		std::string value;    /* what ares powers on with */
+		std::vector<std::string> options;
+	};
+
+	void walkSettings(Node::Object node, const std::string &prefix, std::vector<Setting> &out)
+	{
+		for (auto &child : *node)
+		{
+			std::string name = (const char *)child->name();
+			std::string path = prefix.empty() ? name : prefix + "/" + name;
+			if (auto setting = child->cast<Node::Setting::Setting>())
+			{
+				Setting s;
+				s.path = path;
+				s.name = name;
+				s.value = (const char *)setting->readValue();
+				for (auto &v : setting->readAllowedValues()) s.options.push_back((const char *)v);
+				if (child->cast<Node::Setting::Boolean>()) s.type = "bool";
+				else if (!s.options.empty()) s.type = "enum";
+				else if (child->cast<Node::Setting::Natural>() || child->cast<Node::Setting::Integer>()) s.type = "int";
+				else s.type = "string";
+				out.push_back(s);
+			}
+			walkSettings(child, path, out);
+		}
+	}
+
+	void printSettings(const std::vector<Setting> &settings)
+	{
+		bool first = true;
+		printf("[");
+		for (auto &s : settings)
+		{
+			if (!first) printf(", ");
+			first = false;
+			printf("{\"name\": \"%s\", \"path\": \"%s\", \"type\": \"%s\", \"value\": \"%s\", \"options\": [",
+				escape(s.name).c_str(), escape(s.path).c_str(), s.type.c_str(), escape(s.value).c_str());
+			bool firstOpt = true;
+			for (auto &o : s.options)
+			{
+				if (!firstOpt) printf(", ");
+				firstOpt = false;
+				printf("\"%s\"", escape(o).c_str());
+			}
+			printf("]}");
+		}
+		printf("]");
+	}
+
 	bool known(const std::vector<Input> &haystack, const std::string &path)
 	{
 		for (auto &i : haystack) if (i.path == path) return true;
@@ -188,6 +246,14 @@ int main(int argc, char **argv)
 
 		printf("      \"console\": ");
 		printInputs(console, nullptr);
+
+		/* The machine's own settings, before anything is plugged in: a Game Boy's
+		 * Fast Boot, a WonderSwan's Headphones, an Aleck 64's coin slot. */
+		std::vector<Setting> settings;
+		walkSettings(root, "", settings);
+		printf(",\n      \"settings\": ");
+		printSettings(settings);
+
 		printf(",\n      \"ports\": [\n");
 
 		bool firstPort = true;

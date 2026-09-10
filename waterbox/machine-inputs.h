@@ -19,6 +19,15 @@ namespace machines
 		const char *path;  /* what root->find() resolves, e.g. "Controls/Start" */
 	};
 
+	/* One setting ares declares on a machine, and the node it writes to. Every
+	 * ares setting type reads and writes through one string-shaped interface on
+	 * its base, so the value travels as text and the machine converts it. */
+	struct SettingDecl
+	{
+		const char *key;   /* what the package and a movie call it, e.g. "gb.fastBoot" */
+		const char *path;  /* what root->find() resolves, e.g. "Fast Boot" */
+	};
+
 	struct MachineInputs
 	{
 		const char *id;
@@ -26,6 +35,8 @@ namespace machines
 		int buttonCount;
 		const InputDecl *axes;
 		int axisCount;
+		const SettingDecl *settings;
+		int settingCount;
 		/* What goes into the first port when nobody says otherwise: the
 		 * ordinary controller, or null for a machine with no ports at all. */
 		const char *defaultDevice;

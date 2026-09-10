@@ -44,6 +44,23 @@ namespace
 	void core_pre_frame(void) { }
 }
 
+/* --set key=value, for ares' own machine settings. Small and fixed: a machine
+ * declares a handful, and a test that needs more than sixteen is a test that
+ * wants a settings file. */
+static struct { char key[64]; char value[128]; } g_sets[16];
+static int g_setCount = 0;
+
+static bool lookupSet(const char *key, char *out, int outSize)
+{
+	for (int i = 0; i < g_setCount; i++)
+	{
+		if (strcmp(g_sets[i].key, key) != 0) continue;
+		snprintf(out, (size_t)outSize, "%s", g_sets[i].value);
+		return true;
+	}
+	return false;
+}
+
 int main(int argc, char **argv)
 {
 	machine::Config config = {};
@@ -62,6 +79,26 @@ int main(int argc, char **argv)
 		else if (!strcmp(a, "--pal")) config.pal = true;
 		else if (!strcmp(a, "--fast-vi")) config.fastVI = true;
 		else if (!strcmp(a, "--time") && i + 1 < argc) config.initTimeUnix = strtoull(argv[++i], nullptr, 10);
+		else if (!strcmp(a, "--set") && i + 1 < argc)
+		{
+			/* --set gb.fastBoot=true: one of ares' own settings, by the key the
+			 * package declares it under. The sandbox reads these out of the
+			 * mounted settings file; the reference has no file, so it takes
+			 * them here and the two flavours can be compared. */
+			if (g_setCount < (int)(sizeof g_sets / sizeof g_sets[0]))
+			{
+				const char *pair = argv[++i];
+				const char *eq = strchr(pair, '=');
+				if (eq == nullptr) { fprintf(stderr, "run-native: --set wants key=value\n"); return 2; }
+				size_t klen = (size_t)(eq - pair);
+				if (klen >= sizeof g_sets[0].key) klen = sizeof g_sets[0].key - 1;
+				memcpy(g_sets[g_setCount].key, pair, klen);
+				g_sets[g_setCount].key[klen] = 0;
+				snprintf(g_sets[g_setCount].value, sizeof g_sets[0].value, "%s", eq + 1);
+				g_setCount++;
+			}
+			else { fprintf(stderr, "run-native: too many --set\n"); return 2; }
+		}
 		else if (!strcmp(a, "--port") && i + 2 < argc)
 		{
 			int which = atoi(argv[++i]);
@@ -84,6 +121,7 @@ int main(int argc, char **argv)
 			"  --pal             a PAL machine, where the console has one\n"
 			"  --time N          a cartridge clock's starting Unix time\n"
 			"  --port N DEVICE   what to plug into port N, by ares' name, or none\n"
+			"  --set KEY=VALUE   one of ares' own settings, e.g. gb.fastBoot=true\n"
 			"  --fast-vi         skip the Nintendo 64's video filtering\n");
 		gate_usage();
 		return 2;
@@ -91,6 +129,8 @@ int main(int argc, char **argv)
 
 	struct gate_opts opts;
 	if (!gate_parse_opts(argc, argv, 1, &opts)) return 2;
+
+	config.lookupSetting = lookupSet;
 
 	if (!machine::init(config))
 	{

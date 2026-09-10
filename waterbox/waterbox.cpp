@@ -92,6 +92,13 @@ ECL_EXPORT int Init(void)
 	/* Null when the project said nothing, so the machine chooses its own
 	 * ordinary controller - "Gamepad" on a Famicom, "Control Pad" on a Mega
 	 * Drive, "Digital Gamepad" on a PlayStation. */
+	/* ares' own settings are read by key, because which keys exist depends on
+	 * which machine this is - see machines.inc. */
+	config.lookupSetting = [](const char *key, char *out, int outSize) -> bool
+	{
+		return wbx_setting_str(key, out, outSize) >= 0;
+	};
+
 	config.port[0] = settingString("port1", nullptr);
 	config.port[1] = settingString("port2", nullptr);
 	config.port[2] = settingString("port3", nullptr);
