@@ -127,11 +127,22 @@ core_sources += tzx_sources
 
 core_sources += ares_cpp
 
-# ares.cpp #includes its resource.cpp, so only the header is listed - naming an
-# output of the target is what makes meson generate BOTH before anything that
-# needs them compiles. mia compiles its resource.cpp as a unit of its own.
+# Naming an output of a generator is what puts an edge into the build graph, and
+# the edge has to reach whatever INCLUDES the thing.
+#
+# ares.cpp #includes its own resource.cpp, so listing the header is enough: the
+# one edge covers both files, because one command writes both.
+#
+# mia is not like that. It compiles its resource.cpp as a unit of its own, and
+# mia.hpp - which everything in mia includes - includes the generated HEADER. So
+# both outputs are named. Listing only the .cpp built for months and then failed
+# on a build machine with more cores than patience: nothing ordered mia.cpp
+# after the generator, so it read a header that was still being written and the
+# compiler said `Resource::Database has not been declared` about a namespace
+# that was three lines further down the file than the compiler had got.
 core_sources += ares_resource[1]
 core_sources += mia_resource[0]
+core_sources += mia_resource[1]
 
 core_inc = include_directories(
   'extern/ares',
