@@ -813,6 +813,50 @@
       ]
     },
     {
+      "id": "MCD",
+      "label": "Mega CD / Sega CD",
+      "extensions": "cue chd",
+      "maxWidth": 1280,
+      "maxHeight": 480,
+      "virtualWidth": 292,
+      "virtualHeight": 224,
+      "regions": ["ntsc", "pal"],
+      "bootsWithoutMedium": false,
+      "firmware": [{"id": "megaCdBios"}],
+      "loads": true,
+      "console": [{"name": "Reset", "path": "Controls/Reset", "axis": false}],
+      "settings": [],
+      "ports": [
+        {
+          "name": "Controller Port 1",
+          "devices": [
+            {
+              "name": "Control Pad",
+              "inputs": [{"name": "Up", "path": "Controller Port 1/Control Pad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 1/Control Pad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 1/Control Pad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 1/Control Pad/Right", "axis": false}, {"name": "A", "path": "Controller Port 1/Control Pad/A", "axis": false}, {"name": "B", "path": "Controller Port 1/Control Pad/B", "axis": false}, {"name": "C", "path": "Controller Port 1/Control Pad/C", "axis": false}, {"name": "Start", "path": "Controller Port 1/Control Pad/Start", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Controller Port 2",
+          "devices": [
+            {
+              "name": "Control Pad",
+              "inputs": [{"name": "Up", "path": "Controller Port 2/Control Pad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 2/Control Pad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 2/Control Pad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 2/Control Pad/Right", "axis": false}, {"name": "A", "path": "Controller Port 2/Control Pad/A", "axis": false}, {"name": "B", "path": "Controller Port 2/Control Pad/B", "axis": false}, {"name": "C", "path": "Controller Port 2/Control Pad/C", "axis": false}, {"name": "Start", "path": "Controller Port 2/Control Pad/Start", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Extension Port",
+          "devices": [
+            {
+              "name": "Control Pad",
+              "inputs": [{"name": "Up", "path": "Extension Port/Control Pad/Up", "axis": false}, {"name": "Down", "path": "Extension Port/Control Pad/Down", "axis": false}, {"name": "Left", "path": "Extension Port/Control Pad/Left", "axis": false}, {"name": "Right", "path": "Extension Port/Control Pad/Right", "axis": false}, {"name": "A", "path": "Extension Port/Control Pad/A", "axis": false}, {"name": "B", "path": "Extension Port/Control Pad/B", "axis": false}, {"name": "C", "path": "Extension Port/Control Pad/C", "axis": false}, {"name": "Start", "path": "Extension Port/Control Pad/Start", "axis": false}]
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "PCE",
       "label": "PC Engine / TurboGrafx-16",
       "extensions": "pce",
@@ -847,6 +891,76 @@
       "virtualHeight": 218,
       "regions": ["ntsc"],
       "bootsWithoutMedium": false,
+      "loads": true,
+      "console": [],
+      "settings": [{"name": "Color Emulation", "path": "VDP/Screen/Color Emulation", "type": "bool", "value": "true", "options": ["false", "true"]}],
+      "ports": [
+        {
+          "name": "Controller Port",
+          "devices": [
+            {
+              "name": "Gamepad",
+              "inputs": [{"name": "Up", "path": "Controller Port/Gamepad/Up", "axis": false}, {"name": "Down", "path": "Controller Port/Gamepad/Down", "axis": false}, {"name": "Left", "path": "Controller Port/Gamepad/Left", "axis": false}, {"name": "Right", "path": "Controller Port/Gamepad/Right", "axis": false}, {"name": "II", "path": "Controller Port/Gamepad/II", "axis": false}, {"name": "I", "path": "Controller Port/Gamepad/I", "axis": false}, {"name": "Select", "path": "Controller Port/Gamepad/Select", "axis": false}, {"name": "Run", "path": "Controller Port/Gamepad/Run", "axis": false}]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MCD32X",
+      "label": "Mega CD 32X / Sega CD 32X",
+      "extensions": "cue chd",
+      "maxWidth": 1280,
+      "maxHeight": 480,
+      "virtualWidth": 292,
+      "virtualHeight": 224,
+      "regions": ["ntsc", "pal"],
+      "bootsWithoutMedium": false,
+      "firmware": [{"id": "megaCdBios"}, {"id": "m32xVector"}, {"id": "m32xBootM"}, {"id": "m32xBootS"}],
+      "loads": true,
+      "console": [{"name": "Reset", "path": "Controls/Reset", "axis": false}],
+      "settings": [],
+      "ports": [
+        {
+          "name": "Controller Port 1",
+          "devices": [
+            {
+              "name": "Control Pad",
+              "inputs": [{"name": "Up", "path": "Controller Port 1/Control Pad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 1/Control Pad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 1/Control Pad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 1/Control Pad/Right", "axis": false}, {"name": "A", "path": "Controller Port 1/Control Pad/A", "axis": false}, {"name": "B", "path": "Controller Port 1/Control Pad/B", "axis": false}, {"name": "C", "path": "Controller Port 1/Control Pad/C", "axis": false}, {"name": "Start", "path": "Controller Port 1/Control Pad/Start", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Controller Port 2",
+          "devices": [
+            {
+              "name": "Control Pad",
+              "inputs": [{"name": "Up", "path": "Controller Port 2/Control Pad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 2/Control Pad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 2/Control Pad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 2/Control Pad/Right", "axis": false}, {"name": "A", "path": "Controller Port 2/Control Pad/A", "axis": false}, {"name": "B", "path": "Controller Port 2/Control Pad/B", "axis": false}, {"name": "C", "path": "Controller Port 2/Control Pad/C", "axis": false}, {"name": "Start", "path": "Controller Port 2/Control Pad/Start", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Extension Port",
+          "devices": [
+            {
+              "name": "Control Pad",
+              "inputs": [{"name": "Up", "path": "Extension Port/Control Pad/Up", "axis": false}, {"name": "Down", "path": "Extension Port/Control Pad/Down", "axis": false}, {"name": "Left", "path": "Extension Port/Control Pad/Left", "axis": false}, {"name": "Right", "path": "Extension Port/Control Pad/Right", "axis": false}, {"name": "A", "path": "Extension Port/Control Pad/A", "axis": false}, {"name": "B", "path": "Extension Port/Control Pad/B", "axis": false}, {"name": "C", "path": "Extension Port/Control Pad/C", "axis": false}, {"name": "Start", "path": "Extension Port/Control Pad/Start", "axis": false}]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "PCECD",
+      "label": "PC Engine CD / TurboDuo",
+      "extensions": "cue chd",
+      "maxWidth": 1176,
+      "maxHeight": 263,
+      "virtualWidth": 258,
+      "virtualHeight": 218,
+      "regions": ["ntsc"],
+      "bootsWithoutMedium": false,
+      "firmware": [{"id": "pceSystemCard"}],
       "loads": true,
       "console": [],
       "settings": [{"name": "Color Emulation", "path": "VDP/Screen/Color Emulation", "type": "bool", "value": "true", "options": ["false", "true"]}],

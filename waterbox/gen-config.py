@@ -189,6 +189,26 @@ def render_inc(machines):
 # actually built the machine with, so the package pins what was verified rather
 # than what somebody hoped would work.
 FIRMWARE_TEXT = {
+    "megaCdBios": (
+        "Mega CD / Sega CD BIOS",
+        "The BIOS of the disc drive: Sega's, and yours to supply. It is region "
+        "specific and a disc will not boot on the wrong one - a USA game wants "
+        "the Sega CD BIOS, a Japanese one the Mega CD's. Model 1 and Model 2 "
+        "are both fine; they differ in the menu they draw, not in what a game "
+        "sees.",
+        "bios_CD_U.bin",
+    ),
+    "pceSystemCard": (
+        "PC Engine System Card",
+        "The card that goes in the slot of a CD-ROM2 or a TurboDuo, which is "
+        "what reads the disc at all. NEC's, and yours to supply. Which one "
+        "matters: a Super CD-ROM2 game needs System Card 3.0 (a Japanese disc "
+        "the Japanese card, a US disc the American one), an early CD-ROM2 game "
+        "runs on any of them, and a Games Express disc needs the Games Express "
+        "card. The card names itself on screen when the machine starts, so a "
+        "disc that stops at PUSH RUN BUTTON is usually asking for a later one.",
+        "syscard3.pce",
+    ),
     "sfcIpl": (
         "Super Famicom IPL (SPC700 boot ROM)",
         "The sixty-four bytes the SNES's sound CPU runs at power-on, which is "

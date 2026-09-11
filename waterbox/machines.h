@@ -137,6 +137,38 @@ namespace machines
 		 * LAST in this struct on purpose: every entry below is positional, and
 		 * a field added in the middle would quietly re-point the ones after it. */
 		const char *const *extraFirmware;
+
+		/* Which node in ares' tree the medium belongs to, by name.
+		 *
+		 * Most machines have one slot and it is obvious. A Mega CD has two - a
+		 * disc tray and a cartridge slot for the RAM cart - and handing the disc
+		 * to whichever asks first puts a CD image through the cartridge reader.
+		 * ares' own front end routes by node name for exactly these machines,
+		 * and this is the same answer: the named node gets the medium and any
+		 * other gets nothing, which ares reads as an empty slot.
+		 *
+		 * Null for a machine with one slot, where anything that asks and is not
+		 * the system itself is asking for the medium. */
+		const char *mediumNode;
+
+		/* A machine whose BIOS is itself a MEDIUM rather than a file the system
+		 * pak swallows.
+		 *
+		 * A PC Engine CD is a PC Engine with a System Card plugged into the
+		 * cartridge slot and a disc in the tray. The card is an ordinary HuCard
+		 * - mia reads it as a "PC Engine" medium, not as part of the system pak
+		 * - so the machine wants THREE paks where every other machine here
+		 * wants two: the system, the card in the cartridge slot, and the disc
+		 * in the tray.
+		 *
+		 * `firmwareMedium` is mia's name for the medium the card is read as,
+		 * and `firmwareNode` the node in ares' tree that receives it. When
+		 * these are set the system pak is loaded with NO file, because the BIOS
+		 * is not the system's to hold.
+		 *
+		 * Both null for every machine whose BIOS is a file. */
+		const char *firmwareMedium;
+		const char *firmwareNode;
 	};
 
 	/* Ordered as a person would look for them, not as ares stores them. */
@@ -154,6 +186,13 @@ namespace machines
 
 	/* The 32X's three boot ROMs, in the order its system pak reads them. */
 	inline constexpr const char *kMega32XFirmware[] = { "m32xBootM", "m32xBootS", nullptr };
+
+	/* A Mega CD 32X is both machines at once, so it wants both sets of boot
+	 * code: the disc drive's BIOS (which `firmware` names) and then the three
+	 * the 32X starts from. */
+	inline constexpr const char *kMegaCD32XFirmware[] = {
+		"m32xVector", "m32xBootM", "m32xBootS", nullptr,
+	};
 
 	/* The PC Engine's video implementation, which is a null pointer until an
 	 * option names one. ares forces the accurate renderer itself here - its own
@@ -303,6 +342,15 @@ namespace machines
 			 568, 486, 284, 192, "msx2 mx2 rom cas wav tzx tsx", nullptr, "msx2Main", false,
 			 0, 0, 0, 0, nullptr, nullptr, kMSX2Firmware},
 
+			/* A Mega CD is a Mega Drive with a disc drive beside it, so it is
+			 * ares' Mega Drive under another configuration - and the one place
+			 * this core has to say which slot the medium goes in, because the
+			 * machine also has a cartridge slot for its RAM cart. */
+			{"MCD", "Mega CD / Sega CD", "Mega CD", "Mega CD", ares::MegaDrive::load,
+			 "[Sega] Mega CD (NTSC-U)", "[Sega] Mega CD (PAL)",
+			 1280, 480, 292, 224, "cue chd", nullptr, "megaCdBios", false,
+			 0, 0, 0, 0, nullptr, nullptr, nullptr, "Mega CD Disc"},
+
 			{"PCE", "PC Engine / TurboGrafx-16", "PC Engine", "PC Engine",
 			 ares::PCEngine::load, "[NEC] TurboGrafx 16 (NTSC-U)", nullptr,
 			 1176, 263, 258, 218, "pce", nullptr, nullptr, false,
@@ -312,6 +360,27 @@ namespace machines
 			 ares::PCEngine::load, "[NEC] SuperGrafx (NTSC-J)", nullptr,
 			 1176, 263, 258, 218, "sgx", nullptr, nullptr, false,
 			 0, 0, 0, 0, ares::PCEngine::option, kPCEngineOptions},
+
+			/* A TurboDuo is a PC Engine with a System Card in the cartridge
+			 * slot and a disc in the tray - so the BIOS is a MEDIUM here, read
+			 * as an ordinary HuCard, and the machine wants three paks. The
+			 * card decides what a disc can do, and different discs want
+			 * different cards, so the one to mount is the user's choice rather
+			 * than ours; the package asks for it by this id. */
+			/* Both add-ons at once: a disc drive and two SH-2s. ares builds
+			 * it from its Mega Drive, the medium is the disc, and the boot code
+			 * is the Mega CD's BIOS followed by the 32X's three. */
+			{"MCD32X", "Mega CD 32X / Sega CD 32X", "Mega CD 32X", "Mega CD",
+			 ares::MegaDrive::load,
+			 "[Sega] Mega CD 32X (NTSC-U)", "[Sega] Mega CD 32X (PAL)",
+			 1280, 480, 292, 224, "cue chd", nullptr, "megaCdBios", false,
+			 0, 0, 0, 0, nullptr, nullptr, kMegaCD32XFirmware, "Mega CD Disc"},
+
+			{"PCECD", "PC Engine CD / TurboDuo", "PC Engine", "PC Engine CD",
+			 ares::PCEngine::load, "[NEC] TurboDuo (NTSC-U)", nullptr,
+			 1176, 263, 258, 218, "cue chd", nullptr, "pceSystemCard", false,
+			 0, 0, 0, 0, ares::PCEngine::option, kPCEngineOptions, nullptr,
+			 "PC Engine CD Disc", "PC Engine", "PC Engine Card"},
 		};
 		return specs;
 	}

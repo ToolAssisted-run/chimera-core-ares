@@ -45,11 +45,26 @@ say_fail() { echo "FAIL $1"; echo "     $2"; fail=$((fail + 1)); }
 # ROM runs for whoever owns one and is skipped everywhere else, which is the
 # only honest way to gate a machine whose only content is somebody's property.
 # `local_content <machine>` echoes the first file for it, or nothing.
+#
+# A medium is not always ONE file. A disc is a cue sheet naming a track file
+# per track, and the sheet alone loads nothing; the whole set has to travel
+# together. So a machine whose content is a disc puts the set in a DIRECTORY
+# under tests/local/<machine>/, and this echoes the directory. Everything
+# downstream asks `is_dir` rather than assuming a file.
 local_content() {
 	dir="$root/tests/local/$1"
 	[ -d "$dir" ] || return 0
 	for f in "$dir"/*; do
-		[ -f "$f" ] && { echo "$f"; return 0; }
+		[ -e "$f" ] && { echo "$f"; return 0; }
+	done
+	return 0
+}
+
+# Which file in a medium directory is the one to hand the machine: the cue
+# sheet or the CHD, never a track. A directory holding neither is not a medium.
+medium_in_dir() {
+	for f in "$1"/*.cue "$1"/*.chd; do
+		[ -f "$f" ] && { basename "$f"; return 0; }
 	done
 	return 0
 }
@@ -63,14 +78,17 @@ with_local() {
 		echo "SKIP $id $kind (nothing in tests/local/$id)"
 		return
 	fi
-	cp "$rom" "$content/.local-$id"
+	# A link rather than a copy: a disc image is hundreds of megabytes and
+	# gets copied again into the work dir below.
+	rm -rf "$content/.local-$id"
+	ln -s "$rom" "$content/.local-$id"
 	case "$kind" in
 		compare) compare "$id local" "$id" ".local-$id" "$@" ;;
 		rerecord) rerecord "$id local" "$id" ".local-$id" "$@" ;;
 		discipline) input_discipline "$id local" "$id" ".local-$id" "$@" ;;
 		rewind) rewind "$id local" "$id" ".local-$id" "$@" ;;
 	esac
-	rm -f "$content/.local-$id"
+	rm -rf "$content/.local-$id"
 }
 
 firmware_for() {
@@ -86,6 +104,9 @@ firmware_for() {
 		MSX2) echo "$root/tests/firmware/msx2Main" ;;
 		SFC) echo "$root/tests/firmware/sfcIpl" ;;
 		32X) echo "$root/tests/firmware/m32xVector" ;;
+		MCD) echo "$root/tests/firmware/megaCdBios" ;;
+		MCD32X) echo "$root/tests/firmware/megaCdBios" ;;
+		PCECD) echo "$root/tests/firmware/pceSystemCard" ;;
 		PS1) echo "$root/tests/firmware/ps1Bios" ;;
 		NGP) echo "$root/tests/firmware/ngpBios" ;;
 		NGPC) echo "$root/tests/firmware/ngpcBios" ;;
@@ -100,6 +121,7 @@ extra_firmware_for() {
 	case "$1" in
 		32X)  echo "$root/tests/firmware/m32xBootM $root/tests/firmware/m32xBootS" ;;
 		MSX2) echo "$root/tests/firmware/msx2Sub" ;;
+		MCD32X) echo "$root/tests/firmware/m32xVector $root/tests/firmware/m32xBootM $root/tests/firmware/m32xBootS" ;;
 	esac
 }
 
@@ -116,15 +138,43 @@ is_digest() {
 	esac
 }
 
+# Where the REFERENCE is pointed at a piece of content. A file is itself; a
+# directory is the cue sheet or CHD inside it.
+native_rom() {
+	if [ -d "$content/$1" ]; then
+		m="$(medium_in_dir "$content/$1")"
+		[ -n "$m" ] && echo "$content/$1/$m"
+	else
+		echo "$content/$1"
+	fi
+}
+
 # The arguments the reference needs, and the file the sandbox must mount.
+# Sets $workrom to the name the medium has inside the work dir, which is what
+# the slot map records and what the reference is handed.
 setup_work() {
 	id="$1"; rom="$2"
 	rm -rf "$work/w"; mkdir -p "$work/w"
+	workrom=""
 	if [ "$rom" = "-" ]; then
 		# a machine that starts with nothing in its drive - a PlayStation
 		# reaching its BIOS shell, which needs no content at all
 		printf '{}' > "$work/w/slots"
+	elif [ -d "$content/$rom" ]; then
+		# A disc: the cue sheet AND every track it names. run-wbx mounts each
+		# regular file in the work dir under its own basename, which is exactly
+		# how the sheet refers to its tracks, so the set travels whole and the
+		# medium keeps its real name rather than becoming "rom".
+		workrom="$(medium_in_dir "$content/$rom")"
+		[ -n "$workrom" ] || return 1
+		for f in "$content/$rom"/*; do
+			# linked, not copied: a disc image is hundreds of megabytes and
+			# every leg would otherwise pay for it twice
+			[ -f "$f" ] && ln -s "$(cd "$(dirname "$f")" && pwd)/$(basename "$f")" "$work/w/$(basename "$f")"
+		done
+		printf '{"rom":["%s"]}' "$workrom" > "$work/w/slots"
 	else
+		workrom="rom"
 		cp "$content/$rom" "$work/w/rom"
 		printf '{"rom":["rom"]}' > "$work/w/slots"
 	fi
@@ -151,7 +201,7 @@ compare() {
 		return
 	fi
 	set -- "$@"
-	[ "$rom" = "-" ] || set -- "$@" --rom "$work/w/rom"
+	[ "$rom" = "-" ] || set -- "$@" --rom "$work/w/$workrom"
 	[ -z "$nativefw" ] || set -- "$@" --firmware "$nativefw"
 	a="$("$native" --machine "$id" --quiet "$@" | tail -1)"
 	b="$("$runwbx" "$wbx" "$work/w" --machine "$id" --quiet "$@" | tail -1)"
@@ -262,7 +312,7 @@ deterministic() {
 	leg="$1"; id="$2"; rom="$3"; shift 3
 	fw="$(firmware_for "$id")"
 	set -- "$@"
-	[ "$rom" = "-" ] || set -- "$@" --rom "$content/$rom"
+	[ "$rom" = "-" ] || set -- "$@" --rom "$(native_rom "$rom")"
 	if [ -n "$fw" ]; then
 		[ -f "$fw" ] || { echo "SKIP $leg (no console BIOS in tests/firmware)"; return; }
 		set -- "$@" --firmware "$fw"
@@ -377,6 +427,15 @@ with_local rerecord   MSX  --frames 200
 with_local compare    MSX2 --frames 300
 with_local rerecord   MSX2 --frames 200
 with_local rewind     MSX2 120 --frames 300
+with_local compare    MCD  --frames 400
+with_local rerecord   MCD  --frames 200
+with_local rewind     MCD  120 --frames 400
+with_local compare    PCECD --frames 400
+with_local rerecord   PCECD --frames 200
+with_local rewind     PCECD 120 --frames 400
+with_local compare    MCD32X --frames 400
+with_local rerecord   MCD32X --frames 200
+with_local rewind     MCD32X 120 --frames 400
 
 echo
 echo "== a machine put back to a frame it has left =="
@@ -412,7 +471,7 @@ echo "== the refresh rate is the machine's own =="
 # so and says what the numbers were.
 refresh_is() {
 	leg="$1"; id="$2"; rom="$3"; want="$4"; shift 4
-	if [ "$rom" = "-" ]; then set -- "$@"; else set -- --rom "$content/$rom" "$@"; fi
+	if [ "$rom" = "-" ]; then set -- "$@"; else set -- --rom "$(native_rom "$rom")" "$@"; fi
 	fw="$(firmware_for "$id")"
 	if [ -n "$fw" ]; then
 		# the gate skips a machine whose BIOS the developer has not put there,

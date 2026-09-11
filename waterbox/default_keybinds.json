@@ -229,6 +229,16 @@
       "Keyboard 1": "Z, J1 B3, X1 X",
       "Keyboard 2": "X, J1 B1, X1 A"
     },
+    "Mega CD / Sega CD Controller": {
+      "P1 Up": "Up, J1 POV1U, X1 DpadUp",
+      "P1 Down": "Down, J1 POV1D, X1 DpadDown",
+      "P1 Left": "Left, J1 POV1L, X1 DpadLeft",
+      "P1 Right": "Right, J1 POV1R, X1 DpadRight",
+      "P1 A": "X, J1 B1, X1 A",
+      "P1 B": "Z, J1 B3, X1 X",
+      "P1 C": "C, J1 B4, X1 Y",
+      "P1 Start": "Enter, J1 B10, X1 Start"
+    },
     "PC Engine / TurboGrafx-16 Controller": {
       "Controller Up": "Up, J1 POV1U, X1 DpadUp",
       "Controller Down": "Down, J1 POV1D, X1 DpadDown",
@@ -238,6 +248,24 @@
       "Controller Run": "Enter, J1 B10, X1 Start"
     },
     "SuperGrafx Controller": {
+      "Controller Up": "Up, J1 POV1U, X1 DpadUp",
+      "Controller Down": "Down, J1 POV1D, X1 DpadDown",
+      "Controller Left": "Left, J1 POV1L, X1 DpadLeft",
+      "Controller Right": "Right, J1 POV1R, X1 DpadRight",
+      "Controller Select": "Space, J1 B9, X1 Back",
+      "Controller Run": "Enter, J1 B10, X1 Start"
+    },
+    "Mega CD 32X / Sega CD 32X Controller": {
+      "P1 Up": "Up, J1 POV1U, X1 DpadUp",
+      "P1 Down": "Down, J1 POV1D, X1 DpadDown",
+      "P1 Left": "Left, J1 POV1L, X1 DpadLeft",
+      "P1 Right": "Right, J1 POV1R, X1 DpadRight",
+      "P1 A": "X, J1 B1, X1 A",
+      "P1 B": "Z, J1 B3, X1 X",
+      "P1 C": "C, J1 B4, X1 Y",
+      "P1 Start": "Enter, J1 B10, X1 Start"
+    },
+    "PC Engine CD / TurboDuo Controller": {
       "Controller Up": "Up, J1 POV1U, X1 DpadUp",
       "Controller Down": "Down, J1 POV1D, X1 DpadDown",
       "Controller Left": "Left, J1 POV1L, X1 DpadLeft",

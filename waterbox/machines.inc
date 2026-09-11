@@ -923,6 +923,36 @@ static const machines::InputDecl kButtons_MSX2[] = {
 static const machines::InputDecl kAxes_MSX2[] = {
 };
 
+static const machines::InputDecl kButtons_MCD[] = {
+	{"Reset", "Controls/Reset"},
+	{"P1 Up", "Controller Port 1/Control Pad/Up"},
+	{"P1 Down", "Controller Port 1/Control Pad/Down"},
+	{"P1 Left", "Controller Port 1/Control Pad/Left"},
+	{"P1 Right", "Controller Port 1/Control Pad/Right"},
+	{"P1 A", "Controller Port 1/Control Pad/A"},
+	{"P1 B", "Controller Port 1/Control Pad/B"},
+	{"P1 C", "Controller Port 1/Control Pad/C"},
+	{"P1 Start", "Controller Port 1/Control Pad/Start"},
+	{"P2 Up", "Controller Port 2/Control Pad/Up"},
+	{"P2 Down", "Controller Port 2/Control Pad/Down"},
+	{"P2 Left", "Controller Port 2/Control Pad/Left"},
+	{"P2 Right", "Controller Port 2/Control Pad/Right"},
+	{"P2 A", "Controller Port 2/Control Pad/A"},
+	{"P2 B", "Controller Port 2/Control Pad/B"},
+	{"P2 C", "Controller Port 2/Control Pad/C"},
+	{"P2 Start", "Controller Port 2/Control Pad/Start"},
+	{"Ext Up", "Extension Port/Control Pad/Up"},
+	{"Ext Down", "Extension Port/Control Pad/Down"},
+	{"Ext Left", "Extension Port/Control Pad/Left"},
+	{"Ext Right", "Extension Port/Control Pad/Right"},
+	{"Ext A", "Extension Port/Control Pad/A"},
+	{"Ext B", "Extension Port/Control Pad/B"},
+	{"Ext C", "Extension Port/Control Pad/C"},
+	{"Ext Start", "Extension Port/Control Pad/Start"},
+};
+static const machines::InputDecl kAxes_MCD[] = {
+};
+
 static const machines::InputDecl kButtons_PCE[] = {
 	{"Controller Up", "Controller Port/Gamepad/Up"},
 	{"Controller Down", "Controller Port/Gamepad/Down"},
@@ -955,6 +985,52 @@ static const machines::SettingDecl kSettings_SGX[] = {
 	{"sgx.colorEmulation", "VDP/Screen/Color Emulation"},
 };
 
+static const machines::InputDecl kButtons_MCD32X[] = {
+	{"Reset", "Controls/Reset"},
+	{"P1 Up", "Controller Port 1/Control Pad/Up"},
+	{"P1 Down", "Controller Port 1/Control Pad/Down"},
+	{"P1 Left", "Controller Port 1/Control Pad/Left"},
+	{"P1 Right", "Controller Port 1/Control Pad/Right"},
+	{"P1 A", "Controller Port 1/Control Pad/A"},
+	{"P1 B", "Controller Port 1/Control Pad/B"},
+	{"P1 C", "Controller Port 1/Control Pad/C"},
+	{"P1 Start", "Controller Port 1/Control Pad/Start"},
+	{"P2 Up", "Controller Port 2/Control Pad/Up"},
+	{"P2 Down", "Controller Port 2/Control Pad/Down"},
+	{"P2 Left", "Controller Port 2/Control Pad/Left"},
+	{"P2 Right", "Controller Port 2/Control Pad/Right"},
+	{"P2 A", "Controller Port 2/Control Pad/A"},
+	{"P2 B", "Controller Port 2/Control Pad/B"},
+	{"P2 C", "Controller Port 2/Control Pad/C"},
+	{"P2 Start", "Controller Port 2/Control Pad/Start"},
+	{"Ext Up", "Extension Port/Control Pad/Up"},
+	{"Ext Down", "Extension Port/Control Pad/Down"},
+	{"Ext Left", "Extension Port/Control Pad/Left"},
+	{"Ext Right", "Extension Port/Control Pad/Right"},
+	{"Ext A", "Extension Port/Control Pad/A"},
+	{"Ext B", "Extension Port/Control Pad/B"},
+	{"Ext C", "Extension Port/Control Pad/C"},
+	{"Ext Start", "Extension Port/Control Pad/Start"},
+};
+static const machines::InputDecl kAxes_MCD32X[] = {
+};
+
+static const machines::InputDecl kButtons_PCECD[] = {
+	{"Controller Up", "Controller Port/Gamepad/Up"},
+	{"Controller Down", "Controller Port/Gamepad/Down"},
+	{"Controller Left", "Controller Port/Gamepad/Left"},
+	{"Controller Right", "Controller Port/Gamepad/Right"},
+	{"Controller II", "Controller Port/Gamepad/II"},
+	{"Controller I", "Controller Port/Gamepad/I"},
+	{"Controller Select", "Controller Port/Gamepad/Select"},
+	{"Controller Run", "Controller Port/Gamepad/Run"},
+};
+static const machines::InputDecl kAxes_PCECD[] = {
+};
+static const machines::SettingDecl kSettings_PCECD[] = {
+	{"pcecd.colorEmulation", "VDP/Screen/Color Emulation"},
+};
+
 static const machines::MachineInputs kMachineInputs[] = {
 	{"N64", kButtons_N64, 64, kAxes_N64, 16, nullptr, 0, "Gamepad", false},
 	{"NES", kButtons_NES, 18, nullptr, 0, nullptr, 0, "Gamepad", false},
@@ -980,7 +1056,10 @@ static const machines::MachineInputs kMachineInputs[] = {
 	{"SFC", kButtons_SFC, 25, nullptr, 0, kSettings_SFC, 5, "Gamepad", false},
 	{"32X", kButtons_32X, 25, nullptr, 0, nullptr, 0, "Control Pad", false},
 	{"MSX2", kButtons_MSX2, 103, nullptr, 0, nullptr, 0, "Japanese", false},
+	{"MCD", kButtons_MCD, 25, nullptr, 0, nullptr, 0, "Control Pad", false},
 	{"PCE", kButtons_PCE, 8, nullptr, 0, kSettings_PCE, 1, "Gamepad", false},
 	{"SGX", kButtons_SGX, 8, nullptr, 0, kSettings_SGX, 1, "Gamepad", false},
+	{"MCD32X", kButtons_MCD32X, 25, nullptr, 0, nullptr, 0, "Control Pad", false},
+	{"PCECD", kButtons_PCECD, 8, nullptr, 0, kSettings_PCECD, 1, "Gamepad", false},
 };
 

@@ -14,15 +14,20 @@ Chimera has never had - and the reason to start there is that N64 is the
 *hardest* of ares' systems to sandbox, so a port that works for it works for
 the rest.
 
-**Twenty-one machines are declared now**: Nintendo 64, Famicom/NES, Game Boy,
-Game Boy Color, Mega Drive, Master System, Game Gear, SG-1000, Atari 2600,
-WonderSwan, WonderSwan Color, ZX Spectrum, MyVision - which need nothing of the
-user but a cartridge - and the Game Boy Advance, ColecoVision and MSX, which
-need a console BIOS the user supplies, the PlayStation which loads discs, and
-the Atari 5200, Neo Geo, Neo Geo Pocket and Neo Geo Pocket Color. Four are
-validated by the gate and fifteen against real commercial games; the rest are declared, built and enumerated but have never
-run a game here. See "What is proven and what is only declared" below, because
-the difference matters.
+**Twenty-nine machines are declared now.** Thirteen need nothing of the user but
+a cartridge: Nintendo 64, Famicom/NES, Game Boy, Game Boy Color, Mega Drive,
+Master System, Game Gear, SG-1000, Atari 2600, WonderSwan, WonderSwan Color, ZX
+Spectrum and MyVision. Eight want a console BIOS the user supplies: the Game Boy
+Advance, ColecoVision, MSX, MSX2, Super Famicom, Atari 5200, Neo Geo AES and the
+two Neo Geo Pockets. The 32X wants three BIOS files. And five load a disc: the
+PlayStation, the Mega CD, the Mega CD 32X, the PC Engine CD - whose BIOS is
+itself a cartridge - and the PC Engine and SuperGrafx beside them.
+
+Four are validated by the gate on content anybody may have, and ten more by the
+same three legs on commercial content only this developer has; fifteen have run
+a real game here off the record. The rest are declared, built and enumerated but
+have never run a game. See "What is proven and what is only declared" below,
+because the difference matters.
 
 ## The three things that had to be solved
 
@@ -91,8 +96,9 @@ which was invisible until the gate was pointed at it.
 
 ## What else the patches are for
 
-Eleven patches, all small. Six of them are things that are simply *wrong*
-upstream in a build like this one, and are worth offering back:
+Twenty-five patches, all small. Six of them are things that are simply *wrong*
+upstream in a build like this one, and are worth offering back. The table below
+is the first eleven; the rest are named where the thing they do is explained.
 
 | patch | what |
 | --- | --- |
@@ -108,6 +114,20 @@ upstream in a build like this one, and are worth offering back:
 | `ares/0010` | **nothing depends on the host's entropy** - see below. |
 | `ares/0011` | **the picture is drawn on the machine's thread** - see below. |
 | `angrylion-rdp/0001-2` | the rasteriser includes the header it uses, and its output buffer becomes part of its interface rather than something callers declare `extern` for themselves. |
+
+Two of the later ones are a pair and are easy to mix up. `ares/0024` **refuses**
+the machines this core does not offer: mia would otherwise build them a pak out
+of firmware compiled into ares, which is not ours to carry, and a pak missing
+its boot ROM makes a machine that runs zeros. `ares/0025` is the other half -
+the machines this core DOES offer, reading the user's own files instead of those
+blobs, plus the Super Famicom's game databases.
+
+That split is not cosmetic. For a while the un-stubbing lived only in the
+submodule's working tree and in no patch at all, so a fresh clone got the stubs
+back and the Super Famicom and the 32X refused to load with nothing to say why.
+The check that catches it is one command: check out the pin into a scratch
+worktree, apply every patch in order, and diff it against `extern/ares`. The
+answer has to be empty.
 
 ### Two that only a second machine could have found
 
@@ -347,7 +367,7 @@ something outside this repository, rather than against ourselves.
 
 ## What is proven and what is only declared
 
-This distinction is the honest part of a seventeen-machine claim, so it gets its
+This distinction is the honest part of a twenty-nine-machine claim, so it gets its
 own heading. There are three tiers, and the middle one is new: a machine can be
 checked against a real commercial game on this developer's machine without that
 check being something the gate can carry, because the game may not be
@@ -365,6 +385,13 @@ flavours, on content anybody may have:
   gate reads the verdict off the screen rather than comparing a digest, so that
   leg cannot pass by agreeing with itself;
 - the **PlayStation**, which reaches its BIOS shell with nothing in its drive.
+
+Beside those, twelve machines run the gate's three legs - reference against
+sandbox, a savestate every frame, and a return to a frame the machine has left -
+on content this developer owns and the repository may not carry
+(`tests/local/<machine>/`, skipped where it is empty): the Neo Geo Pocket Color,
+the PC Engine, the SuperGrafx, the Super Famicom, the 32X, the MSX, the MSX2,
+the Mega CD, the PC Engine CD and the Mega CD 32X.
 
 ### Proven against a real game, off the record
 
@@ -398,6 +425,32 @@ the strongest thing anybody has asked of this core so far.
 the set up in its database by the name of the zip. `samsho4.zip` works and
 `game.zip` does not. A project keeps the file's own name, so this is only a trap
 for anybody writing a test.
+
+### The Neo Geo's DIP switches belong to a machine this core has not got
+
+ares declares seven settings on the Neo Geo - Settings Mode, Two Coin Chutes,
+Normal Controller, Multiplayer, Free Play, Freeze and a Communication ID - and
+they are its DIP switches: they go straight into REG_DIPSW. **On an AES nothing
+ever reads that register.** Traced over 900 frames of two commercial games, it
+is read zero times. The AES is a home console and has no DIP switches to set.
+
+The machine that reads them is the **MVS**, the arcade board, and ares has it -
+but it does not run here yet, and the reason is worth writing down because it is
+one chip:
+
+- mia never supplies the board's own fix-layer tile ROM. `NeoGeo::System::power`
+  reads `static.rom` on an MVS and nowhere else; it is `sfix.sfix`, and without
+  it `srom` is never allocated and every character the BIOS draws comes out of
+  whatever the tile memory held. The machine looked dead.
+- **ares has no uPD4990A.** The real-time clock is commented out - REG_RTCCTRL
+  does nothing and REG_STATUS_A bits 6 and 7 are hardcoded to zero - and the MVS
+  BIOS spins on the time pulse for ever, about a thousand reads of REG_STATUS_A
+  per frame. Feeding it a toggling pulse gets straight past it to a clean
+  `CALENDAR ERROR` on screen, which is both the proof that the fix ROM was the
+  other half and the proof that the clock is all that is left.
+
+So the MVS is one chip away and the AES is not the machine anybody wants the
+switches on. Left out rather than shipped half-working.
 
 ### Declared, and not to be trusted yet
 
@@ -561,9 +614,7 @@ had left, and fifteen rerecord points through the frontend - play, go back,
 edit, replay - all exact. The content is somebody's property, so those legs read
 `tests/local/<machine>/` and are skipped where it is empty.
 
-**The CD is not in.** A PC Engine CD is three paks rather than one - the system,
-a system card HuCard as firmware, and the disc - and it wants a machine table
-that can say so. See "Not done".
+**The CD is in now.** See "A machine may have more than one slot" below.
 
 ## A machine may need more than one BIOS file
 
@@ -578,6 +629,54 @@ its id, and the gate mounts them the same way (`extra_firmware_for`).
 `extraFirmware` is the LAST field of the Spec on purpose: every entry in that
 table is positional, and a field added in the middle would quietly re-point the
 ones after it.
+
+## A machine may have more than one slot
+
+Every machine up to here had one: whatever asked for a pak and was not the
+system itself was asking for the medium. Three machines broke that, each in its
+own way, and between them they are the CD add-ons.
+
+**A Mega CD has a disc tray AND a cartridge slot** - the slot takes the RAM
+cart - and handing the disc to whichever asked first put a CD image through a
+cartridge reader. `Spec.mediumNode` names the node the medium belongs to and
+anything else is handed nothing, which ares reads as an empty slot. That is
+ares' own answer for these machines; its front end routes by node name for
+exactly the same reason.
+
+**A PC Engine CD's BIOS is a cartridge.** A TurboDuo is a PC Engine with a
+System Card in the slot and a disc in the tray, and the card is an ordinary
+HuCard - mia reads it as a "PC Engine" MEDIUM, not as part of the system pak.
+So the machine wants three paks where every other machine wants two.
+`Spec.firmwareMedium` is mia's name for the medium the card is read as and
+`Spec.firmwareNode` the node that receives it; when they are set the system pak
+loads with no file at all, because the BIOS is not the system's to hold. Which
+card is mounted is the user's choice rather than ours: a Super CD-ROM2 game
+needs System Card 3.0 in the right region, an early CD-ROM2 game runs on any of
+them, and a Games Express disc needs the Games Express card. A disc that stops
+at PUSH RUN BUTTON is usually asking for a later one.
+
+**A Mega CD 32X is both add-ons at once**, so it wants both sets of boot code:
+the drive's BIOS and then the 32X's three. That is `extraFirmware` doing what it
+already did, with mia's `mega-cd-32x` un-stubbed to read four user files rather
+than ares' compiled-in blobs.
+
+`mediumNode`, `firmwareMedium` and `firmwareNode` are appended at the END of the
+Spec, for the reason `extraFirmware` was: the table is positional.
+
+### The gate had to learn that a medium is not one file
+
+A disc is a cue sheet that names a track file per track, and the sheet alone
+loads nothing. So `tests/local/<machine>/` may now hold a DIRECTORY, and the
+whole set travels together: every file in it is linked into the work dir under
+its own basename, which is exactly how the sheet refers to its tracks, and the
+medium keeps its real name rather than becoming "rom". Linked rather than
+copied, because a disc image is hundreds of megabytes and each leg would
+otherwise pay for it twice.
+
+Worth knowing: a mounted file lives in host memory for the life of the run. A
+286MB PC Engine CD image costs about 820MB of resident memory in the gate's
+runner. Nothing about that is new - it is how `wbx_mount_file` has always worked
+- but a disc is the first medium big enough for it to be worth saying.
 
 ## A tape deck is not a cartridge slot
 

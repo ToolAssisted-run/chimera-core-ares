@@ -77,6 +77,9 @@ namespace
 
 	std::shared_ptr<mia::Pak> g_systemPak;
 	std::shared_ptr<mia::Pak> g_cartridgePak;
+	/* A BIOS that is a medium in its own slot rather than a file inside the
+	 * system pak - a PC Engine CD's System Card. See machines.h. */
+	std::shared_ptr<mia::Pak> g_firmwarePak;
 	Node::System g_root;
 
 	/* What each declared input binds to, resolved once at init. A null entry is
@@ -150,6 +153,16 @@ namespace
 			/* The system node is the machine itself; anything else asking is the
 			 * medium in its slot. */
 			if (g_root && node == g_root) return g_systemPak ? g_systemPak->pak : nullptr;
+
+			/* The card slot of a machine whose BIOS is a medium. Asked for
+			 * before the disc tray is, and by a different node, so it is
+			 * answered before anything else looks at the medium. */
+			if (g_firmwarePak && g_spec != nullptr && g_spec->firmwareNode != nullptr
+				&& node->name() == g_spec->firmwareNode)
+			{
+				return g_firmwarePak->pak;
+			}
+
 			auto pak = g_cartridgePak ? g_cartridgePak->pak : nullptr;
 			if (!pak) return nullptr;
 
@@ -166,6 +179,15 @@ namespace
 			 * otherwise nothing - which ares reads as an empty deck. */
 			if (std::dynamic_pointer_cast<ares::Core::Tape>(node)
 				&& !pak->attribute("frequency"))
+			{
+				return nullptr;
+			}
+
+			/* A machine with more than one slot says which of them the medium
+			 * goes in (see machines.h). A Mega CD has a disc tray AND a
+			 * cartridge slot, and the tray is the one holding the game. */
+			if (g_spec != nullptr && g_spec->mediumNode != nullptr
+				&& node->name() != g_spec->mediumNode)
 			{
 				return nullptr;
 			}
@@ -494,7 +516,24 @@ namespace machine
 			firmware = (config.firmwareFile && *config.firmwareFile) ? config.firmwareFile
 			                                                        : g_spec->firmware;
 		}
-		if (g_spec->extraFirmware != nullptr)
+		if (g_spec->firmwareMedium != nullptr)
+		{
+			/* The BIOS is a cartridge, so it is read as one and the system pak
+			 * is loaded with nothing: a PC Engine CD's System Card is an
+			 * ordinary HuCard in the cartridge slot, not a file the system pak
+			 * holds. See machines.h. */
+			g_firmwarePak = mia::Medium::create(g_spec->firmwareMedium);
+			if (!g_firmwarePak) return fail("ares has no such firmware medium");
+			if (g_firmwarePak->load(firmware) != successful)
+			{
+				return fail("the console BIOS would not load");
+			}
+			if (g_systemPak->load() != successful)
+			{
+				return fail("this machine's system pak would not load");
+			}
+		}
+		else if (g_spec->extraFirmware != nullptr)
 		{
 			/* A machine with more than one BIOS file. mia takes them together -
 			 * loadMultiple is its own interface for exactly this - and the

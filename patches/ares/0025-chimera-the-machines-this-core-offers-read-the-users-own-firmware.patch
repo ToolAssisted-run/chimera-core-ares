@@ -1,0 +1,150 @@
+--- a/mia/medium/medium.cpp
++++ b/mia/medium/medium.cpp
+@@ -118,6 +118,7 @@
+     {"MSX",        Resource::Database::MSX,       sizeof(Resource::Database::MSX)},
+     {"MSX2",       Resource::Database::MSX2,      sizeof(Resource::Database::MSX2)},
+     {"Neo Geo",    Resource::Database::NeoGeo,    sizeof(Resource::Database::NeoGeo)},
++    {"Super Famicom", Resource::Database::SuperFamicom, sizeof(Resource::Database::SuperFamicom)},
+   };
+   for(auto& builtin : builtins) {
+     if(database.name != builtin.name) continue;
+--- a/mia/resource/resource.bml
++++ b/mia/resource/resource.bml
+@@ -5,3 +5,5 @@
+     binary name=MSX file="../Database/MSX.bml"
+     binary name=MSX2 file="../Database/MSX2.bml"
+     binary name=NeoGeo file="../Database/Neo Geo.bml"
++    binary name=SuperFamicom file="../Database/Super Famicom.bml"
++    binary name=SuperFamicomBoards file="../Database/Super Famicom Boards.bml"
+--- a/mia/system/mega-32x.cpp
++++ b/mia/system/mega-32x.cpp
+@@ -1,17 +1,26 @@
+ struct Mega32X : System {
+   auto name() -> string override { return "Mega 32X"; }
+-  auto load(string location) -> LoadResult override;
++  auto loadMultiple(std::vector<string> location) -> bool override;
+   auto save(string location) -> bool override;
+ };
+ 
+-auto Mega32X::load(string location) -> LoadResult {
++auto Mega32X::loadMultiple(std::vector<string> location) -> bool {
++  //Three files, in the order waterbox/machines.h lists them: the 68000's vector
++  //table and a boot ROM for each of the two SH-2s. Sega's, and the user's to
++  //supply. No tmss.rom: it is Sega's too, and this core never turns TMSS on.
++  if(location.size() != 3) return false;
++
++  auto vector = Pak::read(location[0]);
++  auto bootM = Pak::read(location[1]);
++  auto bootS = Pak::read(location[2]);
++  if(vector.empty() || bootM.empty() || bootS.empty()) return false;
++
+   this->location = locate();
+   pak = std::make_shared<vfs::directory>();
+-  pak->append("tmss.rom", Resource::MegaDrive::TMSS);
+-  pak->append("vector.rom", Resource::Mega32X::Vector);
+-  pak->append("sh2.boot.mrom", Resource::Mega32X::SH2BootM);
+-  pak->append("sh2.boot.srom", Resource::Mega32X::SH2BootS);
+-  return successful;
++  pak->append("vector.rom", vector);
++  pak->append("sh2.boot.mrom", bootM);
++  pak->append("sh2.boot.srom", bootS);
++  return true;
+ }
+ 
+ auto Mega32X::save(string location) -> bool {
+--- a/mia/system/mega-cd.cpp
++++ b/mia/system/mega-cd.cpp
+@@ -12,12 +12,14 @@
+ };
+ 
+ auto MegaCD::load(string location) -> LoadResult {
++  //The BIOS is Sega's and does not travel with this core; the user supplies it
++  //and Chimera pins it by hash. No tmss.rom either: it is Sega's too, and this
++  //core never turns TMSS on. See waterbox/machines.h.
+   auto bios = Pak::read(location);
+   if(bios.empty()) return romNotFound;
+ 
+   this->location = locate();
+   pak = std::make_shared<vfs::directory>();
+-  pak->append("tmss.rom", Resource::MegaDrive::TMSS);
+   pak->append("bios.rom", bios);
+   pak->append("backup.ram", 8_KiB);
+ 
+--- a/mia/system/mega-cd-32x.cpp
++++ b/mia/system/mega-cd-32x.cpp
+@@ -1,6 +1,6 @@
+ struct MegaCD32X : System {
+   auto name() -> string override { return "Mega CD 32X"; }
+-  auto load(string location) -> LoadResult override;
++  auto loadMultiple(std::vector<string> location) -> bool override;
+   auto save(string location) -> bool override;
+ 
+   static constexpr u8 bram[64] = {
+@@ -11,17 +11,25 @@
+   };
+ };
+ 
+-auto MegaCD32X::load(string location) -> LoadResult {
+-  auto bios = Pak::read(location);
+-  if(bios.empty()) return romNotFound;
++auto MegaCD32X::loadMultiple(std::vector<string> location) -> bool {
++  //Four files, in the order waterbox/machines.h lists them: the Mega CD's own
++  //BIOS, then the 68000's vector table and a boot ROM for each of the two
++  //SH-2s. All Sega's, and the user's to supply. No tmss.rom: it is Sega's too,
++  //and this core never turns TMSS on.
++  if(location.size() != 4) return false;
++
++  auto bios = Pak::read(location[0]);
++  auto vector = Pak::read(location[1]);
++  auto bootM = Pak::read(location[2]);
++  auto bootS = Pak::read(location[3]);
++  if(bios.empty() || vector.empty() || bootM.empty() || bootS.empty()) return false;
+ 
+   this->location = locate();
+   pak = std::make_shared<vfs::directory>();
+-  pak->append("tmss.rom", Resource::MegaDrive::TMSS);
+   pak->append("bios.rom", bios);
+-  pak->append("vector.rom", Resource::Mega32X::Vector);
+-  pak->append("sh2.boot.mrom", Resource::Mega32X::SH2BootM);
+-  pak->append("sh2.boot.srom", Resource::Mega32X::SH2BootS);
++  pak->append("vector.rom", vector);
++  pak->append("sh2.boot.mrom", bootM);
++  pak->append("sh2.boot.srom", bootS);
+   pak->append("backup.ram", 8_KiB);
+ 
+   if(auto fp = pak->write("backup.ram")) {
+@@ -32,7 +40,7 @@
+ 
+   Pak::load("backup.ram", ".bram");
+ 
+-  return successful;
++  return true;
+ }
+ 
+ auto MegaCD32X::save(string location) -> bool {
+--- a/mia/system/super-famicom.cpp
++++ b/mia/system/super-famicom.cpp
+@@ -5,12 +5,19 @@
+ };
+ 
+ auto SuperFamicom::load(string location) -> LoadResult {
++  //The IPL is the sixty-four bytes the sound CPU runs at power-on. It is
++  //Nintendo's and does not travel with this core; the user supplies it and
++  //Chimera pins it by hash. See waterbox/machines.h.
++  auto ipl = Pak::read(location);
++  if(ipl.empty()) return romNotFound;
++
+   this->location = locate();
+   pak = std::make_shared<vfs::directory>();
+-  pak->append("ipl.rom", Resource::SuperFamicom::IPLROM);
+-  auto romLocation = mia::locate("Database/Super Famicom Boards.bml");
+-  if(!romLocation) return { databaseNotFound, "Super Famicom Boards.bml" };
+-  pak->append("boards.bml", file::read(romLocation));
++  pak->append("ipl.rom", ipl);
++  //The board database is ares' own and is compiled in, because a core has no
++  //filesystem to read it from - the same arrangement the game databases have.
++  pak->append("boards.bml", std::span<const u8>{
++    Resource::Database::SuperFamicomBoards, sizeof(Resource::Database::SuperFamicomBoards)});
+   return successful;
+ }
+ 
