@@ -339,6 +339,83 @@ FIRMWARE_TEXT = {
 }
 
 
+# A BIOS that is not ONE file.
+#
+# A Mega CD BIOS is region specific and a disc will not boot on the wrong one; a
+# PC Engine CD's System Card decides what a disc can do at all, and different
+# discs want different cards. Pinning one hash for these would have shipped a
+# Sega CD that only runs American discs and a TurboDuo that only runs Japanese
+# Super CD-ROM2 ones.
+#
+# The package's own decision language already has the shape for it, and says so:
+# variants are separate entries with the SAME id and disjoint conditions,
+# selected by a sync setting. So each variant is declared and hashed separately
+# and one setting picks between them; the guest opens the id and never knows.
+#
+# Each variant's file is the developer's own copy at tests/firmware/<id>.<value>
+# - a variant with no file there is not declared, so a developer who has one
+# region's BIOS ships a package offering that region.
+FIRMWARE_VARIANTS = {
+    "megaCdBios": ("mcd.bios", "Which Mega CD BIOS",
+        "Region specific, and a disc will not boot on the wrong one: a USA game"
+        " wants the Sega CD BIOS, a Japanese one the Mega CD's, a European one"
+        " the European. Model 1 and Model 2 differ in the menu they draw, not"
+        " in what a game sees.", [
+        ("usa", "SCD_m2_us_200.bin"),
+        ("japan", "MCD_jp_100s.bin"),
+        ("europe", "MCD_eu_200.bin"),
+    ]),
+    "pceSystemCard": ("pcecd.card", "Which System Card",
+        "The card in the slot is what reads the disc, and which one matters: a"
+        " Super CD-ROM2 game needs System Card 3.0 in its own region, an early"
+        " CD-ROM2 game runs on any of them, and a Games Express disc needs the"
+        " Games Express card. The card names itself on screen when the machine"
+        " starts, so a disc that stops at PUSH RUN BUTTON is usually asking for"
+        " a later one.", [
+        ("system3-jp", "syscard3.pce"),
+        ("system3-us", "syscard3u.pce"),
+        ("system2-jp", "syscard2.pce"),
+        ("system2-us", "syscard2u.pce"),
+        ("system1-jp", "syscard1.pce"),
+        ("games-express", "gecard.pce"),
+    ]),
+}
+
+
+def firmware_variant_settings(firmware, declared_ids):
+    """The settings that pick between a BIOS's variants, scoped to the machines
+    that ask for that BIOS.
+
+    Taken from the DECLARATION that was just rendered rather than from the files
+    on disk, because they are not the same thing: a machine without the dumps
+    keeps whatever the package already declared (see render_firmware), and a
+    setting derived from the disk would then offer nothing to choose. That is
+    exactly the shape CI runs in."""
+    out = []
+    for fwid, (key, display, description, variants) in FIRMWARE_VARIANTS.items():
+        order = [v[0] for v in variants]
+        declared = []
+        for entry in firmware:
+            if entry["id"] != fwid:
+                continue
+            for cond in (entry.get("requiredWhen") or {}).get("all") or []:
+                if cond.get("setting") == key and cond.get("is") in order:
+                    declared.append(cond["is"])
+        if len(declared) < 2 or fwid not in declared_ids:
+            continue  # one variant needs no choosing, and neither does none
+        declared.sort(key=order.index)
+        out.append({
+            "name": key,
+            "display": display,
+            "description": description,
+            "type": "enum",
+            "default": declared[0],
+            "options": declared,
+            "when": sorted(declared_ids[fwid]),
+        })
+    return out
+
+
 def render_firmware(machines, already=None):
     """What the frontend asks the user for, and refuses to start a project without.
 
@@ -348,39 +425,68 @@ def render_firmware(machines, already=None):
     because re-deriving it is not possible and discarding it would be worse.
     """
     import hashlib
-    known = {f["id"]: f for f in (already or [])}
-    out = []
-    seen = set()
+    known = {(f["id"], f.get("name")): f for f in (already or [])}
+    # WHICH machines want each BIOS, not just the first. A Mega CD 32X wants the
+    # Mega CD's BIOS and the 32X's three, and every one of them was already
+    # declared for another machine - so declaring each id once and naming only
+    # the machine that got there first left the Mega CD 32X asking for nothing
+    # and failing to load with nothing to say about it.
+    wants = {}
     for m in machines:
-        # A machine may need several: the 32X wants a vector table and a boot
-        # ROM for each of its two SH-2s. Each is declared separately, and each
-        # is required by the same machine, so the frontend asks for all of them.
         for fw in m.get("firmware") or []:
-            if fw["id"] in seen:
-                continue
-            seen.add(fw["id"])
-            display, description, name = FIRMWARE_TEXT[fw["id"]]
-            # The developer's own copy, which is where the machine was built from.
-            path = os.path.join(HERE, "..", "tests", "firmware", fw["id"])
+            wants.setdefault(fw["id"], []).append(m["id"].lower())
+
+    out = []
+    for fwid, machineIds in wants.items():
+        display, description, name = FIRMWARE_TEXT[fwid]
+        base = {"setting": "machine", "in": sorted(set(machineIds))}
+
+        def declare(path, entry_name, extra=None, missing_key=None):
             if not os.path.exists(path):
-                if fw["id"] in known:
-                    out.append(known[fw["id"]])
-                    continue
-                raise SystemExit(
-                    f"{fw['id']}: machines.json describes a machine built with this BIOS, and\n"
-                    f"neither tests/firmware/{fw['id']} nor an existing declaration is there to\n"
-                    f"take its size and hash from."
-                )
+                cached = known.get((fwid, entry_name))
+                if cached is not None:
+                    out.append(cached)
+                    return True
+                return False
             blob = open(path, "rb").read()
-            out.append({
-                "id": fw["id"],
+            entry = {
+                "id": fwid,
                 "display": display,
                 "description": description,
                 "size": len(blob),
                 "sha1": hashlib.sha1(blob).hexdigest().upper(),
-                "name": name,
-                "requiredWhen": {"setting": "machine", "is": m["id"].lower()},
-            })
+                "name": entry_name,
+                "requiredWhen": {"all": [base, extra]} if extra else base,
+            }
+            out.append(entry)
+            return True
+
+        variants = FIRMWARE_VARIANTS.get(fwid)
+        if variants is not None:
+            key, _d, _desc, forms = variants
+            declared = 0
+            present = [v for v in forms
+                       if os.path.exists(os.path.join(HERE, "..", "tests", "firmware",
+                                                      f"{fwid}.{v[0]}"))]
+            for value, filename in forms:
+                path = os.path.join(HERE, "..", "tests", "firmware", f"{fwid}.{value}")
+                # One variant present needs no setting to choose it, so it is
+                # declared plainly and the package stays simple.
+                extra = {"setting": key, "is": value} if len(present) > 1 else None
+                if declare(path, filename, extra):
+                    declared += 1
+            if declared:
+                continue
+            # No variant file: fall through and try the plain one, so a tree
+            # that predates this still generates.
+
+        path = os.path.join(HERE, "..", "tests", "firmware", fwid)
+        if not declare(path, name):
+            raise SystemExit(
+                f"{fwid}: machines.json describes a machine built with this BIOS, and\n"
+                f"neither tests/firmware/{fwid} nor an existing declaration is there to\n"
+                f"take its size and hash from."
+            )
     return out
 
 
@@ -662,7 +768,18 @@ def main():
     # decoration: a Game Boy's DMG revision, a Master System's VDP revision and
     # whether the boot ROM is skipped all change what the machine DOES, so a
     # movie has to carry them, which means the package has to declare them.
-    cfg["settings"] = [s for s in cfg["settings"] if not s.get("fromAres")]
+    cfg["settings"] = [s for s in cfg["settings"]
+                       if not s.get("fromAres") and not s.get("fromVariants")]
+    # Which of a BIOS's variants this project uses. A sync setting like any
+    # other, because it decides which bytes the machine boots from and a movie
+    # has to carry that.
+    wants = {}
+    for m in machines:
+        for fw in m.get("firmware") or []:
+            wants.setdefault(fw["id"], set()).add(m["id"].lower())
+    for entry in firmware_variant_settings(cfg.get("firmware") or [], wants):
+        entry["fromVariants"] = True
+        cfg["settings"].append(entry)
     for m in machines:
         if not m["loads"]:
             continue

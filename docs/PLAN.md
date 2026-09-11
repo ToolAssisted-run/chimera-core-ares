@@ -746,6 +746,37 @@ a medium only when the medium is a tape and otherwise nothing, which ares reads
 as an empty deck. Cassettes and the .wav and .tzx forms of them load and the
 gate now runs an MSX with a cartridge in it, which is the path that was broken.
 
+## A BIOS that is not one file
+
+Every BIOS up to here was one dump, pinned by hash, and that is right: the
+package should pin what was verified rather than what somebody hoped would work.
+Two of these machines break it.
+
+A **Mega CD BIOS is region specific** and a disc will not boot on the wrong one.
+A **PC Engine CD's System Card** decides what a disc can do at all: a Super
+CD-ROM2 game wants System Card 3.0 in its own region, an early CD-ROM2 game runs
+on any of them, and a Games Express disc wants the Games Express card. Pinning
+one hash apiece would have shipped a Sega CD that only runs American discs and a
+TurboDuo that only runs Japanese ones.
+
+Chimera's decision language already has the shape, and its own test says so:
+variants of one id are separate entries with disjoint conditions, and a sync
+setting picks between them. So each variant is declared and hashed separately,
+one setting (`mcd.bios`, `pcecd.card`) chooses, and the guest opens the id and
+never learns which file it got. A movie records the setting, which is exactly
+what a movie should record.
+
+Each variant's file is the developer's own copy at
+`tests/firmware/<id>.<value>`; a variant with no file there is not declared, so
+whoever builds the package ships the regions they own. One variant alone needs
+no setting to choose it and is declared plainly.
+
+**And a bug the same work found.** Firmware was declared once per id, with
+`requiredWhen` naming the FIRST machine that asked for it - so a Mega CD 32X,
+whose four BIOS files had all been declared for the Mega CD and the 32X, asked
+for none of them and would have failed to load with nothing to say. The
+condition names every machine that wants the file now.
+
 ## Firmware
 
 Four machines need a console BIOS - the Game Boy Advance, the ColecoVision, the

@@ -22,6 +22,9 @@ Updated as the work lands. `[x]` means committed and gated.
 - [x] **Mega 32X** - vector table and both SH-2 boot ROMs supplied
 - [x] **MSX2** - main and sub ROMs supplied; cassettes (.cas/.wav/.tzx) load
       on both MSX machines, and an MSX with a CARTRIDGE no longer crashes
+- [x] **A BIOS that is not one file** - a Mega CD BIOS is region specific and a
+      PC Engine System Card decides what a disc can do, so each is declared per
+      variant and a sync setting picks (`mcd.bios`, `pcecd.card`)
 - [x] **Mega CD / Sega CD** - the disc goes to the tray rather than to the
       cartridge slot beside it
 - [x] **Mega CD 32X** - both add-ons at once: the CD BIOS plus the 32X's three
@@ -56,7 +59,12 @@ Updated as the work lands. `[x]` means committed and gated.
 ## Ruffle
 - [x] A getenv per GL call, and a greenzone capturing what it could not afford
       (chimera e00b19c): 112 ms a frame to 48 on New Star Soccer
-- [ ] **SetRenderingEnabled** - the guest exports none, so a seek or turbo draws
-      every frame at full price
-- [ ] **Fewer GL crossings** - ~6,000 an average frame, 50,000 in a heavy one.
-      A batching problem rather than a constant-factor one.
+- [x] **SetRenderingEnabled** (ruffle 4a49986) - a seek or turbo no longer reads
+      the frame back off the GPU and converts it. About 6 ms a frame. What is
+      skipped is the readback and nothing else: `Player::render` still runs,
+      because it broadcasts Event.RENDER and updates the caches, and that is
+      machine state.
+- [x] **Fewer GL crossings** - NOT worth building, and now measured rather than
+      assumed. A crossing costs **4.0 ns** (`run-wbx --bench-crossings`), so six
+      thousand is 24 us and fifty thousand is 200 us. The driver is the cost,
+      not the boundary.
