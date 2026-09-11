@@ -74,7 +74,7 @@ ares_cpp = configure_file(
 # this list is what has to compile.
 ares_systems = [
   'a26', 'a52', 'cv', 'fc', 'gb', 'gba', 'md', 'ms', 'msx', 'myvision', 'n64',
-  'ng', 'ngp', 'pce', 'ps1', 'sg', 'spec', 'ws',
+  'ng', 'ngp', 'pce', 'ps1', 'sfc', 'sg', 'spec', 'ws',
 ]
 
 # The PC Engine is the exception the comment above mentions: its video is two

@@ -481,6 +481,14 @@ Geo and Neo Geo Pocket ones and all four machines were added.
 The **Saturn** is a stub upstream - one file - so it is not a machine anybody
 could offer.
 
+The **Super Famicom**, the **32X** and the **MSX2** are in, each because
+somebody supplied the firmware ares would not carry: the SPC700's sixty-four
+byte IPL, the 32X's vector table and two SH-2 boot ROMs, and the MSX2's main and
+sub ROMs. A game that carries a coprocessor - the DSP-1 of Pilotwings, the CX4
+of Mega Man X2 - needs that chip's own ROM as well, and the firmware declaration
+cannot yet say "required only for some cartridges"; those games are refused
+rather than run wrong.
+
 The **PC Engine** is in, and what kept it out was not what this said. It does
 not crash for want of a cartridge: ares' PC Engine has two video
 implementations and chooses between them at RUN time through an option, so
@@ -556,6 +564,34 @@ edit, replay - all exact. The content is somebody's property, so those legs read
 **The CD is not in.** A PC Engine CD is three paks rather than one - the system,
 a system card HuCard as firmware, and the disc - and it wants a machine table
 that can say so. See "Not done".
+
+## A machine may need more than one BIOS file
+
+`Spec.firmware` names one, which was enough until the 32X: it needs a vector
+table for the 68000 and a boot ROM for each of its two SH-2s, and an MSX2 needs
+a main ROM and the sub ROM it calls into. `extraFirmware` lists the rest,
+null-terminated, and mia takes them all at once through `loadMultiple` - its own
+interface, which upstream already uses for exactly this. Each is declared in the
+package separately, so the frontend asks for all of them and mounts each under
+its id, and the gate mounts them the same way (`extra_firmware_for`).
+
+`extraFirmware` is the LAST field of the Spec on purpose: every entry in that
+table is positional, and a field added in the middle would quietly re-point the
+ones after it.
+
+## A tape deck is not a cartridge slot
+
+Every MSX has both, and the adapter used to hand whatever medium the project
+named to every port that takes one. Given a cartridge, ares' tape reads the rate
+it is meant to play at, gets nothing, and divides by it: **an MSX with a
+cartridge in it killed the process before the first frame, in the shipped
+core**. Only a machine with no medium at all had ever been put through the gate
+- the "MSX BASIC" leg - and that is the one case where nothing is handed over.
+
+A tape pak says it is one by carrying the rate it plays at, so a deck is handed
+a medium only when the medium is a tape and otherwise nothing, which ares reads
+as an empty deck. Cassettes and the .wav and .tzx forms of them load and the
+gate now runs an MSX with a cartridge in it, which is the path that was broken.
 
 ## Firmware
 

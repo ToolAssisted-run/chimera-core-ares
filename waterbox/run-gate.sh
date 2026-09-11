@@ -83,9 +83,23 @@ firmware_for() {
 		GBA) echo "$root/tests/firmware/gbaBios" ;;
 		CV)  echo "$root/tests/firmware/cvBios" ;;
 		MSX) echo "$root/tests/firmware/msxBios" ;;
+		MSX2) echo "$root/tests/firmware/msx2Main" ;;
+		SFC) echo "$root/tests/firmware/sfcIpl" ;;
+		32X) echo "$root/tests/firmware/m32xVector" ;;
 		PS1) echo "$root/tests/firmware/ps1Bios" ;;
 		NGP) echo "$root/tests/firmware/ngpBios" ;;
 		NGPC) echo "$root/tests/firmware/ngpcBios" ;;
+	esac
+}
+
+# A machine may need MORE than one BIOS file - the 32X wants a boot ROM for each
+# of its two SH-2s besides the vector table, an MSX2 a sub ROM besides its main
+# one. `firmware_for` names the first; this names the rest, and setup_work mounts
+# all of them under the ids waterbox/machines.h declares.
+extra_firmware_for() {
+	case "$1" in
+		32X)  echo "$root/tests/firmware/m32xBootM $root/tests/firmware/m32xBootS" ;;
+		MSX2) echo "$root/tests/firmware/msx2Sub" ;;
 	esac
 }
 
@@ -122,6 +136,10 @@ setup_work() {
 		# mounted under the id the package declares, which is what the guest opens
 		cp "$fw" "$work/w/$(basename "$fw")"
 		nativefw="$fw"
+		for extra in $(extra_firmware_for "$id"); do
+			[ -f "$extra" ] || return 1
+			cp "$extra" "$work/w/$(basename "$extra")"
+		done
 	fi
 	return 0
 }
@@ -345,6 +363,20 @@ with_local rewind     PCE  120 --frames 300
 with_local compare    SGX  --frames 300
 with_local rerecord   SGX  --frames 200
 with_local rewind     SGX  120 --frames 300
+# The Super Famicom, the 32X and the two MSXes: cartridges nobody may hand out.
+# The MSX is here as well as in the BASIC leg above because a machine with a
+# CARTRIDGE in it exercises a different path - it is the one that was broken.
+with_local compare    SFC  --frames 300
+with_local rerecord   SFC  --frames 200
+with_local rewind     SFC  120 --frames 300
+with_local compare    32X  --frames 300
+with_local rerecord   32X  --frames 200
+with_local rewind     32X  120 --frames 300
+with_local compare    MSX  --frames 300
+with_local rerecord   MSX  --frames 200
+with_local compare    MSX2 --frames 300
+with_local rerecord   MSX2 --frames 200
+with_local rewind     MSX2 120 --frames 300
 
 echo
 echo "== a machine put back to a frame it has left =="

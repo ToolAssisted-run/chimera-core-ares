@@ -318,7 +318,7 @@
       "virtualHeight": 144,
       "regions": ["ntsc"],
       "bootsWithoutMedium": false,
-      "firmware": {"id": "gbBoot"},
+      "firmware": [{"id": "gbBoot"}],
       "loads": true,
       "console": [{"name": "Up", "path": "Controls/Up", "axis": false}, {"name": "Down", "path": "Controls/Down", "axis": false}, {"name": "Left", "path": "Controls/Left", "axis": false}, {"name": "Right", "path": "Controls/Right", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "Select", "path": "Controls/Select", "axis": false}, {"name": "Start", "path": "Controls/Start", "axis": false}],
       "settings": [{"name": "Fast Boot", "path": "Fast Boot", "type": "bool", "value": "false", "options": ["false", "true"]}, {"name": "Version", "path": "CPU/Version", "type": "enum", "value": "DMG-CPU B", "options": ["DMG-CPU", "DMG-CPU A", "DMG-CPU B", "DMG-CPU C", "CPU MGB"]}, {"name": "Color Emulation", "path": "PPU/Screen/Color Emulation", "type": "enum", "value": "Game Boy", "options": ["Game Boy", "Game Boy Pocket", "RGB"]}, {"name": "Interframe Blending", "path": "PPU/Screen/Interframe Blending", "type": "bool", "value": "true", "options": ["false", "true"]}],
@@ -336,7 +336,7 @@
       "virtualHeight": 144,
       "regions": ["ntsc"],
       "bootsWithoutMedium": false,
-      "firmware": {"id": "gbcBoot"},
+      "firmware": [{"id": "gbcBoot"}],
       "loads": true,
       "console": [{"name": "Up", "path": "Controls/Up", "axis": false}, {"name": "Down", "path": "Controls/Down", "axis": false}, {"name": "Left", "path": "Controls/Left", "axis": false}, {"name": "Right", "path": "Controls/Right", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "Select", "path": "Controls/Select", "axis": false}, {"name": "Start", "path": "Controls/Start", "axis": false}],
       "settings": [{"name": "Fast Boot", "path": "Fast Boot", "type": "bool", "value": "false", "options": ["false", "true"]}, {"name": "Version", "path": "CPU/Version", "type": "enum", "value": "CPU CGB", "options": ["CPU CGB", "CPU CGB A", "CPU CGB B", "CPU CGB C", "CPU CGB D", "CPU CGB E"]}, {"name": "Color Emulation", "path": "PPU/Screen/Color Emulation", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Interframe Blending", "path": "PPU/Screen/Interframe Blending", "type": "bool", "value": "true", "options": ["false", "true"]}],
@@ -354,7 +354,7 @@
       "virtualHeight": 144,
       "regions": ["ntsc"],
       "bootsWithoutMedium": false,
-      "firmware": {"id": "wsBoot"},
+      "firmware": [{"id": "wsBoot"}],
       "loads": true,
       "console": [{"name": "Y1", "path": "Controls/Y1", "axis": false}, {"name": "Y2", "path": "Controls/Y2", "axis": false}, {"name": "Y3", "path": "Controls/Y3", "axis": false}, {"name": "Y4", "path": "Controls/Y4", "axis": false}, {"name": "X1", "path": "Controls/X1", "axis": false}, {"name": "X2", "path": "Controls/X2", "axis": false}, {"name": "X3", "path": "Controls/X3", "axis": false}, {"name": "X4", "path": "Controls/X4", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "Start", "path": "Controls/Start", "axis": false}, {"name": "Volume", "path": "Controls/Volume", "axis": false}, {"name": "Power", "path": "Controls/Power", "axis": false}],
       "settings": [{"name": "Headphones", "path": "Headphones", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Color Emulation", "path": "PPU/Screen/Color Emulation", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Interframe Blending", "path": "PPU/Screen/Interframe Blending", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Orientation", "path": "PPU/Screen/Orientation", "type": "enum", "value": "Automatic", "options": ["Automatic", "Horizontal", "Vertical"]}, {"name": "Show Icons", "path": "PPU/Screen/Show Icons", "type": "bool", "value": "true", "options": ["false", "true"]}],
@@ -372,7 +372,7 @@
       "virtualHeight": 144,
       "regions": ["ntsc"],
       "bootsWithoutMedium": false,
-      "firmware": {"id": "wscBoot"},
+      "firmware": [{"id": "wscBoot"}],
       "loads": true,
       "console": [{"name": "Y1", "path": "Controls/Y1", "axis": false}, {"name": "Y2", "path": "Controls/Y2", "axis": false}, {"name": "Y3", "path": "Controls/Y3", "axis": false}, {"name": "Y4", "path": "Controls/Y4", "axis": false}, {"name": "X1", "path": "Controls/X1", "axis": false}, {"name": "X2", "path": "Controls/X2", "axis": false}, {"name": "X3", "path": "Controls/X3", "axis": false}, {"name": "X4", "path": "Controls/X4", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "Start", "path": "Controls/Start", "axis": false}, {"name": "Volume", "path": "Controls/Volume", "axis": false}, {"name": "Power", "path": "Controls/Power", "axis": false}],
       "settings": [{"name": "Headphones", "path": "Headphones", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Color Emulation", "path": "PPU/Screen/Color Emulation", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Interframe Blending", "path": "PPU/Screen/Interframe Blending", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Orientation", "path": "PPU/Screen/Orientation", "type": "enum", "value": "Automatic", "options": ["Automatic", "Horizontal", "Vertical"]}, {"name": "Show Icons", "path": "PPU/Screen/Show Icons", "type": "bool", "value": "true", "options": ["false", "true"]}],
@@ -390,7 +390,7 @@
       "virtualHeight": 296,
       "regions": ["ntsc"],
       "bootsWithoutMedium": false,
-      "firmware": {"id": "zxsBios"},
+      "firmware": [{"id": "zxsBios"}],
       "loads": true,
       "console": [],
       "settings": [],
@@ -416,7 +416,7 @@
       "virtualHeight": 160,
       "regions": ["ntsc"],
       "bootsWithoutMedium": false,
-      "firmware": {"id": "gbaBios"},
+      "firmware": [{"id": "gbaBios"}],
       "loads": true,
       "console": [{"name": "Up", "path": "Controls/Up", "axis": false}, {"name": "Down", "path": "Controls/Down", "axis": false}, {"name": "Left", "path": "Controls/Left", "axis": false}, {"name": "Right", "path": "Controls/Right", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "L", "path": "Controls/L", "axis": false}, {"name": "R", "path": "Controls/R", "axis": false}, {"name": "Select", "path": "Controls/Select", "axis": false}, {"name": "Start", "path": "Controls/Start", "axis": false}],
       "settings": [{"name": "Color Emulation", "path": "PPU/Screen/Color Emulation", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Interframe Blending", "path": "PPU/Screen/Interframe Blending", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Orientation", "path": "PPU/Screen/Orientation", "type": "enum", "value": "0°", "options": ["0°", "90°", "180°", "270°"]}],
@@ -434,7 +434,7 @@
       "virtualHeight": 192,
       "regions": ["ntsc", "pal"],
       "bootsWithoutMedium": false,
-      "firmware": {"id": "cvBios"},
+      "firmware": [{"id": "cvBios"}],
       "loads": true,
       "console": [{"name": "Reset", "path": "Controls/Reset", "axis": false}],
       "settings": [],
@@ -462,14 +462,14 @@
     {
       "id": "MSX",
       "label": "MSX",
-      "extensions": "msx rom",
+      "extensions": "msx rom cas wav tzx tsx",
       "maxWidth": 284,
       "maxHeight": 243,
       "virtualWidth": 284,
       "virtualHeight": 192,
       "regions": ["ntsc", "pal"],
       "bootsWithoutMedium": true,
-      "firmware": {"id": "msxBios"},
+      "firmware": [{"id": "msxBios"}],
       "loads": true,
       "console": [],
       "settings": [],
@@ -513,7 +513,7 @@
       "virtualHeight": 480,
       "regions": ["ntsc", "pal"],
       "bootsWithoutMedium": true,
-      "firmware": {"id": "ps1Bios"},
+      "firmware": [{"id": "ps1Bios"}],
       "loads": true,
       "console": [],
       "settings": [{"name": "Fast Boot", "path": "Fast Boot", "type": "bool", "value": "false", "options": ["false", "true"]}],
@@ -566,7 +566,7 @@
       "virtualHeight": 240,
       "regions": ["ntsc"],
       "bootsWithoutMedium": false,
-      "firmware": {"id": "a52Bios"},
+      "firmware": [{"id": "a52Bios"}],
       "loads": true,
       "console": [],
       "settings": [],
@@ -619,7 +619,7 @@
       "virtualHeight": 152,
       "regions": ["ntsc"],
       "bootsWithoutMedium": false,
-      "firmware": {"id": "ngpBios"},
+      "firmware": [{"id": "ngpBios"}],
       "loads": true,
       "console": [{"name": "Up", "path": "Controls/Up", "axis": false}, {"name": "Down", "path": "Controls/Down", "axis": false}, {"name": "Left", "path": "Controls/Left", "axis": false}, {"name": "Right", "path": "Controls/Right", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "Option", "path": "Controls/Option", "axis": false}, {"name": "Debugger", "path": "Controls/Debugger", "axis": false}, {"name": "Power", "path": "Controls/Power", "axis": false}],
       "settings": [{"name": "Fast Boot", "path": "Fast Boot", "type": "bool", "value": "false", "options": ["false", "true"]}, {"name": "Interframe Blending", "path": "KGE/Screen/Interframe Blending", "type": "bool", "value": "true", "options": ["false", "true"]}],
@@ -637,7 +637,7 @@
       "virtualHeight": 152,
       "regions": ["ntsc"],
       "bootsWithoutMedium": false,
-      "firmware": {"id": "ngpcBios"},
+      "firmware": [{"id": "ngpcBios"}],
       "loads": true,
       "console": [{"name": "Up", "path": "Controls/Up", "axis": false}, {"name": "Down", "path": "Controls/Down", "axis": false}, {"name": "Left", "path": "Controls/Left", "axis": false}, {"name": "Right", "path": "Controls/Right", "axis": false}, {"name": "A", "path": "Controls/A", "axis": false}, {"name": "B", "path": "Controls/B", "axis": false}, {"name": "Option", "path": "Controls/Option", "axis": false}, {"name": "Debugger", "path": "Controls/Debugger", "axis": false}, {"name": "Power", "path": "Controls/Power", "axis": false}],
       "settings": [{"name": "Fast Boot", "path": "Fast Boot", "type": "bool", "value": "false", "options": ["false", "true"]}, {"name": "Interframe Blending", "path": "KGE/Screen/Interframe Blending", "type": "bool", "value": "true", "options": ["false", "true"]}],
@@ -655,7 +655,7 @@
       "virtualHeight": 224,
       "regions": ["ntsc"],
       "bootsWithoutMedium": false,
-      "firmware": {"id": "ngBios"},
+      "firmware": [{"id": "ngBios"}],
       "loads": true,
       "console": [],
       "settings": [{"name": "Settings Mode", "path": "Settings Mode", "type": "bool", "value": "false", "options": ["false", "true"]}, {"name": "Two Coin Chutes", "path": "Two Coin Chutes", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Normal Controller", "path": "Normal Controller", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Multiplayer", "path": "Multiplayer", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Free Play", "path": "Free Play", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Freeze", "path": "Freeze", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "Communication ID", "path": "Communication ID", "type": "enum", "value": "3", "options": ["0", "1", "2", "3"]}],
@@ -684,6 +684,129 @@
             {
               "name": "Memory Card",
               "inputs": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SFC",
+      "label": "Super Famicom / SNES",
+      "extensions": "sfc smc swc fig",
+      "maxWidth": 564,
+      "maxHeight": 576,
+      "virtualWidth": 282,
+      "virtualHeight": 242,
+      "regions": ["ntsc", "pal"],
+      "bootsWithoutMedium": false,
+      "firmware": [{"id": "sfcIpl"}],
+      "loads": true,
+      "console": [{"name": "Reset", "path": "Controls/Reset", "axis": false}],
+      "settings": [{"name": "Version", "path": "Version", "type": "enum", "value": "2", "options": ["1", "2"]}, {"name": "Deep Black Boost", "path": "PPU/Screen/Deep Black Boost", "type": "bool", "value": "true", "options": ["false", "true"]}, {"name": "PPU1 Version", "path": "PPU/PPU1 Version", "type": "enum", "value": "1", "options": ["1"]}, {"name": "PPU2 Version", "path": "PPU/PPU2 Version", "type": "enum", "value": "3", "options": ["1", "2", "3"]}, {"name": "VRAM", "path": "PPU/VRAM", "type": "enum", "value": "65536", "options": ["65536", "131072"]}],
+      "ports": [
+        {
+          "name": "Controller Port 1",
+          "devices": [
+            {
+              "name": "Gamepad",
+              "inputs": [{"name": "Up", "path": "Controller Port 1/Gamepad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 1/Gamepad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 1/Gamepad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 1/Gamepad/Right", "axis": false}, {"name": "B", "path": "Controller Port 1/Gamepad/B", "axis": false}, {"name": "A", "path": "Controller Port 1/Gamepad/A", "axis": false}, {"name": "Y", "path": "Controller Port 1/Gamepad/Y", "axis": false}, {"name": "X", "path": "Controller Port 1/Gamepad/X", "axis": false}, {"name": "L", "path": "Controller Port 1/Gamepad/L", "axis": false}, {"name": "R", "path": "Controller Port 1/Gamepad/R", "axis": false}, {"name": "Select", "path": "Controller Port 1/Gamepad/Select", "axis": false}, {"name": "Start", "path": "Controller Port 1/Gamepad/Start", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Controller Port 2",
+          "devices": [
+            {
+              "name": "Gamepad",
+              "inputs": [{"name": "Up", "path": "Controller Port 2/Gamepad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 2/Gamepad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 2/Gamepad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 2/Gamepad/Right", "axis": false}, {"name": "B", "path": "Controller Port 2/Gamepad/B", "axis": false}, {"name": "A", "path": "Controller Port 2/Gamepad/A", "axis": false}, {"name": "Y", "path": "Controller Port 2/Gamepad/Y", "axis": false}, {"name": "X", "path": "Controller Port 2/Gamepad/X", "axis": false}, {"name": "L", "path": "Controller Port 2/Gamepad/L", "axis": false}, {"name": "R", "path": "Controller Port 2/Gamepad/R", "axis": false}, {"name": "Select", "path": "Controller Port 2/Gamepad/Select", "axis": false}, {"name": "Start", "path": "Controller Port 2/Gamepad/Start", "axis": false}]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "32X",
+      "label": "Mega Drive 32X",
+      "extensions": "32x",
+      "maxWidth": 1280,
+      "maxHeight": 480,
+      "virtualWidth": 292,
+      "virtualHeight": 224,
+      "regions": ["ntsc", "pal"],
+      "bootsWithoutMedium": false,
+      "firmware": [{"id": "m32xVector"}, {"id": "m32xBootM"}, {"id": "m32xBootS"}],
+      "loads": true,
+      "console": [{"name": "Reset", "path": "Controls/Reset", "axis": false}],
+      "settings": [],
+      "ports": [
+        {
+          "name": "Controller Port 1",
+          "devices": [
+            {
+              "name": "Control Pad",
+              "inputs": [{"name": "Up", "path": "Controller Port 1/Control Pad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 1/Control Pad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 1/Control Pad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 1/Control Pad/Right", "axis": false}, {"name": "A", "path": "Controller Port 1/Control Pad/A", "axis": false}, {"name": "B", "path": "Controller Port 1/Control Pad/B", "axis": false}, {"name": "C", "path": "Controller Port 1/Control Pad/C", "axis": false}, {"name": "Start", "path": "Controller Port 1/Control Pad/Start", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Controller Port 2",
+          "devices": [
+            {
+              "name": "Control Pad",
+              "inputs": [{"name": "Up", "path": "Controller Port 2/Control Pad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 2/Control Pad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 2/Control Pad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 2/Control Pad/Right", "axis": false}, {"name": "A", "path": "Controller Port 2/Control Pad/A", "axis": false}, {"name": "B", "path": "Controller Port 2/Control Pad/B", "axis": false}, {"name": "C", "path": "Controller Port 2/Control Pad/C", "axis": false}, {"name": "Start", "path": "Controller Port 2/Control Pad/Start", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Extension Port",
+          "devices": [
+            {
+              "name": "Control Pad",
+              "inputs": [{"name": "Up", "path": "Extension Port/Control Pad/Up", "axis": false}, {"name": "Down", "path": "Extension Port/Control Pad/Down", "axis": false}, {"name": "Left", "path": "Extension Port/Control Pad/Left", "axis": false}, {"name": "Right", "path": "Extension Port/Control Pad/Right", "axis": false}, {"name": "A", "path": "Extension Port/Control Pad/A", "axis": false}, {"name": "B", "path": "Extension Port/Control Pad/B", "axis": false}, {"name": "C", "path": "Extension Port/Control Pad/C", "axis": false}, {"name": "Start", "path": "Extension Port/Control Pad/Start", "axis": false}]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MSX2",
+      "label": "MSX2",
+      "extensions": "msx2 mx2 rom cas wav tzx tsx",
+      "maxWidth": 568,
+      "maxHeight": 486,
+      "virtualWidth": 284,
+      "virtualHeight": 192,
+      "regions": ["ntsc", "pal"],
+      "bootsWithoutMedium": false,
+      "firmware": [{"id": "msx2Main"}, {"id": "msx2Sub"}],
+      "loads": true,
+      "console": [],
+      "settings": [],
+      "ports": [
+        {
+          "name": "Keyboard",
+          "devices": [
+            {
+              "name": "Japanese",
+              "inputs": [{"name": "0 わ を", "path": "Keyboard/Japanese/0 わ を", "axis": false}, {"name": "1 ! ぬ", "path": "Keyboard/Japanese/1 ! ぬ", "axis": false}, {"name": "2 \" ふ", "path": "Keyboard/Japanese/2 \" ふ", "axis": false}, {"name": "3 # あ ぁ", "path": "Keyboard/Japanese/3 # あ ぁ", "axis": false}, {"name": "4 $ う ぅ", "path": "Keyboard/Japanese/4 $ う ぅ", "axis": false}, {"name": "5 % え ぇ", "path": "Keyboard/Japanese/5 % え ぇ", "axis": false}, {"name": "6 & お ぉ", "path": "Keyboard/Japanese/6 & お ぉ", "axis": false}, {"name": "7 ’ や ゃ", "path": "Keyboard/Japanese/7 ’ や ゃ", "axis": false}, {"name": "8 ( ゆ ゅ", "path": "Keyboard/Japanese/8 ( ゆ ゅ", "axis": false}, {"name": "9 ) よ ょ", "path": "Keyboard/Japanese/9 ) よ ょ", "axis": false}, {"name": "- = ほ", "path": "Keyboard/Japanese/- = ほ", "axis": false}, {"name": "^ ~ へ", "path": "Keyboard/Japanese/^ ~ へ", "axis": false}, {"name": "¥ | ー", "path": "Keyboard/Japanese/¥ | ー", "axis": false}, {"name": "@ ‘ \"", "path": "Keyboard/Japanese/@ ‘ \"", "axis": false}, {"name": "[ { 。", "path": "Keyboard/Japanese/[ { 。", "axis": false}, {"name": "; + れ", "path": "Keyboard/Japanese/; + れ", "axis": false}, {"name": ": * け", "path": "Keyboard/Japanese/: * け", "axis": false}, {"name": "] } む", "path": "Keyboard/Japanese/] } む", "axis": false}, {"name": ", < ね `", "path": "Keyboard/Japanese/, < ね `", "axis": false}, {"name": ". > る 。", "path": "Keyboard/Japanese/. > る 。", "axis": false}, {"name": "/ ? め .", "path": "Keyboard/Japanese// ? め .", "axis": false}, {"name": "- ろ", "path": "Keyboard/Japanese/- ろ", "axis": false}, {"name": "A ち", "path": "Keyboard/Japanese/A ち", "axis": false}, {"name": "B こ", "path": "Keyboard/Japanese/B こ", "axis": false}, {"name": "C そ", "path": "Keyboard/Japanese/C そ", "axis": false}, {"name": "D し", "path": "Keyboard/Japanese/D し", "axis": false}, {"name": "E い ぃ", "path": "Keyboard/Japanese/E い ぃ", "axis": false}, {"name": "F は", "path": "Keyboard/Japanese/F は", "axis": false}, {"name": "G き", "path": "Keyboard/Japanese/G き", "axis": false}, {"name": "H く", "path": "Keyboard/Japanese/H く", "axis": false}, {"name": "I に", "path": "Keyboard/Japanese/I に", "axis": false}, {"name": "J ま", "path": "Keyboard/Japanese/J ま", "axis": false}, {"name": "K の", "path": "Keyboard/Japanese/K の", "axis": false}, {"name": "L り", "path": "Keyboard/Japanese/L り", "axis": false}, {"name": "M も", "path": "Keyboard/Japanese/M も", "axis": false}, {"name": "N み", "path": "Keyboard/Japanese/N み", "axis": false}, {"name": "O ら", "path": "Keyboard/Japanese/O ら", "axis": false}, {"name": "P せ", "path": "Keyboard/Japanese/P せ", "axis": false}, {"name": "Q た", "path": "Keyboard/Japanese/Q た", "axis": false}, {"name": "R す", "path": "Keyboard/Japanese/R す", "axis": false}, {"name": "S と", "path": "Keyboard/Japanese/S と", "axis": false}, {"name": "T か", "path": "Keyboard/Japanese/T か", "axis": false}, {"name": "U な", "path": "Keyboard/Japanese/U な", "axis": false}, {"name": "V ひ", "path": "Keyboard/Japanese/V ひ", "axis": false}, {"name": "W て", "path": "Keyboard/Japanese/W て", "axis": false}, {"name": "X さ", "path": "Keyboard/Japanese/X さ", "axis": false}, {"name": "Y ん", "path": "Keyboard/Japanese/Y ん", "axis": false}, {"name": "Z つ っ", "path": "Keyboard/Japanese/Z つ っ", "axis": false}, {"name": "SHIFT", "path": "Keyboard/Japanese/SHIFT", "axis": false}, {"name": "CTRL", "path": "Keyboard/Japanese/CTRL", "axis": false}, {"name": "GRAPH", "path": "Keyboard/Japanese/GRAPH", "axis": false}, {"name": "CAPS", "path": "Keyboard/Japanese/CAPS", "axis": false}, {"name": "かな", "path": "Keyboard/Japanese/かな", "axis": false}, {"name": "F1 F6", "path": "Keyboard/Japanese/F1 F6", "axis": false}, {"name": "F2 F7", "path": "Keyboard/Japanese/F2 F7", "axis": false}, {"name": "F3 F8", "path": "Keyboard/Japanese/F3 F8", "axis": false}, {"name": "F4 F9", "path": "Keyboard/Japanese/F4 F9", "axis": false}, {"name": "F5 F10", "path": "Keyboard/Japanese/F5 F10", "axis": false}, {"name": "ESC", "path": "Keyboard/Japanese/ESC", "axis": false}, {"name": "TAB", "path": "Keyboard/Japanese/TAB", "axis": false}, {"name": "STOP", "path": "Keyboard/Japanese/STOP", "axis": false}, {"name": "BS", "path": "Keyboard/Japanese/BS", "axis": false}, {"name": "SELECT", "path": "Keyboard/Japanese/SELECT", "axis": false}, {"name": "RETURN", "path": "Keyboard/Japanese/RETURN", "axis": false}, {"name": "SPACE", "path": "Keyboard/Japanese/SPACE", "axis": false}, {"name": "CLS/HOME", "path": "Keyboard/Japanese/CLS/HOME", "axis": false}, {"name": "INS", "path": "Keyboard/Japanese/INS", "axis": false}, {"name": "DEL", "path": "Keyboard/Japanese/DEL", "axis": false}, {"name": "←", "path": "Keyboard/Japanese/←", "axis": false}, {"name": "↑", "path": "Keyboard/Japanese/↑", "axis": false}, {"name": "↓", "path": "Keyboard/Japanese/↓", "axis": false}, {"name": "→", "path": "Keyboard/Japanese/→", "axis": false}, {"name": "*", "path": "Keyboard/Japanese/*", "axis": false}, {"name": "+", "path": "Keyboard/Japanese/+", "axis": false}, {"name": "/", "path": "Keyboard/Japanese//", "axis": false}, {"name": "0", "path": "Keyboard/Japanese/0", "axis": false}, {"name": "1", "path": "Keyboard/Japanese/1", "axis": false}, {"name": "2", "path": "Keyboard/Japanese/2", "axis": false}, {"name": "3", "path": "Keyboard/Japanese/3", "axis": false}, {"name": "4", "path": "Keyboard/Japanese/4", "axis": false}, {"name": "5", "path": "Keyboard/Japanese/5", "axis": false}, {"name": "6", "path": "Keyboard/Japanese/6", "axis": false}, {"name": "7", "path": "Keyboard/Japanese/7", "axis": false}, {"name": "8", "path": "Keyboard/Japanese/8", "axis": false}, {"name": "9", "path": "Keyboard/Japanese/9", "axis": false}, {"name": "-", "path": "Keyboard/Japanese/-", "axis": false}, {"name": ",", "path": "Keyboard/Japanese/,", "axis": false}, {"name": ".", "path": "Keyboard/Japanese/.", "axis": false}, {"name": "", "path": "Keyboard/Japanese/", "axis": false}, {"name": "実行", "path": "Keyboard/Japanese/実行", "axis": false}, {"name": "取消", "path": "Keyboard/Japanese/取消", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Controller Port 1",
+          "devices": [
+            {
+              "name": "Gamepad",
+              "inputs": [{"name": "Up", "path": "Controller Port 1/Gamepad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 1/Gamepad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 1/Gamepad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 1/Gamepad/Right", "axis": false}, {"name": "A", "path": "Controller Port 1/Gamepad/A", "axis": false}, {"name": "B", "path": "Controller Port 1/Gamepad/B", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Controller Port 2",
+          "devices": [
+            {
+              "name": "Gamepad",
+              "inputs": [{"name": "Up", "path": "Controller Port 2/Gamepad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 2/Gamepad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 2/Gamepad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 2/Gamepad/Right", "axis": false}, {"name": "A", "path": "Controller Port 2/Gamepad/A", "axis": false}, {"name": "B", "path": "Controller Port 2/Gamepad/B", "axis": false}]
             }
           ]
         }

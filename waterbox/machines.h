@@ -37,6 +37,7 @@
 #include <ng/ng.hpp>
 #include <ngp/ngp.hpp>
 #include <pce/pce.hpp>
+#include <sfc/sfc.hpp>
 #include <ps1/ps1.hpp>
 #include <sg/sg.hpp>
 #include <spec/spec.hpp>
@@ -122,9 +123,38 @@ namespace machines
 		 * of and would otherwise hit exactly the same crash. */
 		OptionFn option;
 		const Option *options;
+
+		/* A machine that needs MORE than one BIOS file lists the rest here,
+		 * null-terminated, after the one `firmware` names.
+		 *
+		 * The 32X wants a vector table and a boot ROM for each of its two
+		 * SH-2s; an MSX2 wants a main ROM and a sub ROM. mia takes them all at
+		 * once through its own loadMultiple, which upstream already uses for
+		 * exactly this, so the only thing this core adds is saying which files
+		 * and in what order. Every one of them is declared in the package, so
+		 * the frontend asks for all of them and mounts each under its id.
+		 *
+		 * LAST in this struct on purpose: every entry below is positional, and
+		 * a field added in the middle would quietly re-point the ones after it. */
+		const char *const *extraFirmware;
 	};
 
 	/* Ordered as a person would look for them, not as ares stores them. */
+	/* Accuracy over speed, and a machine that starts the same way every time:
+	 * the two things a movie needs of a Super Famicom. Its video is the same
+	 * two-implementation arrangement the PC Engine's is. */
+	inline constexpr Option kSuperFamicomOptions[] = {
+		{"Pixel Accuracy", "true"},
+		{"Deterministic Entropy", "true"},
+		{nullptr, nullptr},
+	};
+
+	/* An MSX2's main ROM and the sub ROM it calls into. */
+	inline constexpr const char *kMSX2Firmware[] = { "msx2Sub", nullptr };
+
+	/* The 32X's three boot ROMs, in the order its system pak reads them. */
+	inline constexpr const char *kMega32XFirmware[] = { "m32xBootM", "m32xBootS", nullptr };
+
 	/* The PC Engine's video implementation, which is a null pointer until an
 	 * option names one. ares forces the accurate renderer itself here - its own
 	 * comment says the scanline one is too buggy - so the value is not read. */
@@ -226,7 +256,7 @@ namespace machines
 			 * here. */
 			{"MSX", "MSX", "MSX", "MSX", ares::MSX::load,
 			 "[Microsoft] MSX (NTSC)", "[Microsoft] MSX (PAL)",
-			 284, 243, 284, 192, "msx rom", nullptr, "msxBios", true},
+			 284, 243, 284, 192, "msx rom cas wav tzx tsx", nullptr, "msxBios", true},
 
 			/* The one machine here that loads a disc rather than a cartridge.
 			 * mia takes a .cue (with its .bin beside it, mounted under the name
@@ -251,6 +281,27 @@ namespace machines
 			{"NG", "Neo Geo AES", "Neo Geo AES", "Neo Geo", ares::NeoGeo::load,
 			 "[SNK] Neo Geo AES", nullptr,
 			 320, 256, 320, 224, "zip", nullptr, "ngBios", false},
+
+			{"SFC", "Super Famicom / SNES", "Super Famicom", "Super Famicom",
+			 ares::SuperFamicom::load,
+			 "[Nintendo] Super Famicom (NTSC)", "[Nintendo] Super Famicom (PAL)",
+			 564, 576, 282, 242, "sfc smc swc fig", nullptr, "sfcIpl", false,
+			 0, 0, 0, 0, ares::SuperFamicom::option, kSuperFamicomOptions},
+
+			/* A 32X is a Mega Drive with two SH-2s bolted on, so it is ares'
+			 * Mega Drive under another configuration, reading its own medium
+			 * and needing the three boot ROMs those processors start from. */
+			{"32X", "Mega Drive 32X", "Mega 32X", "Mega 32X", ares::MegaDrive::load,
+			 "[Sega] Mega 32X (NTSC-U)", "[Sega] Mega 32X (PAL)",
+			 1280, 480, 292, 224, "32x", nullptr, "m32xVector", false,
+			 0, 0, 0, 0, nullptr, nullptr, kMega32XFirmware},
+
+			/* Twice the MSX's buffer in both directions: an MSX2 has modes the
+			 * MSX has not, and ares gives the screen the largest of them. */
+			{"MSX2", "MSX2", "MSX2", "MSX2", ares::MSX::load,
+			 "[Microsoft] MSX2 (NTSC)", "[Microsoft] MSX2 (PAL)",
+			 568, 486, 284, 192, "msx2 mx2 rom cas wav tzx tsx", nullptr, "msx2Main", false,
+			 0, 0, 0, 0, nullptr, nullptr, kMSX2Firmware},
 
 			{"PCE", "PC Engine / TurboGrafx-16", "PC Engine", "PC Engine",
 			 ares::PCEngine::load, "[NEC] TurboGrafx 16 (NTSC-U)", nullptr,

@@ -150,7 +150,26 @@ namespace
 			/* The system node is the machine itself; anything else asking is the
 			 * medium in its slot. */
 			if (g_root && node == g_root) return g_systemPak ? g_systemPak->pak : nullptr;
-			return g_cartridgePak ? g_cartridgePak->pak : nullptr;
+			auto pak = g_cartridgePak ? g_cartridgePak->pak : nullptr;
+			if (!pak) return nullptr;
+
+			/* A tape deck asks this the same way a cartridge slot does, and
+			 * every MSX has both. Handed a cartridge, ares' tape reads the
+			 * frequency it is meant to play at, gets nothing, and divides by
+			 * it - which killed the process before the first frame. An MSX with
+			 * a cartridge in it did exactly that in the shipped core; only a
+			 * machine with no medium at all was ever put through the gate, and
+			 * that is the one case where nothing is handed over.
+			 *
+			 * A tape pak says it is one by carrying the rate it plays at. So a
+			 * deck is handed a medium only when the medium is a tape, and
+			 * otherwise nothing - which ares reads as an empty deck. */
+			if (std::dynamic_pointer_cast<ares::Core::Tape>(node)
+				&& !pak->attribute("frequency"))
+			{
+				return nullptr;
+			}
+			return pak;
 		}
 
 		/* A machine can have more than one of these - a Mega Drive has the
@@ -475,7 +494,27 @@ namespace machine
 			firmware = (config.firmwareFile && *config.firmwareFile) ? config.firmwareFile
 			                                                        : g_spec->firmware;
 		}
-		if (g_systemPak->load(firmware) != successful)
+		if (g_spec->extraFirmware != nullptr)
+		{
+			/* A machine with more than one BIOS file. mia takes them together -
+			 * loadMultiple is its own interface for exactly this - and the
+			 * order is the order machines.h lists them in, because that is what
+			 * the system pak reads them as. Each is mounted under its id, so
+			 * the ids ARE the names; run-native, which speaks paths, puts them
+			 * beside the first one. */
+			std::vector<string> firmwares;
+			firmwares.push_back(firmware);
+			const string dir = Location::path(firmware);
+			for (const char *const *extra = g_spec->extraFirmware; *extra != nullptr; extra++)
+			{
+				firmwares.push_back(string{dir, *extra});
+			}
+			if (!g_systemPak->loadMultiple(firmwares))
+			{
+				return fail("the console BIOS would not load");
+			}
+		}
+		else if (g_systemPak->load(firmware) != successful)
 		{
 			return fail(g_spec->firmware ? "the console BIOS would not load"
 			                             : "this machine's system pak would not load");

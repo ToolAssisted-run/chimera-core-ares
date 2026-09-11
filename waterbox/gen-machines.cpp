@@ -199,6 +199,7 @@ int main(int argc, char **argv)
 	{
 		g_systemPak = mia::System::create(spec.miaSystem);
 		string firmware;
+		std::vector<string> firmwares;
 		bool firmwareMissing = false;
 		if (spec.firmware != nullptr)
 		{
@@ -207,9 +208,18 @@ int main(int argc, char **argv)
 			{
 				firmware = {firmwareDir, "/", spec.firmware};
 				if (!file::exists(firmware)) firmwareMissing = true;
+				firmwares.push_back(firmware);
+				for (const char *const *extra = spec.extraFirmware; extra && *extra; extra++)
+				{
+					string one = {firmwareDir, "/", *extra};
+					if (!file::exists(one)) firmwareMissing = true;
+					firmwares.push_back(one);
+				}
 			}
 		}
-		bool systemOk = !firmwareMissing && g_systemPak && g_systemPak->load(firmware) == successful;
+		bool systemOk = !firmwareMissing && g_systemPak
+			&& (spec.extraFirmware != nullptr ? g_systemPak->loadMultiple(firmwares)
+			                                  : g_systemPak->load(firmware) == successful);
 
 		/* What this machine has to be told before it is built. A machine that
 		 * chooses between two implementations of a chip through an option has a
@@ -237,10 +247,17 @@ int main(int argc, char **argv)
 		printf("      \"bootsWithoutMedium\": %s,\n", spec.bootsWithoutMedium ? "true" : "false");
 		if (spec.firmware != nullptr)
 		{
-			/* Only the id: gen-config.py finds the file under tests/firmware and
-			 * hashes it, so the package pins the BIOS that was verified to work
-			 * and this file stays the same whatever path it was run with. */
-			printf("      \"firmware\": {\"id\": \"%s\"},\n", spec.firmware);
+			/* Only the ids: gen-config.py finds each file under tests/firmware
+			 * and hashes it, so the package pins the BIOSes that were verified
+			 * to work and this file stays the same whatever path it was run
+			 * with. A list because a machine may need several, in the order the
+			 * system pak reads them. */
+			printf("      \"firmware\": [{\"id\": \"%s\"}", spec.firmware);
+			for (const char *const *extra = spec.extraFirmware; extra && *extra; extra++)
+			{
+				printf(", {\"id\": \"%s\"}", *extra);
+			}
+			printf("],\n");
 		}
 		printf("      \"loads\": %s,\n", ok ? "true" : "false");
 		if (!ok)

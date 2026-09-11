@@ -189,6 +189,45 @@ def render_inc(machines):
 # actually built the machine with, so the package pins what was verified rather
 # than what somebody hoped would work.
 FIRMWARE_TEXT = {
+    "sfcIpl": (
+        "Super Famicom IPL (SPC700 boot ROM)",
+        "The sixty-four bytes the SNES's sound CPU runs at power-on, which is "
+        "how the main CPU gets any code into it at all. Nothing plays without "
+        "it. Nintendo's, and yours to supply. Games that carry a coprocessor - "
+        "the DSP-1 of Pilotwings, the CX4 of Mega Man X2 - need that chip's own "
+        "ROM as well, which this core does not yet ask for.",
+        "ipl.rom",
+    ),
+    "m32xVector": (
+        "Mega 32X vector table",
+        "The 256-byte table the 68000 starts from on a 32X. Sega's, and yours "
+        "to supply. All three 32X files come from the same dump and are usually "
+        "named for what runs them: G for the Genesis side, M and S for the two "
+        "SH-2s.",
+        "32X_G_BIOS.bin",
+    ),
+    "m32xBootM": (
+        "Mega 32X master SH-2 boot ROM",
+        "The 2KB boot ROM of the first of the 32X's two SH-2 processors.",
+        "32X_M_BIOS.bin",
+    ),
+    "m32xBootS": (
+        "Mega 32X slave SH-2 boot ROM",
+        "The 1KB boot ROM of the second of the 32X's two SH-2 processors.",
+        "32X_S_BIOS.bin",
+    ),
+    "msx2Main": (
+        "MSX2 main BIOS",
+        "The MSX2's 32KB main ROM. Microsoft's and ASCII's, and yours to "
+        "supply; an MSX2 needs its sub ROM as well.",
+        "msx2.rom",
+    ),
+    "msx2Sub": (
+        "MSX2 sub ROM",
+        "The MSX2's 16KB sub ROM, which carries the extended BIOS the main ROM "
+        "calls into.",
+        "msx2ext.rom",
+    ),
     "gbBoot": (
         "Game Boy boot ROM",
         "The Game Boy's 256-byte boot ROM - the one that scrolls the logo and "
@@ -291,32 +330,37 @@ def render_firmware(machines, already=None):
     import hashlib
     known = {f["id"]: f for f in (already or [])}
     out = []
+    seen = set()
     for m in machines:
-        fw = m.get("firmware")
-        if not fw:
-            continue
-        display, description, name = FIRMWARE_TEXT[fw["id"]]
-        # The developer's own copy, which is where the machine was built from.
-        path = os.path.join(HERE, "..", "tests", "firmware", fw["id"])
-        if not os.path.exists(path):
-            if fw["id"] in known:
-                out.append(known[fw["id"]])
+        # A machine may need several: the 32X wants a vector table and a boot
+        # ROM for each of its two SH-2s. Each is declared separately, and each
+        # is required by the same machine, so the frontend asks for all of them.
+        for fw in m.get("firmware") or []:
+            if fw["id"] in seen:
                 continue
-            raise SystemExit(
-                f"{fw['id']}: machines.json describes a machine built with this BIOS, and\n"
-                f"neither tests/firmware/{fw['id']} nor an existing declaration is there to\n"
-                f"take its size and hash from."
-            )
-        blob = open(path, "rb").read()
-        out.append({
-            "id": fw["id"],
-            "display": display,
-            "description": description,
-            "size": len(blob),
-            "sha1": hashlib.sha1(blob).hexdigest().upper(),
-            "name": name,
-            "requiredWhen": {"setting": "machine", "is": m["id"].lower()},
-        })
+            seen.add(fw["id"])
+            display, description, name = FIRMWARE_TEXT[fw["id"]]
+            # The developer's own copy, which is where the machine was built from.
+            path = os.path.join(HERE, "..", "tests", "firmware", fw["id"])
+            if not os.path.exists(path):
+                if fw["id"] in known:
+                    out.append(known[fw["id"]])
+                    continue
+                raise SystemExit(
+                    f"{fw['id']}: machines.json describes a machine built with this BIOS, and\n"
+                    f"neither tests/firmware/{fw['id']} nor an existing declaration is there to\n"
+                    f"take its size and hash from."
+                )
+            blob = open(path, "rb").read()
+            out.append({
+                "id": fw["id"],
+                "display": display,
+                "description": description,
+                "size": len(blob),
+                "sha1": hashlib.sha1(blob).hexdigest().upper(),
+                "name": name,
+                "requiredWhen": {"setting": "machine", "is": m["id"].lower()},
+            })
     return out
 
 
