@@ -1,21 +1,25 @@
 --- a/mia/medium/medium.cpp
 +++ b/mia/medium/medium.cpp
-@@ -118,6 +118,7 @@
+@@ -118,6 +118,9 @@
      {"MSX",        Resource::Database::MSX,       sizeof(Resource::Database::MSX)},
      {"MSX2",       Resource::Database::MSX2,      sizeof(Resource::Database::MSX2)},
      {"Neo Geo",    Resource::Database::NeoGeo,    sizeof(Resource::Database::NeoGeo)},
 +    {"Super Famicom", Resource::Database::SuperFamicom, sizeof(Resource::Database::SuperFamicom)},
++    {"BS Memory",   Resource::Database::BSMemory,   sizeof(Resource::Database::BSMemory)},
++    {"Sufami Turbo", Resource::Database::SufamiTurbo, sizeof(Resource::Database::SufamiTurbo)},
    };
    for(auto& builtin : builtins) {
      if(database.name != builtin.name) continue;
 --- a/mia/resource/resource.bml
 +++ b/mia/resource/resource.bml
-@@ -5,3 +5,5 @@
+@@ -5,3 +5,7 @@
      binary name=MSX file="../Database/MSX.bml"
      binary name=MSX2 file="../Database/MSX2.bml"
      binary name=NeoGeo file="../Database/Neo Geo.bml"
 +    binary name=SuperFamicom file="../Database/Super Famicom.bml"
 +    binary name=SuperFamicomBoards file="../Database/Super Famicom Boards.bml"
++    binary name=BSMemory file="../Database/BS Memory.bml"
++    binary name=SufamiTurbo file="../Database/Sufami Turbo.bml"
 --- a/mia/system/mega-32x.cpp
 +++ b/mia/system/mega-32x.cpp
 @@ -1,17 +1,26 @@

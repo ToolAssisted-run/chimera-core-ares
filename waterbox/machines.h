@@ -55,6 +55,26 @@ namespace machines
 	/* One of those, as the table spells it. A null name ends the list. */
 	struct Option { const char *name; const char *value; };
 
+	/* A slot on the CARTRIDGE rather than on the console.
+	 *
+	 * A Super Famicom cartridge may itself have a slot: a BS-X cartridge takes
+	 * a Satellaview memory pack, a Sufami Turbo cartridge takes one or two
+	 * Sufami Turbo minicarts, a Super Game Boy takes a Game Boy cartridge. The
+	 * base cartridge is an ordinary medium in the console's own slot; what goes
+	 * INTO it is a second medium of a different kind, read by a different mia
+	 * medium, answered at a different node.
+	 *
+	 * Which one applies is decided by the second file's EXTENSION, because a
+	 * machine may offer several and the file is what says which. A null
+	 * extensions field ends the list. */
+	struct SubSlot
+	{
+		const char *extensions;  /* space separated, no dots */
+		const char *miaMedium;   /* mia's name for what goes in the slot */
+		const char *port;        /* the port inside the cartridge, by ares' path */
+		const char *node;        /* the node that asks for the pak, by name */
+	};
+
 	struct Spec
 	{
 		const char *id;          /* what a project records, and what waterbox.config calls it */
@@ -169,6 +189,10 @@ namespace machines
 		 * Both null for every machine whose BIOS is a file. */
 		const char *firmwareMedium;
 		const char *firmwareNode;
+
+		/* What this machine's CARTRIDGE can take, null-terminated; null for a
+		 * machine whose cartridges take nothing. See SubSlot. */
+		const SubSlot *subSlots;
 	};
 
 	/* Ordered as a person would look for them, not as ares stores them. */
@@ -183,6 +207,19 @@ namespace machines
 
 	/* An MSX2's main ROM and the sub ROM it calls into. */
 	inline constexpr const char *kMSX2Firmware[] = { "msx2Sub", nullptr };
+
+	/* What a Super Famicom cartridge can have a slot for. The base cartridge
+	 * decides whether the slot is there at all - a BS-X cartridge has the
+	 * Satellaview one, a Sufami Turbo cartridge has two minicart ones, a Super
+	 * Game Boy has the Game Boy one - and the second file's extension decides
+	 * which of them it is going into. */
+	inline constexpr SubSlot kSuperFamicomSubSlots[] = {
+		{"bs", "BS Memory", "BS Memory Slot", "BS Memory Cartridge"},
+		{"st", "Sufami Turbo", "Sufami Turbo Slot A", "Sufami Turbo Cartridge"},
+		{"gb gbc", "Game Boy Color", "Super Game Boy/Cartridge Slot",
+		 "Game Boy Color Cartridge"},
+		{nullptr, nullptr, nullptr, nullptr},
+	};
 
 	/* The 32X's three boot ROMs, in the order its system pak reads them. */
 	inline constexpr const char *kMega32XFirmware[] = { "m32xBootM", "m32xBootS", nullptr };
@@ -325,7 +362,8 @@ namespace machines
 			 ares::SuperFamicom::load,
 			 "[Nintendo] Super Famicom (NTSC)", "[Nintendo] Super Famicom (PAL)",
 			 564, 576, 282, 242, "sfc smc swc fig", nullptr, "sfcIpl", false,
-			 0, 0, 0, 0, ares::SuperFamicom::option, kSuperFamicomOptions},
+			 0, 0, 0, 0, ares::SuperFamicom::option, kSuperFamicomOptions,
+			 nullptr, nullptr, nullptr, nullptr, kSuperFamicomSubSlots},
 
 			/* A 32X is a Mega Drive with two SH-2s bolted on, so it is ares'
 			 * Mega Drive under another configuration, reading its own medium

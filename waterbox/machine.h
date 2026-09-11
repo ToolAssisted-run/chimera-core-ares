@@ -24,6 +24,12 @@ namespace machine
 
 		/* Mounted file names, not host paths. Null means absent. */
 		const char *romFile;
+		/* What goes into a slot on the CARTRIDGE rather than on the console: a
+		 * Satellaview memory pack in a BS-X cartridge, a Sufami Turbo minicart,
+		 * a Game Boy cartridge in a Super Game Boy. Which slot it goes in is
+		 * decided by its extension (machines.h, SubSlot). Null for the ordinary
+		 * case, which is every other machine. */
+		const char *subRomFile;
 		/* The console BIOS, for a machine that needs one. Mounted under the id
 		 * waterbox/machines.h names, which is also what the package declares. */
 		const char *firmwareFile;

@@ -95,6 +95,7 @@ int main(int argc, char **argv)
 	{
 		const char *a = argv[i];
 		if (!strcmp(a, "--rom") && i + 1 < argc) config.romFile = argv[++i];
+		else if (!strcmp(a, "--subrom") && i + 1 < argc) config.subRomFile = argv[++i];
 		else if (!strcmp(a, "--firmware") && i + 1 < argc) config.firmwareFile = argv[++i];
 		else if (!strcmp(a, "--pif-rom") && i + 1 < argc) config.pifRomFile = argv[++i];
 		else if (!strcmp(a, "--boot-probe")) config.bootProbe = true;
@@ -140,6 +141,9 @@ int main(int argc, char **argv)
 	{
 		fprintf(stderr, "usage: run-native --rom FILE [options]\n"
 			"  --machine ID      which console (default N64); see waterbox/machines.h\n"
+			"  --subrom FILE     what goes in a slot on the CARTRIDGE: a\n"
+			"                    Satellaview pack in a BS-X cartridge, a Sufami\n"
+			"                    Turbo minicart, a Game Boy cart in a Super Game Boy\n"
 			"  --firmware FILE   the console BIOS, for a machine that needs one\n"
 			"  --pif-rom FILE    boot a Nintendo 64 from a real PIF ROM instead of\n"
 			"                    the core's own HLE boot. The reference only.\n"

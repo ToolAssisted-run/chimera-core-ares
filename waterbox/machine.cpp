@@ -80,6 +80,10 @@ namespace
 	/* A BIOS that is a medium in its own slot rather than a file inside the
 	 * system pak - a PC Engine CD's System Card. See machines.h. */
 	std::shared_ptr<mia::Pak> g_firmwarePak;
+	/* What went into a slot on the cartridge - a Satellaview memory pack, a
+	 * Sufami Turbo minicart - and which SubSlot it was. See machines.h. */
+	std::shared_ptr<mia::Pak> g_subPak;
+	const machines::SubSlot *g_subSlot = nullptr;
 	Node::System g_root;
 
 	/* What each declared input binds to, resolved once at init. A null entry is
@@ -153,6 +157,13 @@ namespace
 			/* The system node is the machine itself; anything else asking is the
 			 * medium in its slot. */
 			if (g_root && node == g_root) return g_systemPak ? g_systemPak->pak : nullptr;
+
+			/* A cartridge's own slot. Asked for by a different node than the
+			 * cartridge itself, so it is answered before anything else. */
+			if (g_subPak && g_subSlot != nullptr && node->name() == g_subSlot->node)
+			{
+				return g_subPak->pak;
+			}
 
 			/* The card slot of a machine whose BIOS is a medium. Asked for
 			 * before the disc tray is, and by a different node, so it is
@@ -484,7 +495,13 @@ namespace machine
 
 		g_spec = machines::find(config.machine ? config.machine : "N64");
 		if (g_spec == nullptr) return fail("this core has no such machine");
-		g_isN64 = nall::string{g_spec->id} == "N64";
+		/* Every machine ares builds through Nintendo64::load has angrylion for
+		 * its rasteriser, and angrylion has to be told where to draw before the
+		 * first frame. Asking by ID caught the Nintendo 64 and missed the
+		 * Nintendo 64DD, which is the same machine with a drive under it: the
+		 * output pointer stayed null and the first frame took the process with
+		 * it. The question is which MACHINE this is, so ask that. */
+		g_isN64 = g_spec->load == ares::Nintendo64::load;
 		g_pal = config.pal && g_spec->configPal != nullptr;
 		g_refreshRate = 0.0;
 		g_streams.clear();
@@ -603,6 +620,48 @@ namespace machine
 			}
 		}
 
+		/* Something in a slot ON the cartridge. Which slot is decided by the
+		 * file's extension, because a Super Famicom cartridge may have any of
+		 * three and the file is what says which. See machines.h. */
+		g_subPak.reset();
+		g_subSlot = nullptr;
+		if (config.subRomFile != nullptr && *config.subRomFile && g_spec->subSlots != nullptr)
+		{
+			string ext = Location::suffix(config.subRomFile).trimLeft(".", 1L).downcase();
+			for (const machines::SubSlot *slot = g_spec->subSlots; slot->extensions != nullptr; slot++)
+			{
+				/* a space separated list, matched whole: "gb" must not match
+				 * inside "gbc" */
+				const char *at = slot->extensions;
+				while (*at != '\0')
+				{
+					const char *end = at;
+					while (*end != '\0' && *end != ' ') end++;
+					if ((size_t)(end - at) == ext.size()
+						&& memcmp(at, ext.data(), ext.size()) == 0)
+					{
+						g_subSlot = slot;
+						break;
+					}
+					at = (*end == '\0') ? end : end + 1;
+				}
+				if (g_subSlot != nullptr) break;
+			}
+			if (g_subSlot == nullptr) return fail("this machine has no slot for that file");
+			g_subPak = mia::Medium::create(g_subSlot->miaMedium);
+			if (!g_subPak) return fail("ares has no such medium");
+			auto subResult = g_subPak->load(config.subRomFile);
+			if (subResult != successful)
+			{
+				snprintf(g_error, sizeof g_error,
+					"the second cartridge would not load (mia said %d%s%s)",
+					(int)subResult.result,
+					subResult.info ? ": " : "",
+					subResult.info ? (const char *)subResult.info : "");
+				return false;
+			}
+		}
+
 		if (g_isN64)
 		{
 			/* The picture is the rasteriser's, written straight into the buffer
@@ -640,6 +699,27 @@ namespace machine
 			if (!port->supported().empty()) continue;
 			port->allocate();
 			port->connect();
+		}
+
+		/* A slot on the CARTRIDGE only exists once the cartridge does, and the
+		 * sweep above walked the tree as it was before that. So the second
+		 * cartridge goes in here, by the port path the SubSlot names - which is
+		 * relative to the cartridge, not to the machine.
+		 *
+		 * A base cartridge without that slot is a real mistake and is said so:
+		 * a Satellaview pack needs a BS-X cartridge to go into, and an ordinary
+		 * Super Famicom game silently ignoring the second file is how somebody
+		 * spends an afternoon wondering why nothing changed. */
+		if (g_subPak && g_subSlot != nullptr)
+		{
+			Node::Port slot;
+			for (auto &port : g_root->find<Node::Port>())
+			{
+				if (port->name() == g_subSlot->port) { slot = port; break; }
+			}
+			if (!slot) return fail("this cartridge has no slot for that file");
+			slot->allocate();
+			slot->connect();
 		}
 
 		if (!connectPorts(config)) return false;

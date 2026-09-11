@@ -550,6 +550,40 @@ def render_slots(machines, slots):
     for slot in slots["slots"]:
         if slot["id"] == "rom":
             slot["formats"] = every
+
+    # A slot on the CARTRIDGE rather than on the console: a Satellaview memory
+    # pack goes into a BS-X cartridge, a Sufami Turbo minicart into a Sufami
+    # Turbo cartridge, a Game Boy cartridge into a Super Game Boy. Offered only
+    # on the machines whose cartridges have one, and never required - the base
+    # cartridge alone is a perfectly good machine.
+    subformats, subwhen = [], []
+    for m in machines:
+        if not m["loads"] or not m.get("subExtensions"):
+            continue
+        for ext in m["subExtensions"].split():
+            if ext not in subformats:
+                subformats.append(ext)
+        subwhen.extend(m.get("when") or [m["id"].lower()])
+    slots["slots"] = [s for s in slots["slots"] if s["id"] != "subcart"]
+    if subformats:
+        slots["slots"].append({
+            "id": "subcart",
+            "title": "Cartridge in the cartridge",
+            "min": 0,
+            "max": 1,
+            "formats": subformats,
+            "exposedWhen": {"setting": "machine", "in": sorted(set(subwhen))},
+            "help": "Some Super Famicom cartridges have a slot of their own, and"
+                    " this is what goes in it. A Satellaview memory pack (.bs)"
+                    " goes into the BS-X cartridge - pick the BS-X as the game"
+                    " above and the pack here. A Sufami Turbo minicart (.st)"
+                    " goes into the Sufami Turbo cartridge, and a Game Boy"
+                    " cartridge goes into a Super Game Boy. Which slot it lands"
+                    " in is decided by the file itself, so there is nothing to"
+                    " choose. Leave it empty for an ordinary cartridge, which is"
+                    " almost every one: a game that has no such slot will say so"
+                    " rather than quietly ignore the file.",
+        })
     return json.dumps(slots, indent=2) + "\n"
 
 

@@ -69,26 +69,51 @@ medium_in_dir() {
 	return 0
 }
 
+# What goes in a slot on the CARTRIDGE, when the developer has one: a
+# Satellaview memory pack, a Sufami Turbo minicart, a Game Boy cartridge for a
+# Super Game Boy. tests/local/<machine>-sub/ holds it, beside the base cartridge
+# in tests/local/<machine>/, because it is a second file rather than a second
+# machine.
+local_subcart() {
+	dir="$root/tests/local/$1-sub"
+	[ -d "$dir" ] || return 0
+	for f in "$dir"/*; do
+		[ -f "$f" ] && { echo "$f"; return 0; }
+	done
+	return 0
+}
+
 # The same legs, on content only the developer has. `setup_work` takes a name
 # inside tests/content, so this copies the file in and calls the leg by hand.
+# with_local_as names the CONTENT separately from the machine: a Satellaview is
+# a Super Famicom with a particular cartridge in it, not a machine of its own, so
+# its content lives in tests/local/BSX/ and runs on SFC. `with_local` is the
+# ordinary case where the two are the same name.
 with_local() {
-	kind="$1"; id="$2"; shift 2
-	rom="$(local_content "$id")"
+	wl_kind="$1"; wl_id="$2"; shift 2
+	with_local_as "$wl_kind" "$wl_id" "$wl_id" "$@"
+}
+
+with_local_as() {
+	kind="$1"; contentid="$2"; id="$3"; shift 3
+	rom="$(local_content "$contentid")"
 	if [ -z "$rom" ]; then
-		echo "SKIP $id $kind (nothing in tests/local/$id)"
+		echo "SKIP $contentid $kind (nothing in tests/local/$contentid)"
 		return
 	fi
+	name="$contentid"
 	# A link rather than a copy: a disc image is hundreds of megabytes and
 	# gets copied again into the work dir below.
-	rm -rf "$content/.local-$id"
-	ln -s "$rom" "$content/.local-$id"
+	rm -rf "$content/.local-$name"
+	ln -s "$rom" "$content/.local-$name"
 	case "$kind" in
-		compare) compare "$id local" "$id" ".local-$id" "$@" ;;
-		rerecord) rerecord "$id local" "$id" ".local-$id" "$@" ;;
-		discipline) input_discipline "$id local" "$id" ".local-$id" "$@" ;;
-		rewind) rewind "$id local" "$id" ".local-$id" "$@" ;;
+		compare) compare "$name local" "$id" ".local-$name" "$@" ;;
+		rerecord) rerecord "$name local" "$id" ".local-$name" "$@" ;;
+		discipline) input_discipline "$name local" "$id" ".local-$name" "$@" ;;
+		rewind) rewind "$name local" "$id" ".local-$name" "$@" ;;
 	esac
-	rm -rf "$content/.local-$id"
+	rm -rf "$content/.local-$name"
+	contentid=""
 }
 
 firmware_for() {
@@ -178,6 +203,16 @@ setup_work() {
 		cp "$content/$rom" "$work/w/rom"
 		printf '{"rom":["rom"]}' > "$work/w/slots"
 	fi
+	# A second file for a slot on the cartridge. Mounted under its own name and
+	# named in the slot map, exactly as the medium is; $nativesub is the path
+	# the reference is handed.
+	nativesub=""
+	sub="$(local_subcart "${contentid:-$id}")"
+	if [ -n "$sub" ] && [ "$rom" != "-" ]; then
+		cp "$sub" "$work/w/$(basename "$sub")"
+		nativesub="$sub"
+		printf '{"rom":["%s"],"subcart":["%s"]}' "$workrom" "$(basename "$sub")" > "$work/w/slots"
+	fi
 	printf '{"machine":"%s"}' "$(echo "$id" | tr 'A-Z' 'a-z')" > "$work/w/settings"
 	fw="$(firmware_for "$id")"
 	nativefw=""
@@ -202,6 +237,7 @@ compare() {
 	fi
 	set -- "$@"
 	[ "$rom" = "-" ] || set -- "$@" --rom "$work/w/$workrom"
+	[ -z "$nativesub" ] || set -- "$@" --subrom "$nativesub"
 	[ -z "$nativefw" ] || set -- "$@" --firmware "$nativefw"
 	a="$("$native" --machine "$id" --quiet "$@" | tail -1)"
 	b="$("$runwbx" "$wbx" "$work/w" --machine "$id" --quiet "$@" | tail -1)"
@@ -416,6 +452,9 @@ with_local rewind     SGX  120 --frames 300
 # The Super Famicom, the 32X and the two MSXes: cartridges nobody may hand out.
 # The MSX is here as well as in the BASIC leg above because a machine with a
 # CARTRIDGE in it exercises a different path - it is the one that was broken.
+with_local_as compare  BSX SFC --frames 400
+with_local_as rerecord BSX SFC --frames 200
+with_local_as rewind   BSX SFC 120 --frames 400
 with_local compare    SFC  --frames 300
 with_local rerecord   SFC  --frames 200
 with_local rewind     SFC  120 --frames 300

@@ -678,6 +678,60 @@ Worth knowing: a mounted file lives in host memory for the life of the run. A
 runner. Nothing about that is new - it is how `wbx_mount_file` has always worked
 - but a disc is the first medium big enough for it to be worth saying.
 
+## A cartridge may have a slot of its own
+
+A Super Famicom cartridge is not always the end of the chain. A BS-X cartridge
+takes a Satellaview memory pack, a Sufami Turbo cartridge takes one or two
+minicarts, a Super Game Boy takes a Game Boy cartridge. The base cartridge is an
+ordinary medium in the console's slot; what goes INTO it is a second medium of a
+different kind, read by a different mia medium and answered at a different node.
+
+`Spec.subSlots` is that list, and which entry applies is decided by the second
+file's EXTENSION, because one machine offers three and the file is what says
+which. The package asks for it through a second file slot (`subcart`), exposed
+only on the machines whose cartridges have one and never required.
+
+Two things about the ORDER, both of which bit:
+
+- A slot on the cartridge only exists once the cartridge does, and the sweep
+  that allocates every medium port walks the tree as it was before that. So the
+  second cartridge goes in afterwards, by the port path the SubSlot names -
+  which is relative to the cartridge rather than to the machine.
+- A base cartridge WITHOUT that slot is refused and says so. An ordinary Super
+  Famicom game silently ignoring the second file is how somebody spends an
+  afternoon wondering why nothing changed.
+
+The Satellaview runs: the BS-X cartridge with `Super Puyo Puyo (Japan).bs` in it
+reaches the BS-X title screen, the pack is in the machine's state, and the three
+local legs pass. It needed two more of ares' own databases compiled in (BS
+Memory and Sufami Turbo) beside the Super Famicom's.
+
+The **Sufami Turbo** is the same mechanism and is not proven, for one reason: the
+base cartridge. A .st minicart goes into the Sufami Turbo cartridge, and that
+cartridge's own ROM is not in this developer's collection. Nothing in the core
+is waiting on anything else.
+
+## A Nintendo 64DD is not one line (tried, 2026-09-11)
+
+It looks like the Mega CD: the same machine with a drive under it, the disk
+routed to the drive by `mediumNode`, the IPL as firmware. It is a table entry,
+and it segfaults before the first frame.
+
+`PIF::bootHLE` reads the CARTRIDGE - it copies IPL3 out of the ROM header and
+programs the bus timing from the first four bytes - and a 64DD booting from its
+own IPL has no cartridge at all. That is our patch 0018 (a Nintendo 64 boots
+without Nintendo's boot ROM) meeting a machine it was not written for: ares
+itself boots a 64DD through a real PIF ROM, which is exactly the thing this core
+does not carry.
+
+So the 64DD needs either Nintendo's PIF ROM or an HLE boot for the disk drive's
+own path, and a disk image to test with, and this developer has none. Left out.
+
+One real fix came out of it and stayed: `g_isN64` asked which ID this was, so it
+caught the Nintendo 64 and would have missed every other machine ares builds
+through `Nintendo64::load`. angrylion's output pointer then stays null and the
+first frame takes the process with it. It asks which MACHINE now.
+
 ## A tape deck is not a cartridge slot
 
 Every MSX has both, and the adapter used to hand whatever medium the project

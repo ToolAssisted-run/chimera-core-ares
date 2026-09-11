@@ -9,8 +9,10 @@ Updated as the work lands. `[x]` means committed and gated.
       goes in, and `Spec.firmwareMedium` / `firmwareNode` cover a BIOS that is
       itself a cartridge. The gate takes a whole DIRECTORY as one medium, so a
       cue sheet travels with its track files.
-- [ ] **A second cartridge slot** - Satellaview and Sufami Turbo plug a second
-      medium into a Super Famicom.
+- [x] **A second cartridge slot** - `Spec.subSlots`, chosen by the second
+      file's extension, plugged in after the cartridge that carries it exists.
+      The package asks through a `subcart` file slot shown only where it
+      applies.
 
 ## Machines
 - [x] **PC Engine / TurboGrafx-16** and **SuperGrafx** (ares 3156b55)
@@ -25,8 +27,15 @@ Updated as the work lands. `[x]` means committed and gated.
 - [x] **Mega CD 32X** - both add-ons at once: the CD BIOS plus the 32X's three
 - [x] **PC Engine CD / TurboDuo** - the System Card is a HuCard in the
       cartridge slot, so the machine loads three paks
-- [ ] **Nintendo 64DD** - needs an IPL (supplied) and a disk image
-- [ ] **Satellaview**, **Sufami Turbo** - need the second slot
+- [x] **Satellaview** - the BS-X cartridge with a memory pack in its slot;
+      reaches the BS-X title screen and passes all three local legs
+- [ ] **Sufami Turbo** - the mechanism is in; what is missing is the Sufami
+      Turbo BASE cartridge ROM, which goes in the console slot with the .st
+      minicart inside it. Not in this collection.
+- [ ] **Nintendo 64DD** - tried and reverted. `PIF::bootHLE` reads the
+      cartridge, and a 64DD boots from its own IPL with no cartridge at all, so
+      it segfaults before the first frame. Needs either Nintendo's PIF ROM or an
+      HLE boot for the drive's path - and a disk image, which is also missing.
 - [ ] **Neo Geo MVS** - diagnosed, not shipped. Two things were missing and
       one still is:
       - the board's own fix-layer tile ROM (`sfix.sfix`, which ares' `power()`

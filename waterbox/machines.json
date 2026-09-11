@@ -699,6 +699,7 @@
       "virtualHeight": 242,
       "regions": ["ntsc", "pal"],
       "bootsWithoutMedium": false,
+      "subExtensions": "bs st gb gbc",
       "firmware": [{"id": "sfcIpl"}],
       "loads": true,
       "console": [{"name": "Reset", "path": "Controls/Reset", "axis": false}],

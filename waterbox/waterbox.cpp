@@ -75,6 +75,24 @@ ECL_EXPORT int Init(void)
 	}
 	else rom = nullptr;
 
+	/* A slot on the CARTRIDGE, for the machines whose cartridges have one -
+	 * a Satellaview pack, a Sufami Turbo minicart, a Game Boy cartridge in a
+	 * Super Game Boy. Absent for every other project, and optional in all of
+	 * them. Read the same way the rom slot is, including the empty-file test:
+	 * Chimera mounts a declared slot whether or not the project filled it. */
+	static char subName[256];
+	const char *subRom = nullptr;
+	if (wbx_slot_first("subcart", subName, (int)sizeof subName))
+	{
+		subRom = subName;
+		if (FILE *probe = fopen(subName, "rb"))
+		{
+			if (fseek(probe, 0, SEEK_END) != 0 || ftell(probe) <= 0) subRom = nullptr;
+			fclose(probe);
+		}
+		else subRom = nullptr;
+	}
+
 	static char machineName[32];
 	if (wbx_setting_str("machine", machineName, (int)sizeof machineName) < 0)
 	{
@@ -87,6 +105,7 @@ ECL_EXPORT int Init(void)
 	machine::Config config = {};
 	config.machine = machineName;
 	config.romFile = rom;
+	config.subRomFile = subRom;
 
 	char region[16];
 	config.pal = wbx_setting_str("region", region, (int)sizeof region) >= 0 && !strcmp(region, "pal");

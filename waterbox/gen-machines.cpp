@@ -245,6 +245,19 @@ int main(int argc, char **argv)
 		printf("      \"virtualWidth\": %d,\n      \"virtualHeight\": %d,\n", spec.virtualWidth, spec.virtualHeight);
 		printf("      \"regions\": [\"ntsc\"%s],\n", spec.configPal ? ", \"pal\"" : "");
 		printf("      \"bootsWithoutMedium\": %s,\n", spec.bootsWithoutMedium ? "true" : "false");
+		if (spec.subSlots != nullptr)
+		{
+			/* What this machine's CARTRIDGE can take a second file of, so the
+			 * package can offer a second slot and offer it only here. */
+			printf("      \"subExtensions\": \"");
+			bool firstSub = true;
+			for (const machines::SubSlot *sub = spec.subSlots; sub->extensions != nullptr; sub++)
+			{
+				printf("%s%s", firstSub ? "" : " ", sub->extensions);
+				firstSub = false;
+			}
+			printf("\",\n");
+		}
 		if (spec.firmware != nullptr)
 		{
 			/* Only the ids: gen-config.py finds each file under tests/firmware
