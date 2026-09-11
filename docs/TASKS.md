@@ -60,11 +60,31 @@ Updated as the work lands. `[x]` means committed and gated.
 - [x] A getenv per GL call, and a greenzone capturing what it could not afford
       (chimera e00b19c): 112 ms a frame to 48 on New Star Soccer
 - [x] **SetRenderingEnabled** (ruffle 4a49986) - a seek or turbo no longer reads
-      the frame back off the GPU and converts it. About 6 ms a frame. What is
-      skipped is the readback and nothing else: `Player::render` still runs,
-      because it broadcasts Event.RENDER and updates the caches, and that is
-      machine state.
+      the frame back off the GPU and converts it. **1.5 ms a frame on a GTX
+      1060** (18.59 -> 17.05); the 6 ms first measured was llvmpipe's and does
+      not transfer. What is skipped is the readback and nothing else:
+      `Player::render` still runs, because it broadcasts Event.RENDER and
+      updates the caches, and that is machine state.
 - [x] **Fewer GL crossings** - NOT worth building, and now measured rather than
       assumed. A crossing costs **4.0 ns** (`run-wbx --bench-crossings`), so six
       thousand is 24 us and fifty thousand is 200 us. The driver is the cost,
       not the boundary.
+- [x] **The per-frame buffer churn** (chimera 96b98d5) - 139 buffers created,
+      filled and deleted every frame. The bridge keeps a deleted buffer's name
+      and answers the next request from that list: 18.12 ms a frame to 16.97,
+      and the driver's share 13.50 to 11.36. Pictures byte-identical on Ruffle
+      and Dolphin with it on and off.
+- [ ] **The fence waiting** - the largest item left, ~8 ms a frame, and NOT the
+      bridge's to fix. Eighteen blocking `glGetSynciv` a frame, every one
+      immediately after a draw; the GPU's own span is the same order as the
+      frame and the frame tracks GPU work (ruffle `quality` high to low is
+      17.07 ms to 14.43). It is wgpu's OpenGL backend synchronising for want of
+      persistent buffer mapping, which a sandboxed guest cannot have because a
+      persistent map hands back a HOST pointer. Guest-side work: either stop the
+      per-frame resource churn inside wgpu/ruffle, or give the bridge a second
+      backend so the guest is not forced onto GL.
+- [ ] **BitmapCache does not stamp the render epoch** (ruffle fef5fcf) - a
+      correctness gap, not a speed one: a project reopened from disk draws
+      `cacheAsBitmap` and filters with a handle the previous backend made. The
+      fix is four lines; the test has to come first and it needs a second
+      process.
