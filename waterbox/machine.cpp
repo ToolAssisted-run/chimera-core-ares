@@ -89,6 +89,18 @@ namespace
 	/* What each declared input binds to, resolved once at init. A null entry is
 	 * an input the machine does not have this time - a port left empty. */
 	std::vector<Node::Input::Button> g_buttons;
+
+	/* The tape transport (chimera#134). ares' tape is a peripheral with a
+	 * transport rather than a node of inputs - Tape::allocate declares
+	 * setSupportPlay(true) and the machine samples nothing while it is stopped
+	 * - so "Tape Play" and "Tape Stop" have no node to resolve. Their declared
+	 * paths begin with '@' and are answered here instead.
+	 *
+	 * g_tapeAction is parallel to g_buttons: 0 for an ordinary button, 1 for
+	 * play, 2 for stop. Keeping it parallel means the wire indices a movie
+	 * records need no special case anywhere else. */
+	ares::Node::Tape g_tape;
+	std::vector<unsigned char> g_tapeAction;
 	std::vector<Node::Input::Axis> g_axes;
 
 	/* What was last pushed into each node.
@@ -424,9 +436,34 @@ namespace
 		g_axes.clear();
 		g_buttonPushed.clear();
 		if (g_inputs == nullptr) return;
+		g_tape.reset();
+		g_tapeAction.clear();
 		for (int i = 0; i < g_inputs->buttonCount; i++)
 		{
-			g_buttons.push_back(g_root->find<Node::Input::Button>(g_inputs->buttons[i].path));
+			const char *path = g_inputs->buttons[i].path;
+			if (path != nullptr && path[0] == '@')
+			{
+				/* a transport, not a node: see g_tapeAction */
+				g_buttons.push_back(nullptr);
+				g_tapeAction.push_back(std::strstr(path, "/play") != nullptr ? 1 : 2);
+				continue;
+			}
+			g_buttons.push_back(g_root->find<Node::Input::Button>(path));
+			g_tapeAction.push_back(0);
+		}
+		if (!g_tapeAction.empty())
+		{
+			/* One tape per machine on everything this core offers. Found once
+			 * here rather than per press, because find() walks the graph. */
+			/* The deck holds a tray and the tray holds the tape:
+			 *   Tape Deck (Peripheral) / Tray (Port) / <name> (Tape)
+			 * The leaf's name is the machine's, so both are tried. find()
+			 * wants the whole path - the bare leaf name finds nothing, which
+			 * is how the first version of this silently did nothing at all. */
+			g_tape = g_root->find<ares::Node::Tape>("Tape Deck/Tray/ZX Spectrum Tape");
+			if (!g_tape) g_tape = g_root->find<ares::Node::Tape>("Tape Deck/Tray/MSX Tape");
+			if (getenv("CHIMERA_TAPE_DEBUG"))
+				fprintf(stderr, "tape: %s\n", g_tape ? "found" : "NOT FOUND");
 		}
 		for (int i = 0; i < g_inputs->axisCount; i++)
 		{
@@ -741,6 +778,20 @@ namespace machine
 			/* said before, and nothing new to say: see g_buttonPushed */
 			if (g_buttonPushed[index] == (unsigned char)held) return;
 			g_buttonPushed[index] = (unsigned char)held;
+		}
+		if (index < (int)g_tapeAction.size() && g_tapeAction[index] != 0)
+		{
+			/* Act on the PRESS only. A release must not stop a running tape,
+			 * and a frontend resends every button after a state load - the
+			 * tape's own `playing` came back in that state, so a resend that
+			 * said "not held" undoing it would be the machine losing what it
+			 * had just restored. */
+			if (held && g_tape)
+			{
+				if (g_tapeAction[index] == 1) g_tape->play();
+				else g_tape->stop();
+			}
+			return;
 		}
 		if (auto &node = g_buttons[index]) node->setValue(held);
 	}

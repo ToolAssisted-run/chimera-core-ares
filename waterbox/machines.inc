@@ -387,6 +387,8 @@ static const machines::InputDecl kButtons_ZXS[] = {
 	{"Keyboard Y", "Keyboard/Original/Y"},
 	{"Keyboard H", "Keyboard/Original/H"},
 	{"Keyboard B", "Keyboard/Original/B"},
+	{"Tape Play", "@tape/play"},
+	{"Tape Stop", "@tape/stop"},
 };
 static const machines::InputDecl kAxes_ZXS[] = {
 };
@@ -557,6 +559,8 @@ static const machines::InputDecl kButtons_MSX[] = {
 	{"P2 Right", "Controller Port 2/Gamepad/Right"},
 	{"P2 A", "Controller Port 2/Gamepad/A"},
 	{"P2 B", "Controller Port 2/Gamepad/B"},
+	{"Tape Play", "@tape/play"},
+	{"Tape Stop", "@tape/stop"},
 };
 static const machines::InputDecl kAxes_MSX[] = {
 };
@@ -919,6 +923,8 @@ static const machines::InputDecl kButtons_MSX2[] = {
 	{"P2 Right", "Controller Port 2/Gamepad/Right"},
 	{"P2 A", "Controller Port 2/Gamepad/A"},
 	{"P2 B", "Controller Port 2/Gamepad/B"},
+	{"Tape Play", "@tape/play"},
+	{"Tape Stop", "@tape/stop"},
 };
 static const machines::InputDecl kAxes_MSX2[] = {
 };
@@ -1044,10 +1050,10 @@ static const machines::MachineInputs kMachineInputs[] = {
 	{"GBC", kButtons_GBC, 8, nullptr, 0, kSettings_GBC, 4, nullptr, false},
 	{"WS", kButtons_WS, 13, nullptr, 0, kSettings_WS, 5, nullptr, false},
 	{"WSC", kButtons_WSC, 13, nullptr, 0, kSettings_WSC, 5, nullptr, false},
-	{"ZXS", kButtons_ZXS, 40, nullptr, 0, nullptr, 0, "Original", false},
+	{"ZXS", kButtons_ZXS, 42, nullptr, 0, nullptr, 0, "Original", false},
 	{"GBA", kButtons_GBA, 10, nullptr, 0, kSettings_GBA, 3, nullptr, false},
 	{"CV", kButtons_CV, 37, nullptr, 0, nullptr, 0, "Gamepad", false},
-	{"MSX", kButtons_MSX, 103, nullptr, 0, nullptr, 0, "Japanese", true},
+	{"MSX", kButtons_MSX, 105, nullptr, 0, nullptr, 0, "Japanese", true},
 	{"PS1", kButtons_PS1, 28, nullptr, 0, kSettings_PS1, 1, "Digital Gamepad", true},
 	{"A52", kButtons_A52, 68, kAxes_A52, 8, nullptr, 0, "Controller", false},
 	{"NGP", kButtons_NGP, 9, nullptr, 0, kSettings_NGP, 2, nullptr, false},
@@ -1055,7 +1061,7 @@ static const machines::MachineInputs kMachineInputs[] = {
 	{"NG", kButtons_NG, 20, nullptr, 0, kSettings_NG, 7, "Arcade Stick", false},
 	{"SFC", kButtons_SFC, 25, nullptr, 0, kSettings_SFC, 5, "Gamepad", false},
 	{"32X", kButtons_32X, 25, nullptr, 0, nullptr, 0, "Control Pad", false},
-	{"MSX2", kButtons_MSX2, 103, nullptr, 0, nullptr, 0, "Japanese", false},
+	{"MSX2", kButtons_MSX2, 105, nullptr, 0, nullptr, 0, "Japanese", false},
 	{"MCD", kButtons_MCD, 25, nullptr, 0, nullptr, 0, "Control Pad", false},
 	{"PCE", kButtons_PCE, 8, nullptr, 0, kSettings_PCE, 1, "Gamepad", false},
 	{"SGX", kButtons_SGX, 8, nullptr, 0, kSettings_SGX, 1, "Gamepad", false},

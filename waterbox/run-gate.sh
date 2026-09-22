@@ -699,5 +699,46 @@ else
 fi
 
 echo
+echo "== the tape plays, because something can press play =="
+# ares' tape is a peripheral with a transport, not a node of inputs:
+# Tape::allocate says setSupportPlay(true) and the machine samples nothing
+# while it is stopped - "if(!node || !node->playing()) return 0". This core
+# took .tap and .tzx and declared no way to press it, so LOAD "" waited for a
+# signal that never came (chimera#134).
+#
+# The leg types LOAD "" and then runs the SAME machine twice, once pressing
+# Tape Play and once not. Requiring the two to differ is the negative control
+# built in: if the transport does nothing, the two runs agree and the leg
+# fails, which is exactly what it did before the fix. Comparing against a
+# stored digest would not have that property - it would pass the day somebody
+# broke the keyboard instead.
+zxsfw="$(firmware_for ZXS)"
+zxstape="$(local_content ZXS)"
+if [ -n "$zxsfw" ] && [ -f "$zxsfw" ] && [ -n "$zxstape" ]; then
+	# LOAD is J; each quote is SYMBOL SHIFT held over P; then ENTER.
+	set -- --press 120:6 "Keyboard J" \
+	       --press 140:8 "Keyboard SYMBOL SHIFT" --press 142:4 "Keyboard P" \
+	       --press 160:8 "Keyboard SYMBOL SHIFT" --press 162:4 "Keyboard P" \
+	       --press 190:6 "Keyboard ENTER"
+	quiet_tape="$("$native" --machine ZXS --firmware "$zxsfw" --rom "$zxstape" \
+		--frames 1800 --digest-every 1800 "$@" 2>/dev/null | grep '^frame' | tail -1)"
+	played_tape="$("$native" --machine ZXS --firmware "$zxsfw" --rom "$zxstape" \
+		--frames 1800 --digest-every 1800 "$@" --press 220:4 "Tape Play" 2>/dev/null \
+		| grep '^frame' | tail -1)"
+	if [ -z "$quiet_tape" ] || [ -z "$played_tape" ]; then
+		say_fail "the ZX Spectrum loads a tape when play is pressed" "one of the runs printed no digest"
+	elif [ "$quiet_tape" = "$played_tape" ]; then
+		say_fail "the ZX Spectrum loads a tape when play is pressed" \
+			"pressing Tape Play changed nothing: $played_tape"
+	else
+		say_pass "the ZX Spectrum loads a tape when play is pressed"
+		echo "     stopped: $(echo "$quiet_tape" | sed 's/.*video /video /;s/ audio.*//')"
+		echo "     playing: $(echo "$played_tape" | sed 's/.*video /video /;s/ audio.*//')"
+	fi
+else
+	echo "SKIP ZX Spectrum tape (needs tests/firmware/zxsBios and a .tzx in tests/local/ZXS)"
+fi
+
+echo
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]

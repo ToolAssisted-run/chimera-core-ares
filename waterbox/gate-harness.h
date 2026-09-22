@@ -55,6 +55,7 @@ struct gate_core
 struct gate_press
 {
 	int from;
+	int frames;   /* 0 = hold to the end of the run */
 	char name[48];
 };
 
@@ -85,7 +86,8 @@ static void gate_usage(void)
 	fprintf(stderr,
 		"  --frames N        how many frames to run (default 60)\n"
 		"  --hold NAME       hold a button for the whole run, by its declared name\n"
-		"  --press F NAME    hold a button from frame F onwards\n"
+		"  --press F[:N] NAME  hold a button from frame F, for N frames if given\n"
+		"                    (a keyboard needs releases: LOAD \"\" is four keys)\n"
 		"  --stick X Y       hold the first two axes at X,Y\n"
 		"  --digest-every N  print a digest every N frames as well as at the end\n"
 		"  --dump-frame F    write frame F as a .ppm and stop\n"
@@ -140,7 +142,12 @@ static int gate_parse_opts(int argc, char **argv, int from, struct gate_opts *o)
 		else if (!strcmp(a, "--press"))
 		{
 			if (o->press_count >= 16) { fprintf(stderr, "too many --press\n"); return 0; }
-			o->press[o->press_count].from = atoi(GATE_NEXT());
+			{
+				const char *spec = GATE_NEXT();
+				const char *colon = strchr(spec, ':');
+				o->press[o->press_count].from = atoi(spec);
+				o->press[o->press_count].frames = colon ? atoi(colon + 1) : 0;
+			}
 			snprintf(o->press[o->press_count].name, sizeof o->press[0].name, "%s", GATE_NEXT());
 			o->press_count++;
 		}
@@ -260,7 +267,8 @@ static void gate_set_inputs(const struct gate_core *c, const struct gate_opts *o
 		int on = 0;
 		for (int i = 0; i < o->hold_count; i++) if (held[i] == b) on = 1;
 		for (int i = 0; i < o->press_count; i++)
-			if (pressed[i] == b && f >= o->press[i].from) on = 1;
+			if (pressed[i] == b && f >= o->press[i].from
+				&& (o->press[i].frames <= 0 || f < o->press[i].from + o->press[i].frames)) on = 1;
 		/* A frontend does not push what has not changed - Chimera keeps a
 		 * per-button record and only crosses the boundary when it moves. A
 		 * machine that behaves differently for being told the same thing twice

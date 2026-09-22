@@ -54,6 +54,11 @@ def wire_safe(name):
     return name.replace("|", "(pipe)").replace("#", "(hash)")
 
 
+# Machines whose medium is a tape somebody has to press play on. ares gives each
+# of them an ares::Core::Tape node; the ids are this core's, from machines.h.
+TAPE_MACHINES = {"ZXS", "MSX", "MSX2"}
+
+
 def declare(machine):
     """The machine's buttons and axes, in the order that IS the wire format.
 
@@ -74,6 +79,25 @@ def declare(machine):
             for i in device["inputs"]:
                 name = f"{prefix} {device['name']} {i['name']}" if many else f"{prefix} {i['name']}"
                 (axes if i["axis"] else buttons).append((wire_safe(name), i["path"]))
+
+    # The tape transport, LAST so that every index above it keeps the number a
+    # movie already recorded.
+    #
+    # ares' tape is a peripheral with a transport, not a node of inputs:
+    # Tape::allocate says setSupportPlay(true), and the signal the machine
+    # samples is gated on it - "if(!node || !node->playing()) return 0". The
+    # tape sits silent until something presses play, which standalone ares
+    # offers in its Tape Manager. This core took .tap and .tzx and offered no
+    # way to press it, so LOAD "" waited for a signal that never came
+    # (chimera#134).
+    #
+    # It is an INPUT and not a setting because ares serialises `playing` into
+    # the savestate: when the tape starts is part of the machine a movie has to
+    # reproduce, not a preference of whoever is watching. The paths begin with
+    # @ because there is no node to resolve - machine.cpp reads them itself.
+    if machine["id"] in TAPE_MACHINES:
+        buttons.append(("Tape Play", "@tape/play"))
+        buttons.append(("Tape Stop", "@tape/stop"))
 
     return buttons, axes
 
