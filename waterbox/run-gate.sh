@@ -415,6 +415,12 @@ compare "PS1 BIOS shell"     PS1 -                  --frames 400
 # the only content this one has, since nobody has a freely redistributable MSX
 # cartridge here.
 compare "MSX BASIC"          MSX -                  --frames 400
+# The MSX's own keyboard is part of the machine, not a numbered port: a gamepad
+# in Controller Port 1 was refused as "no such device for that port", because
+# port 1 WAS the keyboard (chimera#141). And a project written before that may
+# still name the keyboard there, which must keep loading.
+compare "MSX gamepad in port 1" MSX -             --frames 400 --port 1 gamepad
+compare "MSX, port 1 naming the keyboard" MSX -   --frames 400 --port 1 japanese
 
 echo
 echo "== the machine survives being saved and reloaded =="

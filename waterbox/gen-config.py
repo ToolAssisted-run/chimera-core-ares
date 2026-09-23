@@ -23,6 +23,20 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
+def numbered_ports(machine):
+    """The ports a project numbers: all but a built-in keyboard (MSX, ZX
+    Spectrum), which is part of the machine and always connected (machine.cpp,
+    connectPorts - chimera#141)."""
+    return [p for p in machine["ports"] if p["name"] != "Keyboard"]
+
+
+def first_port(machine):
+    """The port a first player's default keys belong to: the first numbered
+    one, or the keyboard on a machine that has nothing else (ZX Spectrum)."""
+    ports = numbered_ports(machine) or machine["ports"]
+    return ports[0] if ports else None
+
+
 def port_prefix(name):
     """'Controller Port 2' -> 'P2'; anything else keeps a short readable form."""
     if name.startswith("Controller Port "):
@@ -196,7 +210,7 @@ def render_inc(machines):
         b = f"kButtons_{ident}" if buttons else "nullptr"
         a = f"kAxes_{ident}" if axes else "nullptr"
         # what the first port takes when nobody says otherwise
-        first = m["ports"][0]["devices"][0]["name"] if m["ports"] else None
+        first = first_port(m)["devices"][0]["name"] if first_port(m) else None
         d = f'"{first}"' if first else "nullptr"
         boots = "true" if m.get("bootsWithoutMedium") else "false"
         settings = machine_settings(m)
@@ -603,14 +617,14 @@ def render_keybinds(machines):
 
         # Only what a first player touches: a console's own buttons, and the
         # first port's. Anything further along shares keys it should not.
-        first_port = port_prefix(m["ports"][0]["name"]) if m["ports"] else None
+        first_port_name = port_prefix(first_port(m)["name"]) if first_port(m) else None
         bound = {}
         for declared, path in buttons:
             leaf = path.rsplit("/", 1)[-1]
             if leaf not in DEFAULT_KEYS:
                 continue
             owner = declared.split(" ")[0]
-            if m["ports"] and owner != first_port:
+            if m["ports"] and owner != first_port_name:
                 continue
             bound.setdefault(DEFAULT_KEYS[leaf], declared)
         # setdefault above keeps the FIRST button that wants a key, so a port's
@@ -620,7 +634,7 @@ def render_keybinds(machines):
         bound_axes = {}
         for declared, path in axes:
             leaf = path.rsplit("/", 1)[-1]
-            if leaf in DEFAULT_AXES and (not m["ports"] or declared.split(" ")[0] == first_port):
+            if leaf in DEFAULT_AXES and (not m["ports"] or declared.split(" ")[0] == first_port_name):
                 bound_axes.setdefault(leaf, declared)
         if bound_axes:
             analog[name] = {declared: DEFAULT_AXES[leaf] for leaf, declared in bound_axes.items()}

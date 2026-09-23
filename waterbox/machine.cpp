@@ -341,6 +341,19 @@ namespace
 		}
 	}
 
+	/* A port that is the machine's own keyboard (see connectPorts). */
+	static bool isBuiltInKeyboard(const ares::Node::Port &port)
+	{
+		return port->name() == "Keyboard";
+	}
+
+	/* Whether a device name is a built-in keyboard's, on any machine this core
+	 * offers: MSX "Japanese", ZX Spectrum "Original". */
+	static bool namesBuiltInKeyboard(const char *device)
+	{
+		return sameDeviceName(device, nall::string{"Japanese"}) || sameDeviceName(device, nall::string{"Original"});
+	}
+
 	/* Writes back whatever the project said about ares' own settings.
 	 *
 	 * These are not decoration. A Game Boy's DMG revision, a Master System's VDP
@@ -390,6 +403,18 @@ namespace
 		for (auto &port : g_root->find<Node::Port>())
 		{
 			if (port->supported().empty()) continue;  /* a media slot, not a controller port */
+			/* A machine's own keyboard (MSX, ZX Spectrum) is part of the
+			 * machine, not something plugged into it: always there, with its
+			 * one layout, and not a port the project numbers. ares declares it
+			 * as a port ahead of the joystick ports, and counting it made
+			 * "Controller Port 1" the MSX keyboard - so a gamepad there was
+			 * refused (chimera#141). */
+			if (isBuiltInKeyboard(port))
+			{
+				if (!port->allocate(port->supported().front())) return fail("the machine's keyboard could not be connected");
+				port->connect();
+				continue;
+			}
 			if (index >= 8) break;
 			const char *device = config.port[index];
 			const char *accessory = config.portAccessory[index];
@@ -403,6 +428,9 @@ namespace
 			else if (device == nullptr) device = "";
 			index++;
 			if (!*device) continue;
+			/* A project written before the keyboard stopped being numbered may
+			 * name it here ("japanese", "original"): it is connected already. */
+			if (namesBuiltInKeyboard(device)) continue;
 
 			/* The id has to become the name ares knows this port's device by. */
 			nall::string resolved;
