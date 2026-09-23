@@ -213,5 +213,7 @@ int main(int argc, char **argv)
 		if (machine::padReport(0, &x, &y)) printf("stick reported x=%d y=%d\n", x, y);
 		else printf("stick reported none\n");
 	}
+	fflush(stdout);
+	machine::shutdown();
 	return rc;
 }

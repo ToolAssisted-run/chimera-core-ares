@@ -80,6 +80,9 @@ namespace machine
 
 	/* Builds the machine. False means it could not be built; error() says why. */
 	bool init(const Config &config);
+	/* Unloads the machine in order - for a process that is about to exit,
+	 * so nothing is left to the static destructors (see machine.cpp). */
+	void shutdown(void);
 	const char *error(void);
 
 	/* Runs exactly one frame. Input is whatever was last given to setButton and

@@ -554,6 +554,36 @@ namespace machine
 {
 	const char *error(void) { return g_error; }
 
+	/* Takes the machine apart in the order ares' own frontend does
+	 * (desktop-ui Emulator::unload: root->unload(), then the root dropped),
+	 * with every node this file still holds let go first. Left to the static
+	 * destructors at exit, the nodes went in whatever order the linker chose:
+	 * a ZX Spectrum's tape node outlived the Tape object its unload callback
+	 * captures, and the native runner segfaulted in Tape::unload freeing that
+	 * object's buffer after printing a correct digest. */
+	void shutdown(void)
+	{
+		g_buttons.clear();
+		g_axes.clear();
+		g_buttonPushed.clear();
+		g_tape.reset();
+		g_tapeAction.clear();
+		g_streams.clear();
+		g_buses.clear();
+		g_busNames.clear();
+		for (auto &d : g_domains) d = Domain{};
+		g_domainCount = 0;
+		if (g_root)
+		{
+			g_root->unload();
+			g_root.reset();
+		}
+		g_cartridgePak.reset();
+		g_subPak.reset();
+		g_firmwarePak.reset();
+		g_systemPak.reset();
+	}
+
 	bool init(const Config &config)
 	{
 		g_error[0] = 0;

@@ -741,6 +741,17 @@ if [ -n "$zxsfw" ] && [ -f "$zxsfw" ] && [ -n "$zxstape" ]; then
 		echo "     stopped: $(echo "$quiet_tape" | sed 's/.*video /video /;s/ audio.*//')"
 		echo "     playing: $(echo "$played_tape" | sed 's/.*video /video /;s/ audio.*//')"
 	fi
+	# And the runner leaves as it should. The two runs above print their digest
+	# and then used to die in static destruction - a tape node outliving the
+	# Tape object its unload callback captures - with a segfault nothing here
+	# looked at, because only the digest was read (machine::shutdown).
+	"$native" --machine ZXS --firmware "$zxsfw" --rom "$zxstape" --frames 60 --digest-every 60 >/dev/null 2>&1
+	rc=$?
+	if [ "$rc" -eq 0 ]; then
+		say_pass "the ZX Spectrum runner exits cleanly after a tape run"
+	else
+		say_fail "the ZX Spectrum runner exits cleanly after a tape run" "exit status $rc"
+	fi
 else
 	echo "SKIP ZX Spectrum tape (needs tests/firmware/zxsBios and a .tzx in tests/local/ZXS)"
 fi
