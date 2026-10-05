@@ -528,6 +528,113 @@ def render_firmware(machines, already=None):
     return out
 
 
+# ---- what the controls and the system are called ----
+# The frontend keeps no table of these: a core says what its own are called.
+# MNEMONICS is the letter each button writes into a movie's text and heads its
+# input column with, by the button's name - whole, or without its player ("P2
+# Up" is found under "Up"), so one line serves every pad. AXIS_HEADERS is the
+# short header of each axis's column. (An entry is read by position: a letter
+# may change and no movie made before it is harmed.)
+MNEMONICS = {
+    "Gamepad Up": "U", "Gamepad Down": "D", "Gamepad Left": "L", "Gamepad Right": "R",
+    "Gamepad B": "B", "Gamepad A": "A", "Gamepad C-Up": "^", "Gamepad C-Down": "v",
+    "Gamepad C-Left": "<", "Gamepad C-Right": ">", "Gamepad L": "l", "Gamepad R": "r",
+    "Gamepad Z": "Z", "Gamepad Start": "S", "Mouse Left": "1", "Mouse Right": "2", "Reset": "r",
+    "Microphone": "M", "Up": "U", "Down": "D", "Left": "L", "Right": "R", "B": "B", "A": "A",
+    "Select": "s", "Start": "S", "C": "C", "Ext Up": "U", "Ext Down": "D", "Ext Left": "L",
+    "Ext Right": "R", "Ext A": "A", "Ext B": "B", "Ext C": "C", "Ext Start": "S", "Pause": "p",
+    "1": "1", "2": "2", "Left Difficulty": "<", "Right Difficulty": ">", "TV Type": "T",
+    "Fire": "F", "UP [B]": "U", "DOWN [C]": "D", "LEFT [A]": "L", "RIGHT [D]": "R",
+    "ACTION [E]": "A", "3": "3", "4": "4", "5": "5", "6": "6", "7": "7", "8": "8", "9": "9",
+    "10": "a", "11": "b", "12": "c", "13": "d", "14": "e", "Y1": "1", "Y2": "2", "Y3": "3",
+    "Y4": "4", "X1": "U", "X2": "R", "X3": "D", "X4": "L", "Volume": "V", "Power": "P",
+    "Keyboard CAPS SHIFT": "S", "Keyboard A": "A", "Keyboard Q": "Q", "Keyboard 1": "1",
+    "Keyboard 0": "0", "Keyboard P": "P", "Keyboard ENTER": "E", "Keyboard SPACE BREAK": "B",
+    "Keyboard Z": "Z", "Keyboard S": "S", "Keyboard W": "W", "Keyboard 2": "2", "Keyboard 9": "9",
+    "Keyboard O": "O", "Keyboard L": "L", "Keyboard SYMBOL SHIFT": "S", "Keyboard X": "X",
+    "Keyboard D": "D", "Keyboard E": "E", "Keyboard 3": "3", "Keyboard 8": "8", "Keyboard I": "I",
+    "Keyboard K": "K", "Keyboard M": "M", "Keyboard C,V": "C", "Keyboard F": "F", "Keyboard R": "R",
+    "Keyboard 4": "4", "Keyboard 7": "7", "Keyboard U": "U", "Keyboard J": "J", "Keyboard N": "N",
+    "Keyboard ": "?", "Keyboard G": "G", "Keyboard T": "T", "Keyboard 5": "5", "Keyboard 6": "6",
+    "Keyboard Y": "Y", "Keyboard H": "H", "Keyboard B": "B", "Tape Play": "P", "Tape Stop": "S",
+    "L": "l", "R": "r", "*": "*", "0": "0", "(hash)": "(", "Keyboard 0 わ を": "0",
+    "Keyboard 1 ! ぬ": "!", "Keyboard 2 \" ふ": "\"", "Keyboard 3 (hash) あ ぁ": "(",
+    "Keyboard 4 $ う ぅ": "$", "Keyboard 5 % え ぇ": "%", "Keyboard 6 & お ぉ": "&",
+    "Keyboard 7 ’ や ゃ": "7", "Keyboard 8 ( ゆ ゅ": "(", "Keyboard 9 ) よ ょ": ")",
+    "Keyboard - = ほ": "=", "Keyboard ^ ~ へ": "~", "Keyboard ¥ (pipe) ー": "(",
+    "Keyboard @ ‘ \"": "\"", "Keyboard [ { 。": "{", "Keyboard ; + れ": "+", "Keyboard : * け": "*",
+    "Keyboard ] } む": "}", "Keyboard , < ね `": "`", "Keyboard . > る 。": ">",
+    "Keyboard / ? め .": "?", "Keyboard - ろ": "-", "Keyboard A ち": "A", "Keyboard B こ": "B",
+    "Keyboard C そ": "C", "Keyboard D し": "D", "Keyboard E い ぃ": "E", "Keyboard F は": "F",
+    "Keyboard G き": "G", "Keyboard H く": "H", "Keyboard I に": "I", "Keyboard J ま": "J",
+    "Keyboard K の": "K", "Keyboard L り": "L", "Keyboard M も": "M", "Keyboard N み": "N",
+    "Keyboard O ら": "O", "Keyboard P せ": "P", "Keyboard Q た": "Q", "Keyboard R す": "R",
+    "Keyboard S と": "S", "Keyboard T か": "T", "Keyboard U な": "U", "Keyboard V ひ": "V",
+    "Keyboard W て": "W", "Keyboard X さ": "X", "Keyboard Y ん": "Y", "Keyboard Z つ っ": "Z",
+    "Keyboard SHIFT": "S", "Keyboard CTRL": "C", "Keyboard GRAPH": "G", "Keyboard CAPS": "C",
+    "Keyboard かな": "K", "Keyboard F1 F6": "F", "Keyboard F2 F7": "F", "Keyboard F3 F8": "F",
+    "Keyboard F4 F9": "F", "Keyboard F5 F10": "F", "Keyboard ESC": "E", "Keyboard TAB": "T",
+    "Keyboard STOP": "S", "Keyboard BS": "B", "Keyboard SELECT": "S", "Keyboard RETURN": "R",
+    "Keyboard SPACE": "S", "Keyboard CLS/HOME": "C", "Keyboard INS": "I", "Keyboard DEL": "D",
+    "Keyboard ←": "K", "Keyboard ↑": "K", "Keyboard ↓": "K", "Keyboard →": "K", "Keyboard *": "*",
+    "Keyboard +": "+", "Keyboard /": "/", "Keyboard -": "-", "Keyboard ,": ",", "Keyboard .": "K",
+    "Keyboard 実行": "K", "Keyboard 取消": "K", "Cross": "X", "Circle": "O", "Square": "Q",
+    "Triangle": "T", "L1": "l", "L2": "[", "R1": "r", "R2": "]", "Top Fire": "F",
+    "Bottom Fire": "f", "Option": "O", "Debugger": "d", "D": "d", "Y": "Y", "X": "X",
+    "Controller Up": "U", "Controller Down": "D", "Controller Left": "L", "Controller Right": "R",
+    "Controller II": "2", "Controller I": "1", "Controller Select": "S", "Controller Run": "r",
+}
+AXIS_HEADERS = {
+    "P1 Gamepad X-Axis": "P1GXA", "P1 Gamepad Y-Axis": "P1GYA", "P1 Mouse X": "mX",
+    "P1 Mouse Y": "mY", "P2 Gamepad X-Axis": "P2GXA", "P2 Gamepad Y-Axis": "P2GYA",
+    "P2 Mouse X": "mX", "P2 Mouse Y": "mY", "P3 Gamepad X-Axis": "P3GXA",
+    "P3 Gamepad Y-Axis": "P3GYA", "P3 Mouse X": "mX", "P3 Mouse Y": "mY",
+    "P4 Gamepad X-Axis": "P4GXA", "P4 Gamepad Y-Axis": "P4GYA", "P4 Mouse X": "mX",
+    "P4 Mouse Y": "mY", "P1 X-Axis": "P1XA", "P1 Y-Axis": "P1YA", "P2 X-Axis": "P2XA",
+    "P2 Y-Axis": "P2YA", "P3 X-Axis": "P3XA", "P3 Y-Axis": "P3YA", "P4 X-Axis": "P4XA",
+    "P4 Y-Axis": "P4YA",
+}
+SYSTEM_NAMES = {
+    "N64": "Nintendo 64", "NES": "Nintendo Entertainment System", "GEN": "Mega Drive / Genesis",
+    "SMS": "Master System", "GG": "Game Gear", "SG": "SG-1000", "A26": "Atari 2600",
+    "MYV": "MyVision", "GB": "Game Boy", "GBC": "Game Boy Color", "WS": "WonderSwan",
+    "WSC": "WonderSwan Color", "ZXS": "ZX Spectrum", "GBA": "Game Boy Advance",
+    "CV": "ColecoVision", "MSX": "MSX", "PS1": "PlayStation", "A52": "Atari 5200",
+    "NGP": "Neo Geo Pocket", "NGPC": "Neo Geo Pocket Color", "NG": "Neo Geo AES",
+    "SFC": "Super Famicom / SNES", "32X": "Mega Drive 32X", "MSX2": "MSX2",
+    "MCD": "Mega CD / Sega CD", "PCE": "PC Engine / TurboGrafx-16", "SGX": "SuperGrafx",
+    "MCD32X": "Mega CD 32X / Sega CD 32X", "PCECD": "PC Engine CD",
+}
+
+
+def _bare(name):
+    """A control's name without its player: "P2 Up" -> "Up"."""
+    head, _, rest = name.partition(" ")
+    return rest if rest and head[:1] == "P" and head[1:].isdigit() else name
+
+
+def mnemonics_for(buttons):
+    """The "mnemonics" of an input declaration: a letter for every one of its
+    buttons, and for nothing else. A button nobody gave a letter stops the
+    build - the engine would give it its rule's guess, and two columns of one
+    pad would share a letter with nobody having decided it."""
+    out = {}
+    for b in buttons:
+        key = b if b in MNEMONICS else _bare(b)
+        if key not in MNEMONICS:
+            raise SystemExit("no mnemonic for the button %r (MNEMONICS in %s)" % (b, __file__))
+        out[key] = MNEMONICS[key]
+    return out
+
+
+def with_headers(axes):
+    """The axes with their column headers; an axis nobody named stops the build."""
+    missing = [a["name"] for a in axes if a["name"] not in AXIS_HEADERS]
+    if missing:
+        raise SystemExit("no header for the axes %s (AXIS_HEADERS in %s)" % (missing, __file__))
+    return [dict(a, header=AXIS_HEADERS[a["name"]]) for a in axes]
+
+
 def render_machines(machines):
     """The machines[] block of waterbox.config."""
     result = []
@@ -542,15 +649,16 @@ def render_machines(machines):
             "input": {
                 "name": f"{m['label']} Controller",
                 "buttons": [n for n, _ in buttons],
+                "mnemonics": mnemonics_for([n for n, _ in buttons]),
             },
             "virtualWidth": m["virtualWidth"],
             "virtualHeight": m["virtualHeight"],
             "extensions": {"." + e: m["id"] for e in m["extensions"].split()},
         }
         if axes:
-            entry["input"]["axes"] = [
+            entry["input"]["axes"] = with_headers([
                 {"name": n, "min": -128, "max": 127, "neutral": 0} for n, _ in axes
-            ]
+            ])
         result.append(entry)
     return result
 
@@ -763,6 +871,8 @@ def main():
     cfg_path = os.path.join(HERE, "waterbox.config")
     cfg = json.load(open(cfg_path))
     cfg["machines"] = render_machines(machines)
+    # what each machine's system is called in front of a person: this core's word for it
+    cfg["systemNames"] = {m["id"]: SYSTEM_NAMES[m["id"]] for m in cfg["machines"]}
     firmware = render_firmware(machines, cfg.get("firmware"))
     if firmware:
         cfg["firmware"] = firmware
