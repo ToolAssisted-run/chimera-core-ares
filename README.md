@@ -104,7 +104,19 @@ not there, and says so. That is fourteen of the thirty-five legs, and CI runs
 exactly those (`.github/workflows/chimera.yml`); the rest need a BIOS in
 `tests/firmware/` and are run by hand.
 
+## Using it in Chimera
+
+Chimera includes no cores and downloads none. Download
+`ares-<version>.chimeraCore` from this repository's
+[Releases](https://github.com/ToolAssisted-run/chimera-core-ares/releases)
+page, or build it, and put it in the `Cores` folder beside `Chimera.exe`.
+File > Core Manager lists that folder and can point Chimera at another. The
+same file works on Linux and on Windows.
+
 ## Building
+
+[docs/BUILDING.md](docs/BUILDING.md) has every step, and what each gate
+needs; [AGENTS.md](AGENTS.md) is the short version for an AI coding agent.
 
 Both builds are meson. The native reference:
 
@@ -126,16 +138,18 @@ ninja -C build/meson-guest               # core.wbx
 Adding a machine is a row in `waterbox/machines.h`, then
 
 ```
-build/meson-native/waterbox/gen-machines > waterbox/machines.json
+build/meson-native/waterbox/gen-machines tests/firmware > waterbox/machines.json
 ./waterbox/gen-config.py
 ```
 
 which asks ares what the machine is made of and writes the guest's binding
-table, the package's `machines[]` and the default keybindings from it.
+table, the package's `machines[]` and the default keybindings from it. A
+machine whose console BIOS is not in `tests/firmware/` is written as unbuilt
+and left out, so regenerate only with every BIOS there.
 
 The changes this core needs live in `patches/`, one directory per submodule,
 applied to the pristine pins by `waterbox/apply-patches.sh` (idempotent, and run
-automatically at configure time). There are twenty-one, all small; six of them are
+automatically at configure time). There are twenty-seven, all small; six of them are
 plain bugs in ares that only show up in a build like this one - without Vulkan,
 with more than one machine, or inside a sandbox - and are worth offering
 upstream. `docs/PLAN.md` explains every one.
