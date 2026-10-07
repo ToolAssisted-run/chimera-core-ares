@@ -8,10 +8,11 @@ deterministic sandbox and packaged as a Chimera core (`core.wbx` +
 [chimera-core-dosbox-x](https://github.com/ToolAssisted-run/chimera-core-dosbox-x)
 and [chimera-core-gpgx](https://github.com/ToolAssisted-run/chimera-core-gpgx).
 
-Status: **twenty-one machines declared; five proven by the gate, fifteen proven
-against real commercial games, and four run end to end inside Chimera.** It
-carries no firmware but ares' own: twelve of the twenty-one ask the user for a
-console BIOS, and nine need nothing but a cartridge. It
+Status: **twenty-nine machines declared.** Which are proven by the gate, which
+against a real game and which are only declared is in `docs/PLAN.md`, "What is
+proven and what is only declared". It
+carries no firmware but ares' own: nineteen of the twenty-nine ask the user for a
+console BIOS, and ten need nothing but a cartridge. It
 runs on Windows as well as Linux, but only with **miniBox ab677a2 or newer**:
 libco takes its coroutine stacks from `mmap(MAP_STACK)` rather than from malloc
 so that the sandbox knows what they are, and an older miniBox either kills this
@@ -69,8 +70,8 @@ What the machines have in common:
 - **This core ships no firmware but ares' own.** ares compiles console boot ROMs
   in as resources - Nintendo's, Sega's, Bandai's, Amstrad's - and a package built
   from it carried all of them. It carries none of them now (`patches/ares/0020`
-  and the five after it): nine of the twenty-one machines need nothing but a
-  cartridge, and the other twelve ask for their console BIOS, which the user
+  and the five after it): ten of the twenty-nine machines need nothing but a
+  cartridge, and the other nineteen ask for their console BIOS, which the user
   supplies and Chimera pins by hash. ares' own material - the game databases it
   wrote - stays. Checked by searching the built `core.wbx` for every firmware
   file ares ships: not one twenty-four byte run of any of them survives.
@@ -88,10 +89,10 @@ What the machines have in common:
   unchanged - the convention mupen and BizHawk record, so an N64 run made here
   means the same as a run made there.
 
-The equivalence gate (`waterbox/run-gate.sh`) runs thirty-five legs: native
-against sandbox on every digest for all four proven machines, the machine
+The equivalence gate (`waterbox/run-gate.sh`) compares native
+against sandbox on every digest for the machines it has content for, the machine
 round-tripped through a savestate before every frame, every one of the
-twenty-one rebuilt and re-enumerated against its committed declaration, **each
+twenty-nine rebuilt and re-enumerated against its committed declaration, **each
 machine's refresh rate checked against its own clock**, input proven to
 reach the machine, the picture compared **pixel for pixel against real
 hardware**, **the HLE boot compared against a real one**, and **jsmolka's ARM
@@ -100,9 +101,9 @@ test suite read off the screen**. Its content is
 [libbet](https://github.com/pinobatch/libbet) (Zlib) and
 [gba-tests](https://github.com/jsmolka/gba-tests) (MIT), so it runs on a public
 runner with nothing licensed on it - it simply skips the machines whose BIOS is
-not there, and says so. That is fourteen of the thirty-five legs, and CI runs
-exactly those (`.github/workflows/chimera.yml`); the rest need a BIOS in
-`tests/firmware/` and are run by hand.
+not there, and says so. On a runner that leaves the Nintendo 64 legs and the ten
+machines that need no BIOS (`.github/workflows/chimera.yml`); the Game Boy, Game
+Boy Advance and the rest need a BIOS in `tests/firmware/` and are run by hand.
 
 ## Using it in Chimera
 

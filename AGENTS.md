@@ -95,7 +95,8 @@ The package inside a built Chimera:
 
     CHIMERA_BUILD=<chimera>/build ./waterbox/run-frontend-gate.sh
 
-If it prints `SKIP everything: no ...` it tested nothing and still exits 0.
+If it prints `SKIP everything: no ...` it tested nothing and still exits 0;
+with `FRONTEND_GATE_REQUIRED=1`, as CI sets it, that is a failure instead.
 `docs/BUILDING.md` lists what it needs, and gives the command for Chimera's
 contract tests, which CI also runs on the package.
 

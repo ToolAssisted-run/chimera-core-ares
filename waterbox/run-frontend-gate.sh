@@ -6,9 +6,15 @@
 # the rate a movie records - is invisible to it. Four faults lived in that gap
 # at once; see docs/PLAN.md, "In the frontend".
 #
-# It is separate from run-gate.sh because it needs things a public runner does
-# not have: a built Chimera, Mono, an X server and ffprobe. It SKIPS rather than
-# fails when they are missing, and it says which.
+# It is separate from run-gate.sh because it needs things the core's own build
+# does not: a built Chimera with its ffmpeg (tools/fetch-ffmpeg.sh puts one in
+# build/dll), Mono, an X server and ffprobe. By hand it SKIPS rather than fails
+# when one is missing, and says which.
+#
+# FRONTEND_GATE_REQUIRED=1 turns that around, and CI sets it: a gate that
+# skipped everything left the job green for weeks while proving nothing - the
+# runner's Chimera had no ffmpeg - so where the gate is the job, a missing
+# piece is a failure, and so is a run in which nothing passed.
 #
 #   CHIMERA_BUILD=/path/to/chimera/build ./waterbox/run-frontend-gate.sh
 set -u
@@ -31,15 +37,21 @@ chimera="${CHIMERA_BUILD:-$root/../../chimera/build}"
 package="$root/build/Cores/ares.chimeraCore"
 [ -f "$package" ] || package="$chimera/Cores/ares.chimeraCore"
 
+nothing() {
+	echo "SKIP everything: $1"
+	[ -n "${FRONTEND_GATE_REQUIRED:-}" ] || exit 0
+	echo "FAIL the frontend gate is required here (FRONTEND_GATE_REQUIRED) and could not run"
+	exit 1
+}
 for need in "$native:the reference runner (ninja -C build/meson-native)" \
             "$package:the package (./waterbox/build-package.sh)"; do
 	what="${need%%:*}"; why="${need#*:}"
-	[ -f "$what" ] || { echo "SKIP everything: no $why"; exit 0; }
+	[ -f "$what" ] || nothing "no $why"
 done
-[ -x "$chimera/ChimeraMono.sh" ] || { echo "SKIP everything: no Chimera at $chimera (set CHIMERA_BUILD)"; exit 0; }
-command -v ffprobe >/dev/null 2>&1 || { echo "SKIP everything: no ffprobe"; exit 0; }
-command -v xvfb-run >/dev/null 2>&1 || { echo "SKIP everything: no xvfb-run"; exit 0; }
-[ -x "$chimera/dll/ffmpeg" ] || { echo "SKIP everything: no ffmpeg in $chimera/dll"; exit 0; }
+[ -x "$chimera/ChimeraMono.sh" ] || nothing "no Chimera at $chimera (set CHIMERA_BUILD)"
+command -v ffprobe >/dev/null 2>&1 || nothing "no ffprobe"
+command -v xvfb-run >/dev/null 2>&1 || nothing "no xvfb-run"
+[ -x "$chimera/dll/ffmpeg" ] || nothing "no ffmpeg in $chimera/dll (Chimera's tools/fetch-ffmpeg.sh linux <chimera>/build/dll)"
 
 # What the core itself says, so the frontend's answer is compared against the
 # core's rather than against a number typed here.
@@ -63,10 +75,11 @@ one() {
 	[ -n "$want_rate" ] || { say_fail "$leg" "the core reported no refresh rate"; return; }
 
 	w="$work/$setting"
-	rm -rf "$w"; mkdir -p "$w/data/Cores" "$w/data/UnpackedCores" "$w/data/Projects"
+	rm -rf "$w"; mkdir -p "$w/data/UnpackedCores" "$w/data/Projects"
 	cp -r "$chimera/dll" "$w/data/" 2>/dev/null
-	cp "$package" "$w/data/Cores/ares-local.chimeraCore"
-	set -- --project "$w/p.chimeraProject"
+	# The package is named outright. Chimera reads cores from one folder, the
+	# one beside it, and a data directory's Cores is no longer among them.
+	set -- --project "$w/p.chimeraProject" "--core=$package"
 	if [ "$rom" != "-" ]; then cp "$content/$rom" "$w/$rom"; fi
 	case "$id" in
 		GB)  set -- "$@" --firmware "gbBoot=$firmware/gbBoot";;
@@ -119,11 +132,16 @@ one "N64 helloworld"  n64 N64 helloworld-cpu.n64 120
 # The PlayStation is deliberately absent. The core will boot one with nothing in
 # its drive - that is the gate's PS1 leg - but a project cannot be made that way:
 # file_slots.json declares the cartridge slot min:1, and it is one slot shared by
-# twenty-one machines, so loosening it would let a Famicom project be made with
+# every cartridge machine, so loosening it would let a Famicom project be made with
 # no cartridge in it. A BIOS shell is not a thing anybody records, and the gate
 # already compares that machine both ways.
 say_skip "PS1 BIOS shell (a project must name a file; see docs/PLAN.md)"
 
 echo
 echo "$pass passed, $fail failed, $skip skipped"
-[ "$fail" -eq 0 ]
+[ "$fail" -eq 0 ] || exit 1
+if [ "$pass" -eq 0 ] && [ -n "${FRONTEND_GATE_REQUIRED:-}" ]; then
+	echo "FAIL the frontend gate is required here (FRONTEND_GATE_REQUIRED) and nothing passed"
+	exit 1
+fi
+exit 0

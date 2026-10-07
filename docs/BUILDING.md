@@ -302,12 +302,14 @@ and reads back the video file Chimera recorded. It needs:
 - `mono`, `ffprobe` and `xvfb-run` on the PATH (the `mono-complete`,
   `ffmpeg` and `xvfb` packages);
 - an executable `<chimera>/build/dll/ffmpeg`. Chimera's
-  `tools/fetch-ffmpeg.sh linux <chimera>/build/dll` puts one there. The
-  workflow's steps do not include it.
+  `tools/fetch-ffmpeg.sh linux <chimera>/build/dll` puts one there, and the
+  workflow runs it; the meson install alone does not.
 
 **When any of these is missing the script prints a line that starts
 `SKIP everything:` and exits 0.** That is a skip of the whole gate, not a
-pass. Check the first lines of its output.
+pass. Check the first lines of its output. With `FRONTEND_GATE_REQUIRED=1`
+in the environment, as CI sets it, the same case is a failure, and so is a
+run in which no leg passed.
 
 Its legs, each a project written by `waterbox/tests/make-project.py`,
 opened in Chimera and recorded for 120 frames:

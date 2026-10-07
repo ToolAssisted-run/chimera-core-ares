@@ -52,14 +52,6 @@
       "note": "ares' cooperative scheduler."
     },
     {
-      "name": "Nintendo 64 boot ROMs (PIF, CIC)",
-      "license": "see note",
-      "url": "https://github.com/ares-emulator/ares",
-      "commit": "{submodule:extern/ares}",
-      "file": "extern/ares/LICENSE",
-      "note": "About four kilobytes of console boot code, vendored by ares upstream in mia/Firmware and compiled into the package as ares itself distributes them. It is why the Nintendo 64 needs no firmware from the user, and it is a decision inherited from upstream rather than made here; see docs/PLAN.md for the alternative, which is to drop them and let ares emulate the boot at a high level. No other machine this package offers bundles anything of the kind - the ones that would need to are simply absent."
-    },
-    {
       "name": "ymfm",
       "license": "BSD-3-Clause",
       "url": "https://github.com/aaronsgiles/ymfm",
