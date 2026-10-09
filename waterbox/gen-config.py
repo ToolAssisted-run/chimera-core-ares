@@ -607,6 +607,48 @@ MNEMONICS = {
     "Controller Up": "U", "Controller Down": "D", "Controller Left": "L", "Controller Right": "R",
     "Controller II": "2", "Controller I": "1", "Controller Select": "S", "Controller Run": "r",
 }
+# BUTTON_HEADERS is what heads a button's column where its letter does not tell
+# it from its neighbours (chimera#225): a keyboard has more keys than there are
+# characters worth reading, and an MSX has five keys whose letter is F. It is
+# what a person reads in TAStudio; the movie's text still carries the letter.
+# By the button's whole name, per machine - the Spectrum's row of digits is
+# "Keyboard 1" and so is an MSX's numeric pad. A button not named here is
+# headed by its letter, which is right for every pad and for a keyboard's
+# letters. One to eight characters of ASCII, and no two of one machine alike.
+BUTTON_HEADERS = [
+    # the tape deck, on every machine that has one
+    (None, {"Tape Play": "TPLAY", "Tape Stop": "TSTOP"}),
+    (("ZXS",), {
+        "Keyboard CAPS SHIFT": "CAPS", "Keyboard SYMBOL SHIFT": "SYMB",
+        "Keyboard ENTER": "ENTER", "Keyboard SPACE BREAK": "SPACE",
+    }),
+    # the Japanese layout: a key is headed by the first thing printed on it
+    (("MSX", "MSX2"), {
+        "Keyboard 1 ! ぬ": "1", "Keyboard 2 \" ふ": "2", "Keyboard 3 (hash) あ ぁ": "3",
+        "Keyboard 4 $ う ぅ": "4", "Keyboard 5 % え ぇ": "5", "Keyboard 6 & お ぉ": "6",
+        "Keyboard 8 ( ゆ ゅ": "8", "Keyboard 9 ) よ ょ": "9", "Keyboard - = ほ": "-",
+        "Keyboard ^ ~ へ": "^", "Keyboard ¥ (pipe) ー": "YEN", "Keyboard @ ‘ \"": "@",
+        "Keyboard [ { 。": "[", "Keyboard ; + れ": ";", "Keyboard : * け": ":",
+        "Keyboard ] } む": "]", "Keyboard , < ね `": ",", "Keyboard . > る 。": ".",
+        "Keyboard / ? め .": "/", "Keyboard - ろ": "_",
+        "Keyboard SHIFT": "SHIFT", "Keyboard CTRL": "CTRL", "Keyboard GRAPH": "GRAPH",
+        "Keyboard CAPS": "CAPS", "Keyboard かな": "KANA",
+        "Keyboard F1 F6": "F1", "Keyboard F2 F7": "F2", "Keyboard F3 F8": "F3",
+        "Keyboard F4 F9": "F4", "Keyboard F5 F10": "F5",
+        "Keyboard ESC": "ESC", "Keyboard TAB": "TAB", "Keyboard STOP": "STOP",
+        "Keyboard BS": "BS", "Keyboard SELECT": "SELECT", "Keyboard RETURN": "RETURN",
+        "Keyboard SPACE": "SPACE", "Keyboard CLS/HOME": "HOME", "Keyboard INS": "INS",
+        "Keyboard DEL": "DEL", "Keyboard ←": "LEFT", "Keyboard ↑": "UP",
+        "Keyboard ↓": "DOWN", "Keyboard →": "RIGHT",
+        # the numeric pad
+        "Keyboard *": "N*", "Keyboard +": "N+", "Keyboard /": "N/", "Keyboard -": "N-",
+        "Keyboard ,": "N,", "Keyboard .": "N.",
+        "Keyboard 0": "N0", "Keyboard 1": "N1", "Keyboard 2": "N2", "Keyboard 3": "N3",
+        "Keyboard 4": "N4", "Keyboard 5": "N5", "Keyboard 6": "N6", "Keyboard 7": "N7",
+        "Keyboard 8": "N8", "Keyboard 9": "N9",
+        "Keyboard 実行": "EXEC", "Keyboard 取消": "CANCEL",
+    }),
+]
 AXIS_HEADERS = {
     "P1 Gamepad X-Axis": "P1GXA", "P1 Gamepad Y-Axis": "P1GYA", "P1 Mouse X": "mX",
     "P1 Mouse Y": "mY", "P2 Gamepad X-Axis": "P2GXA", "P2 Gamepad Y-Axis": "P2GYA",
@@ -650,6 +692,35 @@ def mnemonics_for(buttons):
     return out
 
 
+def button_headers_for(machine_id, buttons, letters):
+    """The "headers" of an input declaration: the buttons of this machine that
+    BUTTON_HEADERS names. One that is not a header, or that heads two columns
+    of the machine, stops the build - the engine would drop the first without
+    a word and the second tells nothing apart."""
+    named = {}
+    for machines, headers in BUTTON_HEADERS:
+        if machines is None or machine_id in machines:
+            named.update(headers)
+    out = {}
+    for b in buttons:
+        h = named.get(b)
+        if h is None:
+            continue
+        if not (1 <= len(h) <= 8) or h != h.strip() or any(not (" " <= c < "\x7f") for c in h):
+            raise SystemExit("%r is not a header for %r (BUTTON_HEADERS in %s)" % (h, b, __file__))
+        out[b] = h
+    heads = {}
+    for b in buttons:
+        if b.split(" ")[0][:1] == "P" and b.split(" ")[0][1:].isdigit():
+            continue  # a pad's columns are a player's own, and are not headed here
+        h = out.get(b, letters.get(b, letters.get(_bare(b))))
+        if (b in out or heads.get(h, b) in out) and h in heads:
+            raise SystemExit("%s: %r heads both %r and %r (BUTTON_HEADERS in %s)"
+                             % (machine_id, h, heads[h], b, __file__))
+        heads.setdefault(h, b)
+    return out
+
+
 def with_headers(axes):
     """The axes with their column headers; an axis nobody named stops the build."""
     missing = [a["name"] for a in axes if a["name"] not in AXIS_HEADERS]
@@ -678,6 +749,9 @@ def render_machines(machines):
             "virtualHeight": m["virtualHeight"],
             "extensions": {"." + e: m["id"] for e in m["extensions"].split()},
         }
+        headers = button_headers_for(m["id"], [n for n, _ in buttons], entry["input"]["mnemonics"])
+        if headers:
+            entry["input"]["headers"] = headers
         if axes:
             entry["input"]["axes"] = with_headers([
                 {"name": n, "min": -128, "max": 127, "neutral": 0} for n, _ in axes

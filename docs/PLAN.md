@@ -774,6 +774,16 @@ CAPS SHIFT, `$` SYMBOL SHIFT, `_` SPACE, and the deck's `>` and `#` - so a
 Spectrum movie made before this build belongs to the package it was made with,
 which its project pins. No other machine's columns moved.
 
+**A column is headed by what is printed on the key (chimera#225).** One
+character does not tell a keyboard's keys apart - an MSX had five whose letter
+was F and nine whose letter was K - and the movie's text cannot spend more.
+Chimera now takes a `"headers"` declaration beside the mnemonics, which heads
+a button's column in TAStudio and is never written into a movie, and
+`BUTTON_HEADERS` gives one to every key a letter does not name: CAPS, SYMB,
+ENTER and SPACE on the Spectrum; SHIFT, CTRL, GRAPH, F1 to F5, the arrows, the
+numeric pad as N0 to N9 and the rest on an MSX; TPLAY and TSTOP on the deck.
+The generator stops if two columns of a machine would be headed alike.
+
 What proves it is the Spectrum's own ROM. At the prompt the keyboard routine
 leaves the last key's code in LAST_K (0x5C08) and, in K mode, a letter is its
 capital's ASCII plus 0xA5. The gate presses each of 38 keys alone on a fresh
