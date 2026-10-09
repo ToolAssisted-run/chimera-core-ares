@@ -746,6 +746,40 @@ a medium only when the medium is a tape and otherwise nothing, which ares reads
 as an empty deck. Cassettes and the .wav and .tzx forms of them load and the
 gate now runs an MSX with a cartridge in it, which is the path that was broken.
 
+## A keyboard is declared the way it is printed (chimera#232)
+
+The ZX Spectrum's forty keys were declared wrongly three ways at once.
+
+**Two of them did not exist.** ares lists the keys in one array, and a comma
+that fell inside a string - `"C," "V"` - makes one key named `C,V` of two. The
+row came up one short, so C and V could not be pressed at all and the matrix
+read the next row's keys in their place. Patch 0026 moves the comma; it is an
+upstream typo and nothing else.
+
+**The order was the matrix's.** CAPS SHIFT, A, Q, 1, 0, P, ENTER, SPACE, then
+Z, S, W, 2: the order the machine scans, and so the order of the controller
+window and of every TAStudio column. `KEY_ORDER` in `gen-config.py` lists a
+keyboard top row first, left to right; a key it does not name keeps ares'
+place after the ones it does, so a list that falls behind upstream loses
+nothing.
+
+**Seven keys were bound, to a gamepad.** The defaults went by the name of the
+leaf - a key called A took the pad's A, a key called 1 took the pad's X.
+`KEYBOARD_KEYS` binds a keyboard machine's keys to the host's own: letters and
+digits to themselves, ENTER and SPACE to theirs, CAPS SHIFT to Shift and SYMBOL
+SHIFT to Ctrl.
+
+The mnemonics changed with it - each key is its own character, `<` ENTER, `^`
+CAPS SHIFT, `$` SYMBOL SHIFT, `_` SPACE, and the deck's `>` and `#` - so a
+Spectrum movie made before this build belongs to the package it was made with,
+which its project pins. No other machine's columns moved.
+
+What proves it is the Spectrum's own ROM. At the prompt the keyboard routine
+leaves the last key's code in LAST_K (0x5C08) and, in K mode, a letter is its
+capital's ASCII plus 0xA5. The gate presses each of 38 keys alone on a fresh
+machine, in both flavours, and reads that byte: C gives 0xE8 (CONT), V gives
+0xFB (CLS). With upstream's comma put back the leg fails on exactly C and V.
+
 ## A BIOS that is not one file
 
 Every BIOS up to here was one dump, pinned by hash, and that is right: the

@@ -73,6 +73,28 @@ def wire_safe(name):
 TAPE_MACHINES = {"ZXS", "MSX", "MSX2"}
 
 
+# A keyboard is read the way it is printed. ares lists a ZX Spectrum's keys in
+# the order of its matrix - CAPS SHIFT, A, Q, 1, 0, P, ENTER, SPACE, then Z, S,
+# W, 2... - which is the order the machine scans them in and nobody's idea of
+# where a key is: the controller window and every TAStudio column followed it
+# (chimera#232). Listed here top row first, left to right; a key this list does
+# not name keeps ares' place, after the ones it does, so none can go missing.
+KEY_ORDER = {
+    "ZXS": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
+            "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P",
+            "A", "S", "D", "F", "G", "H", "J", "K", "L", "ENTER",
+            "CAPS SHIFT", "Z", "X", "C", "V", "B", "N", "M", "SYMBOL SHIFT", "SPACE BREAK"],
+}
+
+
+def in_reading_order(machine_id, inputs):
+    order = KEY_ORDER.get(machine_id)
+    if not order:
+        return inputs
+    place = {name: n for n, name in enumerate(order)}
+    return sorted(inputs, key=lambda i: place.get(i["name"], len(order)))
+
+
 def declare(machine):
     """The machine's buttons and axes, in the order that IS the wire format.
 
@@ -90,7 +112,7 @@ def declare(machine):
         prefix = port_prefix(port["name"])
         many = len(port["devices"]) > 1
         for device in port["devices"]:
-            for i in device["inputs"]:
+            for i in in_reading_order(machine["id"], device["inputs"]):
                 name = f"{prefix} {device['name']} {i['name']}" if many else f"{prefix} {i['name']}"
                 (axes if i["axis"] else buttons).append((wire_safe(name), i["path"]))
 
@@ -548,15 +570,16 @@ MNEMONICS = {
     "ACTION [E]": "A", "3": "3", "4": "4", "5": "5", "6": "6", "7": "7", "8": "8", "9": "9",
     "10": "a", "11": "b", "12": "c", "13": "d", "14": "e", "Y1": "1", "Y2": "2", "Y3": "3",
     "Y4": "4", "X1": "U", "X2": "R", "X3": "D", "X4": "L", "Volume": "V", "Power": "P",
-    "Keyboard CAPS SHIFT": "S", "Keyboard A": "A", "Keyboard Q": "Q", "Keyboard 1": "1",
-    "Keyboard 0": "0", "Keyboard P": "P", "Keyboard ENTER": "E", "Keyboard SPACE BREAK": "B",
+    "Keyboard CAPS SHIFT": "^", "Keyboard A": "A", "Keyboard Q": "Q", "Keyboard 1": "1",
+    "Keyboard 0": "0", "Keyboard P": "P", "Keyboard ENTER": "<", "Keyboard SPACE BREAK": "_",
     "Keyboard Z": "Z", "Keyboard S": "S", "Keyboard W": "W", "Keyboard 2": "2", "Keyboard 9": "9",
-    "Keyboard O": "O", "Keyboard L": "L", "Keyboard SYMBOL SHIFT": "S", "Keyboard X": "X",
+    "Keyboard O": "O", "Keyboard L": "L", "Keyboard SYMBOL SHIFT": "$", "Keyboard X": "X",
     "Keyboard D": "D", "Keyboard E": "E", "Keyboard 3": "3", "Keyboard 8": "8", "Keyboard I": "I",
-    "Keyboard K": "K", "Keyboard M": "M", "Keyboard C,V": "C", "Keyboard F": "F", "Keyboard R": "R",
+    "Keyboard K": "K", "Keyboard M": "M", "Keyboard C": "C", "Keyboard F": "F", "Keyboard R": "R",
     "Keyboard 4": "4", "Keyboard 7": "7", "Keyboard U": "U", "Keyboard J": "J", "Keyboard N": "N",
-    "Keyboard ": "?", "Keyboard G": "G", "Keyboard T": "T", "Keyboard 5": "5", "Keyboard 6": "6",
-    "Keyboard Y": "Y", "Keyboard H": "H", "Keyboard B": "B", "Tape Play": "P", "Tape Stop": "S",
+    "Keyboard V": "V", "Keyboard G": "G", "Keyboard T": "T", "Keyboard 5": "5", "Keyboard 6": "6",
+    "Keyboard ": "?",
+    "Keyboard Y": "Y", "Keyboard H": "H", "Keyboard B": "B", "Tape Play": ">", "Tape Stop": "#",
     "L": "l", "R": "r", "*": "*", "0": "0", "(hash)": "(", "Keyboard 0 わ を": "0",
     "Keyboard 1 ! ぬ": "!", "Keyboard 2 \" ふ": "\"", "Keyboard 3 (hash) あ ぁ": "(",
     "Keyboard 4 $ う ぅ": "$", "Keyboard 5 % え ぇ": "%", "Keyboard 6 & お ぉ": "&",
@@ -714,6 +737,28 @@ DEFAULT_AXES = {
 }
 
 
+# A machine whose controller IS a keyboard is played on the keyboard in front
+# of it: each key on the PC key that carries the same letter, and the two
+# shifts where a hand expects them. The table above is a gamepad's - it put a
+# Spectrum's A on the PC's X, because X is where a pad's A button goes, bound
+# seven keys that happened to share a pad button's name, and left the other
+# thirty-three with nothing (chimera#232).
+def _letters_and_digits():
+    keys = {c: c for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"}
+    keys.update({d: "Number" + d for d in "0123456789"})
+    return keys
+
+
+KEYBOARD_KEYS = {
+    "ZXS": dict(_letters_and_digits(), **{
+        "ENTER": "Enter",
+        "SPACE BREAK": "Space",
+        "CAPS SHIFT": "Shift, LeftShift",
+        "SYMBOL SHIFT": "Ctrl, LeftCtrl",
+    }),
+}
+
+
 def render_keybinds(machines):
     """Default bindings for every machine's controller."""
     trollers, analog = {}, {}
@@ -722,6 +767,12 @@ def render_keybinds(machines):
             continue
         buttons, axes = declare(m)
         name = f"{m['label']} Controller"
+
+        if m["id"] in KEYBOARD_KEYS:
+            keys = KEYBOARD_KEYS[m["id"]]
+            trollers[name] = {declared: keys[path.rsplit("/", 1)[-1]]
+                              for declared, path in buttons if path.rsplit("/", 1)[-1] in keys}
+            continue
 
         # Only what a first player touches: a console's own buttons, and the
         # first port's. Anything further along shares keys it should not.

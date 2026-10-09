@@ -757,5 +757,63 @@ else
 fi
 
 echo
+echo "== every key of the ZX Spectrum is the key it is named for =="
+# ares lists the Spectrum's keys in one array and a comma inside a string
+# literal - "C," "V" - made one key called "C,V" of two, so the list came up
+# one short and every key after it answered to its neighbour's name
+# (chimera#232, patch 0026). The digest legs cannot see that: a machine with
+# its keys shuffled is deterministic too.
+#
+# So the leg asks the Spectrum's own ROM what was pressed. The 48K ROM's
+# keyboard routine leaves the code of the last key in LAST_K, 0x5C08, and at
+# the prompt the machine is in K mode, where K-DECODE turns a letter into its
+# keyword by adding 0xA5 to the capital's ASCII - A is NEW, 0xE6, and Z is
+# COPY, 0xFF. A digit is its own ASCII, ENTER is 0x0D and SPACE is 0x20.
+# That is the ROM's arithmetic; nothing in it comes from this core.
+#
+# Each key is pressed alone on a fresh machine, in both flavours. The medium
+# is a tape of one header the gate writes itself: the machine wants one and
+# the ROM never reads it unless told to LOAD, so the leg needs the BIOS and
+# nothing a developer has to own.
+if [ -n "$zxsfw" ] && [ -f "$zxsfw" ]; then
+	rm -rf "$work/w"; mkdir -p "$work/w"
+	printf '\023\000\000\000GATE      \000\000\000\200\000\000\227' > "$work/w/blank.tap"
+	printf '{"rom":["blank.tap"]}' > "$work/w/slots"
+	printf '{"machine":"zxs"}' > "$work/w/settings"
+	cp "$zxsfw" "$work/w/$(basename "$zxsfw")"
+	last_k() { od -An -tx1 -j $((0x5C08 - 0x4000)) -N1 "$1" 2>/dev/null | tr -d ' \n'; }
+	keys=0
+	wrong=""
+	for key in 1 2 3 4 5 6 7 8 9 0 Q W E R T Y U I O P A S D F G H J K L ENTER \
+	           Z X C V B N M "SPACE BREAK"; do
+		case "$key" in
+			ENTER) code="0d" ;;
+			"SPACE BREAK") code="20" ;;
+			[0-9]) code="$(printf '%02x' "'$key")" ;;
+			*) code="$(printf '%02x' $(($(printf '%d' "'$key") + 0xA5)))" ;;
+		esac
+		keys=$((keys + 1))
+		rm -f "$work/k-native.0" "$work/k-sandbox.0"
+		"$native" --machine ZXS --firmware "$zxsfw" --rom "$work/w/blank.tap" --quiet \
+			--frames 220 --press 150:6 "Keyboard $key" --dump-bus "$work/k-native" >/dev/null 2>&1
+		"$runwbx" "$wbx" "$work/w" --machine ZXS --quiet \
+			--frames 220 --press 150:6 "Keyboard $key" --dump-bus "$work/k-sandbox" >/dev/null 2>&1
+		a="$(last_k "$work/k-native.0")"
+		b="$(last_k "$work/k-sandbox.0")"
+		if [ "$a" != "$code" ] || [ "$b" != "$code" ]; then
+			wrong="$wrong
+     $key: the ROM gives $code, native read '${a}', sandbox read '${b}'"
+		fi
+	done
+	if [ -z "$wrong" ]; then
+		say_pass "the ZX Spectrum's $keys keys each reach the ROM as themselves (native and sandbox)"
+	else
+		say_fail "the ZX Spectrum's keys each reach the ROM as themselves" "$wrong"
+	fi
+else
+	echo "SKIP ZX Spectrum keys (needs tests/firmware/zxsBios)"
+fi
+
+echo
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]
