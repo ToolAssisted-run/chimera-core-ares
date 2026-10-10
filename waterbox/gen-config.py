@@ -150,23 +150,51 @@ def cxx(text):
 # or "Interframe Blending" does not explain itself, and where getting it wrong
 # quietly changes what a movie replays as.
 SETTING_TEXT = {
-    "Fast Boot": "Skip the console's boot ROM and start the game straight away. It changes"
-                 " what the machine does, not just how long it takes, so a movie recorded"
-                 " with it on will not replay with it off.",
-    "Interframe Blending": "Average each frame with the one before it, the way an LCD of the"
-                           " period smeared. It is how the machine LOOKS, not what it does -"
-                           " but the frontend records the blended picture, so a movie's video"
-                           " differs with it on.",
-    "Color Emulation": "Reproduce the screen's own colours rather than sending the machine's"
-                       " raw values to a modern display. Changes the recorded picture.",
-    "Phosphor": "Blend each frame with the last, the way a television tube held its picture.",
-    "Version": "Which revision of the console this is. Real revisions differ in behaviour,"
-               " and a game that depends on one will not do the same on another.",
-    "Revision": "Which revision of the console this is. Real revisions differ in behaviour,"
-                " and a game that depends on one will not do the same on another.",
-    "Orientation": "Which way up the handheld is held. Some games are played rotated.",
-    "Headphones": "Whether headphones are plugged in. The machine's sound differs.",
-    "Show Icons": "Draw the handheld's own status icons around the picture.",
+    "Fast Boot": "Skips the console's boot ROM and starts the game at once. The "
+        "machine is in a different state when the game starts, so a movie "
+        "recorded with this on does not play back with it off.",
+    "Interframe Blending": "Mixes each frame with the one before it, the way the LCD screens of"
+        " the time blurred movement. The game runs the same. The recorded "
+        "picture is different, so a movie's video changes when this is on.",
+    "Color Emulation": "Shows the colours the way the console's own screen showed them, and"
+        " not the raw values as a modern display would show them. It changes"
+        " the recorded picture.",
+    "Phosphor": "Mixes each frame with the one before it, the way a television tube "
+        "kept its picture for a moment.",
+    "Version": "Which revision of the console this is. Revisions of the real "
+        "console behave differently in small ways, and a game that depends "
+        "on one may act differently on another.",
+    "Revision": "Which revision of the console this is. Revisions of the real "
+        "console behave differently in small ways, and a game that depends "
+        "on one may act differently on another.",
+    "Orientation": "Which way the handheld is held. Some games are played with it "
+        "turned on its side.",
+    "Headphones": "Whether headphones are plugged in. The console's sound is different"
+        " with them.",
+    "Show Icons": "Draws the handheld's status icons around the picture.",
+    # ares names these and says no more. The Neo Geo ones are the switches of
+    # the system board (an arcade board has them as DIP switches); the system
+    # ROM reads them. The Super Famicom ones are chip revisions and memory size.
+    "Settings Mode": "One of the Neo Geo system board's switches. On an arcade board it opens"
+                     " the board's own settings screens when the machine starts.",
+    "Two Coin Chutes": "One of the Neo Geo system board's switches. It tells the system ROM"
+                       " whether the cabinet has one coin slot or two.",
+    "Normal Controller": "One of the Neo Geo system board's switches. It tells the system ROM"
+                         " that an ordinary controller is connected, and not a mahjong one.",
+    "Multiplayer": "One of the Neo Geo system board's switches. It turns on play between"
+                   " linked machines.",
+    "Free Play": "One of the Neo Geo system board's switches. It lets a game start without"
+                 " coins.",
+    "Freeze": "One of the Neo Geo system board's switches. On an arcade board it stops the"
+              " game while it is set.",
+    "Communication ID": "The number this machine has when several are linked together.",
+    "Deep Black Boost": "Makes the darkest colours darker, as a television showed them. It"
+                        " changes the picture only.",
+    "PPU1 Version": "The revision number of the first of the console's two video chips. A"
+                    " game can read it.",
+    "PPU2 Version": "The revision number of the second of the console's two video chips. A"
+                    " game can read it.",
+    "VRAM": "How much video memory the console has. A real console has 64 KB.",
 }
 
 
@@ -251,149 +279,156 @@ def render_inc(machines):
 FIRMWARE_TEXT = {
     "megaCdBios": (
         "Mega CD / Sega CD BIOS",
-        "The BIOS of the disc drive: Sega's, and yours to supply. It is region "
-        "specific and a disc will not boot on the wrong one - a USA game wants "
-        "the Sega CD BIOS, a Japanese one the Mega CD's. Model 1 and Model 2 "
-        "are both fine; they differ in the menu they draw, not in what a game "
-        "sees.",
+        "The BIOS of the Mega CD disc drive. It is Sega's and you have to "
+        "supply it. A disc only starts with the BIOS of its own region. A "
+        "USA game needs the Sega CD BIOS and a Japanese game the Japanese "
+        "Mega CD BIOS. The Model 1 and Model 2 versions both work. They show"
+        " a different menu, and games behave the same on both.",
         "bios_CD_U.bin",
     ),
     "pceSystemCard": (
         "PC Engine System Card",
-        "The card that goes in the slot of a CD-ROM2 or a TurboDuo, which is "
-        "what reads the disc at all. NEC's, and yours to supply. Which one "
-        "matters: a Super CD-ROM2 game needs System Card 3.0 (a Japanese disc "
-        "the Japanese card, a US disc the American one), an early CD-ROM2 game "
-        "runs on any of them, and a Games Express disc needs the Games Express "
-        "card. The card names itself on screen when the machine starts, so a "
-        "disc that stops at PUSH RUN BUTTON is usually asking for a later one.",
+        "The card that goes in the card slot of a CD-ROM2 or a TurboDuo. "
+        "Without it the machine cannot read a disc. It is NEC's and you have"
+        " to supply it. A Super CD-ROM2 game needs System Card 3.0 of its "
+        "region (the Japanese card for a Japanese disc, the American card "
+        "for a US disc). An early CD-ROM2 game works with any card. A Games "
+        "Express disc needs the Games Express card. The card shows its name "
+        "when the machine starts. A disc that stops at PUSH RUN BUTTON "
+        "usually needs a newer card.",
         "syscard3.pce",
     ),
     "sfcIpl": (
         "Super Famicom IPL (SPC700 boot ROM)",
-        "The sixty-four bytes the SNES's sound CPU runs at power-on, which is "
-        "how the main CPU gets any code into it at all. Nothing plays without "
-        "it. Nintendo's, and yours to supply. Games that carry a coprocessor - "
-        "the DSP-1 of Pilotwings, the CX4 of Mega Man X2 - need that chip's own "
-        "ROM as well, which this core does not yet ask for.",
+        "The 64 bytes the SNES sound processor runs when the console is "
+        "switched on. The main processor uses them to load sound code, so "
+        "nothing plays without this file. It is Nintendo's and you have to "
+        "supply it. Games with an extra chip in the cartridge (the DSP-1 in "
+        "Pilotwings, the CX4 in Mega Man X2) also need that chip's ROM. This"
+        " core does not ask for those yet.",
         "ipl.rom",
     ),
     "m32xVector": (
         "Mega 32X vector table",
-        "The 256-byte table the 68000 starts from on a 32X. Sega's, and yours "
-        "to supply. All three 32X files come from the same dump and are usually "
-        "named for what runs them: G for the Genesis side, M and S for the two "
-        "SH-2s.",
+        "The 256-byte table the Mega Drive's 68000 processor starts from on "
+        "a 32X. It is Sega's and you have to supply it. The three 32X files "
+        "come from the same dump. The letter in each name says which "
+        "processor runs it: G for the Mega Drive side, M and S for the two "
+        "SH-2 processors.",
         "32X_G_BIOS.bin",
     ),
     "m32xBootM": (
         "Mega 32X master SH-2 boot ROM",
-        "The 2KB boot ROM of the first of the 32X's two SH-2 processors.",
+        "The boot ROM of the first of the 32X's two SH-2 processors (2 KB).",
         "32X_M_BIOS.bin",
     ),
     "m32xBootS": (
         "Mega 32X slave SH-2 boot ROM",
-        "The 1KB boot ROM of the second of the 32X's two SH-2 processors.",
+        "The boot ROM of the second of the 32X's two SH-2 processors (1 KB).",
         "32X_S_BIOS.bin",
     ),
     "msx2Main": (
         "MSX2 main BIOS",
-        "The MSX2's 32KB main ROM. Microsoft's and ASCII's, and yours to "
-        "supply; an MSX2 needs its sub ROM as well.",
+        "The MSX2's main ROM (32 KB). It belongs to Microsoft and ASCII, and"
+        " you have to supply it. An MSX2 also needs its sub ROM.",
         "msx2.rom",
     ),
     "msx2Sub": (
         "MSX2 sub ROM",
-        "The MSX2's 16KB sub ROM, which carries the extended BIOS the main ROM "
-        "calls into.",
+        "The MSX2's sub ROM (16 KB). It holds the extended BIOS that the "
+        "main ROM calls.",
         "msx2ext.rom",
     ),
     "gbBoot": (
         "Game Boy boot ROM",
-        "The Game Boy's 256-byte boot ROM - the one that scrolls the logo and "
-        "checks it. ares executes it, and the machine it hands to a cartridge "
-        "is what the boot ROM left behind, so it is not optional. Nintendo's, "
-        "and yours to supply. Any of the DMG revisions will do; DMG-CPU A is "
-        "what ares assumes for a plain Game Boy.",
+        "The Game Boy's boot ROM (256 bytes). It scrolls the logo and checks"
+        " the cartridge. The core runs it and the game starts from the state"
+        " it leaves, so it is required. It is Nintendo's and you have to "
+        "supply it. The boot ROM of any original Game Boy revision works. "
+        "DMG-CPU A is the one ares expects for a plain Game Boy.",
         "dmg_boot.bin",
     ),
     "gbcBoot": (
         "Game Boy Color boot ROM",
-        "The Game Boy Color's 2KB boot ROM. Larger than the Game Boy's because "
-        "it also picks the palette an original Game Boy cartridge is coloured "
-        "with, which is part of what a game looks like.",
+        "The Game Boy Color's boot ROM (2 KB). It is larger than the Game "
+        "Boy's because it also chooses the colours an original Game Boy "
+        "cartridge is shown in.",
         "cgb_boot.bin",
     ),
     "wsBoot": (
         "WonderSwan boot ROM",
-        "The WonderSwan's boot ROM. It draws the startup animation, sets the "
-        "machine up, and reads the owner's name out of the internal EEPROM.",
+        "The WonderSwan's boot ROM. It shows the startup animation, sets the"
+        " machine up and reads the owner's name from the console's memory.",
         "ws_boot.rom",
     ),
     "wscBoot": (
         "WonderSwan Color boot ROM",
-        "The WonderSwan Color's boot ROM, the colour machine's own.",
+        "The WonderSwan Color's boot ROM. It is a different file from the "
+        "WonderSwan's.",
         "wsc_boot.rom",
     ),
     "zxsBios": (
         "ZX Spectrum BIOS",
-        "The 16KB ROM that IS a ZX Spectrum: its BASIC, its editor and its "
-        "loader. Amstrad's, who permit redistribution with emulators, but not "
-        "this core's to decide that for you.",
+        "The ZX Spectrum's ROM (16 KB). It holds the BASIC language, the "
+        "editor and the tape loader, so the machine cannot run without it. "
+        "Amstrad owns it and allows it to be distributed with emulators. "
+        "This core does not include it, and you have to supply it.",
         "spectrum.rom",
     ),
     "gbaBios": (
         "Game Boy Advance BIOS",
-        "The Game Boy Advance's 16KB boot ROM. ares needs the real one: it is "
-        "executed, games call into it, and its timing is part of the machine. "
-        "Nintendo's, so it is yours to supply and not this core's to ship.",
+        "The Game Boy Advance's boot ROM (16 KB). The real one is needed. "
+        "The core runs it, games call functions in it and its timing is part"
+        " of the machine. It is Nintendo's and you have to supply it.",
         "GBA_bios.rom",
     ),
     "cvBios": (
         "ColecoVision BIOS",
-        "The ColecoVision's 8KB boot ROM - the console's title screen and its "
-        "cartridge checks live in it, and nothing runs without it.",
+        "The ColecoVision's boot ROM (8 KB). It holds the console's title "
+        "screen and its cartridge checks, and nothing runs without it.",
         "Coleco_Bios.bin",
     ),
     "a52Bios": (
         "Atari 5200 BIOS",
-        "The Atari 5200's 2KB boot ROM. Exactly 2048 bytes; anything else is "
-        "refused.",
+        "The Atari 5200's boot ROM. It must be exactly 2048 bytes, and a "
+        "file of any other size is refused.",
         "[BIOS] Atari 5200 (USA).a52",
     ),
     "ngBios": (
         "Neo Geo AES BIOS",
-        "The Neo Geo home console's 128KB boot ROM - `neo-epo.bin`, which is "
-        "usually found inside an `aes.zip` BIOS set and must be handed over on "
-        "its own.",
+        "The boot ROM of the Neo Geo home console (128 KB). The file is "
+        "`neo-epo.bin`. It is usually found inside an `aes.zip` BIOS set and"
+        " has to be taken out of the zip first.",
         "neo-epo.bin",
     ),
     "ngpBios": (
         "Neo Geo Pocket BIOS",
-        "The 64KB boot ROM of the original monochrome Neo Geo Pocket, usually "
-        "named for its 1998 date to tell it from the Color one.",
+        "The boot ROM of the original black-and-white Neo Geo Pocket (64 "
+        "KB). Its name usually carries the year 1998, which tells it apart "
+        "from the Color one.",
         "SNK Neo-Geo Pocket BIOS (1998)(SNK)(en-ja).bin",
     ),
     "ngpcBios": (
         "Neo Geo Pocket Color BIOS",
-        "The 64KB boot ROM of the Neo Geo Pocket Color. A different ROM from "
-        "the monochrome machine's, and not interchangeable with it.",
+        "The boot ROM of the Neo Geo Pocket Color (64 KB). It is a different"
+        " ROM from the black-and-white machine's, and one cannot be used in "
+        "place of the other.",
         "SNK Neo-Geo Pocket Color BIOS (1999)(SNK)(en-ja).bin",
     ),
     "ps1Bios": (
         "PlayStation BIOS",
-        "The PlayStation's 512KB boot ROM. It is the console's operating system: "
-        "games call into it constantly, and the machine reaches nothing without "
-        "it. Sony's, so it is yours to supply. Any retail BIOS will do and they "
-        "differ by region and revision; the one pinned here is what this package "
-        "was tested against, and a project records which was used.",
+        "The PlayStation's boot ROM (512 KB). It is the console's operating "
+        "system. Games call it all the time and nothing runs without it. It "
+        "is Sony's and you have to supply it. Any retail BIOS works, and "
+        "they differ by region and revision. The one named here is the one "
+        "this core was tested with. A project records which one it used.",
         "PSX_4.1(A).bin",
     ),
     "msxBios": (
         "MSX BIOS",
-        "The MSX's 32KB BIOS and BASIC ROM. Any machine's will do and they "
-        "differ by region; the one pinned here is what this package was tested "
-        "against, and a project records which was used.",
+        "The MSX's BIOS and BASIC ROM (32 KB). The ROM of any MSX machine "
+        "works, and they differ by region. The one named here is the one "
+        "this core was tested with. A project records which one it used.",
         "MSX.rom",
     ),
 }
@@ -417,21 +452,22 @@ FIRMWARE_TEXT = {
 # region's BIOS ships a package offering that region.
 FIRMWARE_VARIANTS = {
     "megaCdBios": ("mcd.bios", "Which Mega CD BIOS",
-        "Region specific, and a disc will not boot on the wrong one: a USA game"
-        " wants the Sega CD BIOS, a Japanese one the Mega CD's, a European one"
-        " the European. Model 1 and Model 2 differ in the menu they draw, not"
-        " in what a game sees.", [
+        "Which region's Mega CD BIOS to use. A disc only starts with the "
+        "BIOS of its own region. A USA game needs the Sega CD BIOS, a "
+        "Japanese game the Japanese Mega CD BIOS and a European game the "
+        "European one. The Model 1 and Model 2 versions show a different "
+        "menu, and games behave the same on both.", [
         ("usa", "SCD_m2_us_200.bin"),
         ("japan", "MCD_jp_100s.bin"),
         ("europe", "MCD_eu_200.bin"),
     ]),
     "pceSystemCard": ("pcecd.card", "Which System Card",
-        "The card in the slot is what reads the disc, and which one matters: a"
-        " Super CD-ROM2 game needs System Card 3.0 in its own region, an early"
-        " CD-ROM2 game runs on any of them, and a Games Express disc needs the"
-        " Games Express card. The card names itself on screen when the machine"
-        " starts, so a disc that stops at PUSH RUN BUTTON is usually asking for"
-        " a later one.", [
+        "Which System Card is in the card slot. The card is what reads the "
+        "disc. A Super CD-ROM2 game needs System Card 3.0 of its own region."
+        " An early CD-ROM2 game works with any card. A Games Express disc "
+        "needs the Games Express card. The card shows its name when the "
+        "machine starts. A disc that stops at PUSH RUN BUTTON usually needs "
+        "a newer card.", [
         ("system3-jp", "syscard3.pce"),
         ("system3-us", "syscard3u.pce"),
         ("system2-jp", "syscard2.pce"),
@@ -951,15 +987,15 @@ def render_slots(machines, slots):
             "formats": subformats,
             "exposedWhen": {"setting": "machine", "in": sorted(set(subwhen))},
             "help": "Some Super Famicom cartridges have a slot of their own, and"
-                    " this is what goes in it. A Satellaview memory pack (.bs)"
-                    " goes into the BS-X cartridge - pick the BS-X as the game"
-                    " above and the pack here. A Sufami Turbo minicart (.st)"
-                    " goes into the Sufami Turbo cartridge, and a Game Boy"
-                    " cartridge goes into a Super Game Boy. Which slot it lands"
-                    " in is decided by the file itself, so there is nothing to"
-                    " choose. Leave it empty for an ordinary cartridge, which is"
-                    " almost every one: a game that has no such slot will say so"
-                    " rather than quietly ignore the file.",
+                " this is the cartridge that goes into it. A Satellaview "
+                "memory pack (.bs) goes into the BS-X cartridge. Choose the "
+                "BS-X as the game above and the pack here. A Sufami Turbo "
+                "minicart (.st) goes into the Sufami Turbo cartridge, and a "
+                "Game Boy cartridge goes into a Super Game Boy. The core "
+                "finds the right slot from the file itself. Leave this empty"
+                " for an ordinary cartridge, which is almost every game. A "
+                "game that has no such slot reports an error when a file is "
+                "given here.",
         })
     return json.dumps(slots, indent=2) + "\n"
 
@@ -1062,7 +1098,7 @@ def main():
                 "display": f'{m["label"]}: {decl["name"]}',
                 "description": SETTING_TEXT.get(
                     decl["name"],
-                    f'{decl["name"]}, as ares offers it on the {m["label"]}.'),
+                    f'The {m["label"]} option that ares calls "{decl["name"]}". It has no description yet.'),
                 "type": decl["type"],
                 "fromAres": True,
                 "when": list(m["when"]) if m.get("when") else [m["id"].lower()],
