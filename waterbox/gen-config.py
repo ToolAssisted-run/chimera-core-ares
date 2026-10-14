@@ -813,7 +813,7 @@ DEFAULT_KEYS = {
     "C": "C, J1 B4, X1 Y",
     "X": "S, J1 B4, X1 Y",
     "Y": "A, J1 B2, X1 B",
-    "Z": "LeftShift, J1 B7, X1 LeftTrigger",
+    "Z": "Shift, LeftShift, J1 B7, X1 LeftTrigger",  # Shift is what Chimera sends with its left and right keys merged
     "Start": "Enter, J1 B10, X1 Start",
     "Select": "Space, J1 B9, X1 Back",
     "Mode": "Tab",
