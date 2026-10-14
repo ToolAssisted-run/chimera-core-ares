@@ -22,7 +22,7 @@
       "P1 Gamepad C-Right": "L, X1 RStickRight",
       "P1 Gamepad L": "Q, J1 B5, X1 LeftShoulder",
       "P1 Gamepad R": "W, J1 B6, X1 RightShoulder",
-      "P1 Gamepad Z": "LeftShift, J1 B7, X1 LeftTrigger",
+      "P1 Gamepad Z": "Shift, LeftShift, J1 B7, X1 LeftTrigger",
       "P1 Gamepad Start": "Enter, J1 B10, X1 Start"
     },
     "Famicom / NES Controller": {

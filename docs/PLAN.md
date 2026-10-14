@@ -1380,3 +1380,16 @@ without the fix and pass with it.
   game - which cost an hour the first time, when a 30-frame run drew a black
   screen and looked like a broken renderer. The HLE boot hands over on frame
   zero, so this is now a trap only for anyone comparing against a real boot.
+
+## 2026-10-14: the default bindings name keys Chimera sends
+
+P1 Gamepad Z (the Nintendo 64 pad) was on LeftShift alone; it is on Shift and
+LeftShift. Chimera hands a key to the bindings under one name: the name its
+DistinctKeyNameOverrides gives it ("Number1", "Enter", "Backtick",
+"KeypadAdd") or else its DistinctKey name ("Up"); and unless told otherwise it
+reads the left and right Shift, Ctrl and Alt as one key each, "Shift", "Ctrl"
+and "Alt" (Input.cs, Config.MergeLAndRModifierKeys). A default binding to
+another name never fired, so those controls shipped unbound on the keyboard.
+Checked on Xvfb: with 1, Return, left Shift and Up held, Chimera reports
+Number1, Enter, Shift and Up. Left and right names stay beside the merged one,
+for a setup with the merging off.
