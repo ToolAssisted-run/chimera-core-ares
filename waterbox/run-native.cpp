@@ -102,6 +102,7 @@ int main(int argc, char **argv)
 	{
 		const char *a = argv[i];
 		if (!strcmp(a, "--rom") && i + 1 < argc) config.romFile = argv[++i];
+		else if (!strcmp(a, "--save-in") && i + 1 < argc) config.saveFile = argv[++i];
 		else if (!strcmp(a, "--subrom") && i + 1 < argc)
 		{
 			/* given twice: the second goes into a second slot (a Sufami Turbo's B) */

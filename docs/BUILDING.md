@@ -383,7 +383,7 @@ Genesis, Master System, Game Gear, SG-1000, Atari 2600, MyVision, PC Engine
 | Slot | Files | Notes |
 | --- | --- | --- |
 | Cartridge, disc or tape | one file; the formats follow the machine | A disc is a `.cue` or a `.chd`. A PlayStation and an MSX also start with the slot empty; every other machine refuses to. |
-| Save data | one `.sav` `.srm` `.eep` `.fla` or `.ram` | Optional. Only the Nintendo 64 exports and reloads saves this way. A 64DD saves on its disk: Export Save Data hands out the written disk, which goes in the slot above as the game. |
+| Save data | one `.sav` `.srm` `.eep` `.fla` or `.ram` | Optional. Only the Nintendo 64 exports and reloads saves this way; the file must be the size of the cartridge's save chip. A 64DD saves on its disk: Export Save Data hands out the written disk, which goes in the slot above as the game. |
 | Cartridge in the cartridge | one `.bs` `.st` `.gb` or `.gbc` | Super Famicom only. |
 
 ## Troubleshooting

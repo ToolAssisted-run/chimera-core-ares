@@ -93,6 +93,20 @@ ECL_EXPORT int Init(void)
 		else subRom = nullptr;
 	}
 
+	/* The save data a Nintendo 64 cartridge starts with: what Export Save
+	 * Data wrote. Mounted whether or not the project filled it, so an empty
+	 * file is none. */
+	static char saveName[256];
+	const char *saveFile = nullptr;
+	if (wbx_slot_first("savedata", saveName, (int)sizeof saveName))
+	{
+		if (FILE *probe = fopen(saveName, "rb"))
+		{
+			if (fseek(probe, 0, SEEK_END) == 0 && ftell(probe) > 0) saveFile = saveName;
+			fclose(probe);
+		}
+	}
+
 	/* A second one: a Sufami Turbo's slot B. */
 	static char subName2[512];
 	const char *subRom2 = nullptr;
@@ -119,6 +133,7 @@ ECL_EXPORT int Init(void)
 	config.romFile = rom;
 	config.subRomFile = subRom;
 	config.subRomFile2 = subRom2;
+	config.saveFile = saveFile;
 
 	char region[16];
 	config.pal = wbx_setting_str("region", region, (int)sizeof region) >= 0 && !strcmp(region, "pal");

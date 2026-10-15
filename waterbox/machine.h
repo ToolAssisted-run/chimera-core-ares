@@ -33,6 +33,9 @@ namespace machine
 		/* A second one, for a cartridge with two such slots: a Sufami Turbo's
 		 * slot B, which some games link to slot A. Null when absent. */
 		const char *subRomFile2;
+		/* The project's save data, for a Nintendo 64 cartridge with a save
+		 * chip: the file Export Save Data wrote. Null for none. */
+		const char *saveFile;
 		/* The console BIOS, for a machine that needs one. Mounted under the id
 		 * waterbox/machines.h names, which is also what the package declares. */
 		const char *firmwareFile;

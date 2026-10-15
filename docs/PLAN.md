@@ -807,6 +807,34 @@ caught the Nintendo 64 and would have missed every other machine ares builds
 through `Nintendo64::load`. angrylion's output pointer then stays null and the
 first frame takes the process with it. It asks which MACHINE now.
 
+## A cartridge's save data went out backwards and never came back in (2026-10-15)
+
+The owner asked for a check of the Nintendo 64's save data after the 64DD's
+disk turned out to be held with each 4-byte word reversed. Both suspicions
+held, on Super Mario 64 (its EEPROM):
+
+- **Export Save Data handed out the chip as it sits in memory.** ares keeps
+  every Nintendo 64 memory - EEPROM, SRAM, Flash and the 64DD's disk - a
+  32-bit word at a time in the host's byte order, so each word's bytes were
+  reversed against the file ares itself writes. Super Mario 64 tags its save
+  files "DA" and its menu "HI"; the export read "AD" and "IH". Now every
+  export is a copy in the file's order (the same helper as the 64DD's disk).
+- **The Save data slot was never read.** mia looks for a save file named
+  after the game (`<game>.eeprom`) beside it, and the core never handed it the
+  project's file: with a save in the slot the EEPROM still started blank, all
+  0xff. Now the core puts the slot's file into the chip mia made for the
+  cartridge before the cartridge is plugged in. The file must be the chip's
+  size; any other size is refused with both sizes named, rather than cut.
+- Measured: Super Mario 64, Start at the Mario head, the sound setting changed
+  from STEREO to MONO on the file select (the game writes its EEPROM then).
+  The export has the tags where the game puts them and sound mode 1; a new run
+  with it in the slot shows MONO on the file select, the same in both builds.
+- Tests: two that need nothing licensed (the hello-world ROM with a homebrew
+  header asking for a 512-byte EEPROM: a save goes in and exports as it came;
+  a 511-byte save is refused and says why) and two on Super Mario 64 in
+  tests/local/N64 (SKIP without it). Seen to fail with the export in memory
+  order (three of the four) and with the slot ignored (three of the four).
+
 ## A tape deck is not a cartridge slot
 
 Every MSX has both, and the adapter used to hand whatever medium the project

@@ -98,6 +98,7 @@ static void gate_usage(void)
 		"  --dump-to PATH    where --dump-frame writes (default frame.ppm)\n"
 		"  --dump-state PATH write the whole serialised machine there at the end\n"
 		"  --dump-bus PATH   write every bus there, one file per bus, at the end\n"
+		"  --save-out PATH   write what Export Save Data would hand out there\n"
 		"  --no-render       run with drawing off (turbo)\n"
 		"  --rewind-at F     save at frame F, run a frame, put the save back\n"
 		"  --set-on-change   push a button only when it changes, as a frontend does\n"
@@ -159,7 +160,7 @@ static int gate_parse_opts(int argc, char **argv, int from, struct gate_opts *o)
 		/* Options the driver itself consumed; skipping them here keeps one
 		 * parser rather than two that must agree. */
 		else if (!strcmp(a, "--rom") || !strcmp(a, "--subrom") || !strcmp(a, "--time")
-			|| !strcmp(a, "--machine")
+			|| !strcmp(a, "--machine") || !strcmp(a, "--save-in")
 			|| !strcmp(a, "--firmware") || !strcmp(a, "--pif-rom")) { (void)GATE_NEXT(); }
 		else if (!strcmp(a, "--port")) { (void)GATE_NEXT(); (void)GATE_NEXT(); }
 		else if (!strcmp(a, "--pal") || !strcmp(a, "--fast-vi") || !strcmp(a, "--rerecord")

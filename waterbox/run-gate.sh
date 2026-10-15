@@ -418,6 +418,92 @@ compare "N64 helloworld-cpu" N64 helloworld-cpu.n64 --frames 130
 compare "N64 helloworld-rdp" N64 helloworld-rdp.n64 --frames 130
 compare "N64 input-cpu"      N64 input-cpu.n64      --frames 200
 compare "N64 input, A held and the stick over" N64 input-cpu.n64 --frames 200 --hold "P1 Gamepad A" --stick 100 -60
+
+# A cartridge's save chip, filled from the project's save data and handed out
+# again by Export Save Data. ares holds the chip a 32-bit word at a time in the
+# host's byte order; the file is in the order ares reads and writes, and a save
+# that went in and came out reversed, or never went in, fails here. The
+# cartridge is the hello-world ROM with a homebrew header that asks for a 512
+# byte EEPROM (bytes 0x3C-0x3D "ED", save type 1 in 0x3F's top four bits), so
+# this needs nothing that is not ours.
+save_chip() {
+	sw="$work/save"
+	rm -rf "$sw"; mkdir -p "$sw"
+	python3 - "$content/helloworld-cpu.n64" "$sw/rom" "$sw/game.eep" "$sw/short.eep" <<'PYEOF'
+import sys
+rom = bytearray(open(sys.argv[1], "rb").read())
+rom[0x3C:0x3E] = b"ED"
+rom[0x3F] = 0x10
+open(sys.argv[2], "wb").write(rom)
+save = bytes((i * 7 + 3) & 0xFF for i in range(512))
+open(sys.argv[3], "wb").write(save)
+open(sys.argv[4], "wb").write(save[:511])
+PYEOF
+	printf '{"machine":"n64"}' > "$sw/settings"
+	printf '{"rom":["rom"],"savedata":["game.eep"]}' > "$sw/slots"
+	"$native" --machine N64 --rom "$sw/rom" --save-in "$sw/game.eep" --quiet --frames 2 \
+		--save-out "$sw/native.out" > /dev/null 2>&1 || true
+	"$runwbx" "$wbx" "$sw" --machine N64 --quiet --frames 2 --save-out "$sw/sandbox.out" > /dev/null 2>&1 || true
+	if cmp -s "$sw/game.eep" "$sw/native.out" && cmp -s "$sw/game.eep" "$sw/sandbox.out"; then
+		say_pass "N64 save data: the project's save is in the chip at power-on and exports as it came (native and sandbox)"
+	else
+		say_fail "N64 save data: the project's save is in the chip at power-on and exports as it came (native and sandbox)" \
+			"native $(cmp "$sw/game.eep" "$sw/native.out" 2>&1 | head -1); sandbox $(cmp "$sw/game.eep" "$sw/sandbox.out" 2>&1 | head -1)"
+	fi
+	printf '{"rom":["rom"],"savedata":["short.eep"]}' > "$sw/slots"
+	why="$("$runwbx" "$wbx" "$sw" --machine N64 --quiet --frames 2 2>&1)" || true
+	if echo "$why" | grep -q "save chip holds 512"; then
+		say_pass "N64 save data: a save of the wrong size is refused, and says why"
+	else
+		say_fail "N64 save data: a save of the wrong size is refused, and says why" "$(echo "$why" | tail -1)"
+	fi
+}
+save_chip
+
+# The same, through a game: Super Mario 64 in tests/local/N64. It writes its
+# EEPROM when the sound mode is changed on the file select: Start at the Mario
+# head, the hand to STEREO and A, the hand to MONO and A. The export must be in
+# the game's own order (its save files are tagged "DA" and its menu "HI"), and
+# a new run that starts from it must show MONO where it showed STEREO.
+sm64="$(ls "$root/tests/local/N64/"*"Mario 64"* 2> /dev/null | head -1)"
+if [ -n "$sm64" ]; then
+	mw="$work/sm64"
+	rm -rf "$mw"; mkdir -p "$mw"
+	cp "$sm64" "$mw/rom"
+	printf '{"machine":"n64"}' > "$mw/settings"
+	printf '{"rom":["rom"]}' > "$mw/slots"
+	box() { "$runwbx" "$wbx" "$mw" --machine N64 --quiet "$@" > /dev/null 2>&1; }
+	box --frames 900 --press 650:5 "P1 Gamepad Start" --state-out "$mw/0.state" &&
+	box --frames 40 --stick 60 -60 --state-in "$mw/0.state" --state-out "$mw/1.state" &&
+	box --frames 16 --stick 60 45 --state-in "$mw/1.state" --state-out "$mw/2.state" &&
+	box --frames 90 --press 5:4 "P1 Gamepad A" --state-in "$mw/2.state" --state-out "$mw/3.state" &&
+	box --frames 37 --stick -60 30 --state-in "$mw/3.state" --state-out "$mw/4.state" &&
+	box --frames 120 --press 5:4 "P1 Gamepad A" --state-in "$mw/4.state" --save-out "$mw/mono.eep" || true
+	tags="$(python3 -c "
+import sys
+d = open(sys.argv[1], 'rb').read()
+print(d[0x34:0x36] == b'DA' and d[0x1FC:0x1FE] == b'HI' and d[0x1D1] == 1)" "$mw/mono.eep" 2> /dev/null)"
+	if [ "$tags" = "True" ]; then
+		say_pass "N64 local save data: Super Mario 64's EEPROM exports in the game's order, sound mode MONO"
+	else
+		say_fail "N64 local save data: Super Mario 64's EEPROM exports in the game's order, sound mode MONO" "no DA / HI tags where the game puts them, or not MONO"
+	fi
+	a="$("$native" --machine N64 --rom "$mw/rom" --save-in "$mw/mono.eep" --quiet --frames 900 --press 650:5 "P1 Gamepad Start" | tail -1)"
+	cp "$mw/mono.eep" "$mw/mono-in.eep"
+	printf '{"rom":["rom"],"savedata":["mono-in.eep"]}' > "$mw/slots"
+	b="$("$runwbx" "$wbx" "$mw" --machine N64 --quiet --frames 900 --press 650:5 "P1 Gamepad Start" | tail -1)"
+	c="$("$native" --machine N64 --rom "$mw/rom" --quiet --frames 900 --press 650:5 "P1 Gamepad Start" | tail -1)"
+	if is_digest "$a" && [ "$a" = "$b" ] && [ "${a%%  audio*}" != "${c%%  audio*}" ]; then
+		say_pass "N64 local save data: a run from the exported save reaches a file select that is not the fresh one (native == sandbox)"
+		echo "     $a"
+	else
+		say_fail "N64 local save data: a run from the exported save reaches a file select that is not the fresh one (native == sandbox)" "from the save, native  $a
+     from the save, sandbox $b
+     without a save         $c"
+	fi
+else
+	echo "SKIP N64 local save data (no Super Mario 64 in tests/local/N64)"
+fi
 compare "GB libbet"          GB  libbet.gb          --frames 200
 compare "GB libbet, Start held" GB libbet.gb        --frames 200 --hold Start
 compare "GBA arm tests"      GBA gba-arm.gba        --frames 200

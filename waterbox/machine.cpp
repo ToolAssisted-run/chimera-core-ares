@@ -77,8 +77,8 @@ namespace
 	/* The medium's file name as the project gave it, for the name a written
 	 * 64DD disk is exported under. */
 	std::string g_mediumFile;
-	/* A 64DD disk being exported, in the file's byte order (saveData). */
-	std::vector<uint8_t> g_diskExport;
+	/* Save data being exported, in the file's byte order (saveData). */
+	std::vector<uint8_t> g_saveExport;
 
 	std::shared_ptr<mia::Pak> g_systemPak;
 	std::shared_ptr<mia::Pak> g_cartridgePak;
@@ -593,6 +593,34 @@ namespace machine
 		g_systemPak.reset();
 	}
 
+	/* A Nintendo 64 cartridge's save chip, filled from the project's save
+	 * data. mia has already made the chip's file in the cartridge's pak - the
+	 * size the game database gives it, all 0xff - and the cartridge loads it
+	 * from there when it is plugged in, so the save data only has to be put in
+	 * that file. It is the file Export Save Data wrote, in the byte order ares
+	 * reads, and it must be the chip's size: a save of another size is a save
+	 * for another chip or another game, and is refused rather than cut. */
+	static bool seedSave(const char *path)
+	{
+		auto bytes = file::read(path);
+		if (bytes.empty()) return fail("the save data would not open");
+		for (const char *name : {"save.ram", "save.eeprom", "save.flash"})
+		{
+			auto fp = g_cartridgePak->pak->write(name);
+			if (!fp) continue;
+			if ((uint64_t)bytes.size() != (uint64_t)fp->size())
+			{
+				snprintf(g_error, sizeof g_error,
+					"the save data is %llu bytes, and this cartridge's save chip holds %llu",
+					(unsigned long long)bytes.size(), (unsigned long long)fp->size());
+				return false;
+			}
+			fp->write({bytes.data(), bytes.size()});
+			return true;
+		}
+		return fail("this cartridge has no save chip, so it takes no save data");
+	}
+
 	bool init(const Config &config)
 	{
 		g_error[0] = 0;
@@ -723,6 +751,16 @@ namespace machine
 				snprintf(g_error, sizeof g_error, "the game would not load: %s", reason);
 				return false;
 			}
+		}
+
+		/* The project's save data goes into the cartridge's save chip before
+		 * the cartridge is plugged in, the way mia would have put a save file
+		 * of its own there. */
+		if (config.saveFile != nullptr && *config.saveFile)
+		{
+			if (!g_isN64 || !g_cartridgePak)
+				return fail("only a Nintendo 64 cartridge takes save data here; the other machines keep their saves in the savestate");
+			if (!seedSave(config.saveFile)) return false;
 		}
 
 		/* Something in a slot ON the cartridge. Which slot is decided by the
@@ -886,8 +924,8 @@ namespace machine
 
 	void frame(void)
 	{
-		/* a disk export's copy, read by now (see diskInFileOrder) */
-		if (!g_diskExport.empty()) std::vector<uint8_t>().swap(g_diskExport);
+		/* an export's copy, read by now (see inFileOrder) */
+		if (!g_saveExport.empty()) std::vector<uint8_t>().swap(g_saveExport);
 		FenvGuard guard(machineFenv());
 		if (g_isN64) angrylion::OutFrameBuffer = g_rendering ? g_video : nullptr;
 
@@ -1034,44 +1072,45 @@ namespace machine
 	 * has, or a 64DD's disk once a game has written to it (patch 0028): a
 	 * 64DD game saves on its disk. The disk comes out whole, in the layout
 	 * ares keeps it in (MAME's, 0x435B0C0 bytes), which ares reads back as a
-	 * disk, under the name of the disk the project gave. The other machines
-	 * save through mia, which this core does not let write to a host; their
-	 * save data is inside the savestate instead. */
+	 * disk, under the name of the disk the project gave. A save chip comes out
+	 * as ares itself would write it, and goes back in through the project's
+	 * save data (seedSave). The other machines save through mia, which this
+	 * core does not let write to a host; their save data is inside the
+	 * savestate instead. */
 	static bool writtenDisk(void)
 	{
 		using namespace ares::Nintendo64;
 		return dd.node && dd.disk.size && dd.chimeraWritten;
 	}
 
-	/* ares holds the disk a 32-bit word at a time in the host's byte order,
-	 * so each word's bytes are reversed against the file. The export is a
-	 * copy in the file's order, made when it is asked for and let go at the
-	 * next frame, so that no savestate carries 70MB it does not need. */
-
-	static const uint8_t *diskInFileOrder(void)
+	/* ares holds a Nintendo 64's memories - the save chips and a 64DD's disk
+	 * alike - a 32-bit word at a time in the host's byte order, so each word's
+	 * bytes are reversed against the file ares reads and writes. An export is
+	 * a copy in the file's order, made when it is asked for and let go at the
+	 * next frame, so that no savestate carries a 70MB disk it does not need. */
+	static const uint8_t *inFileOrder(const void *data, size_t size)
 	{
-		using namespace ares::Nintendo64;
-		const uint8_t *d = (const uint8_t *)dd.disk.data;
-		size_t n = dd.disk.size & ~(size_t)3;
-		g_diskExport.assign(n, 0);
+		const uint8_t *d = (const uint8_t *)data;
+		size_t n = size & ~(size_t)3;
+		g_saveExport.assign(n, 0);
 		for (size_t i = 0; i < n; i += 4)
 		{
-			g_diskExport[i + 0] = d[i + 3];
-			g_diskExport[i + 1] = d[i + 2];
-			g_diskExport[i + 2] = d[i + 1];
-			g_diskExport[i + 3] = d[i + 0];
+			g_saveExport[i + 0] = d[i + 3];
+			g_saveExport[i + 1] = d[i + 2];
+			g_saveExport[i + 2] = d[i + 1];
+			g_saveExport[i + 3] = d[i + 0];
 		}
-		return g_diskExport.data();
+		return g_saveExport.data();
 	}
 
 	const uint8_t *saveData(void)
 	{
 		if (!g_isN64) return nullptr;
 		using namespace ares::Nintendo64;
-		if (cartridge.ram.size) return (const uint8_t *)cartridge.ram.data;
-		if (cartridge.eeprom.size) return (const uint8_t *)cartridge.eeprom.data;
-		if (cartridge.flash.size) return (const uint8_t *)cartridge.flash.data;
-		if (writtenDisk()) return diskInFileOrder();
+		if (cartridge.ram.size) return inFileOrder(cartridge.ram.data, cartridge.ram.size);
+		if (cartridge.eeprom.size) return inFileOrder(cartridge.eeprom.data, cartridge.eeprom.size);
+		if (cartridge.flash.size) return inFileOrder(cartridge.flash.data, cartridge.flash.size);
+		if (writtenDisk()) return inFileOrder(dd.disk.data, dd.disk.size);
 		return nullptr;
 	}
 
