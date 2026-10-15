@@ -25,6 +25,22 @@
       "P1 Gamepad Z": "Shift, LeftShift, J1 B7, X1 LeftTrigger",
       "P1 Gamepad Start": "Enter, J1 B10, X1 Start"
     },
+    "Nintendo 64DD Controller": {
+      "P1 Gamepad Up": "Up, J1 POV1U, X1 DpadUp",
+      "P1 Gamepad Down": "Down, J1 POV1D, X1 DpadDown",
+      "P1 Gamepad Left": "Left, J1 POV1L, X1 DpadLeft",
+      "P1 Gamepad Right": "Right, J1 POV1R, X1 DpadRight",
+      "P1 Gamepad B": "Z, J1 B3, X1 X",
+      "P1 Gamepad A": "X, J1 B1, X1 A",
+      "P1 Gamepad C-Up": "I, X1 RStickUp",
+      "P1 Gamepad C-Down": "K, X1 RStickDown",
+      "P1 Gamepad C-Left": "J, X1 RStickLeft",
+      "P1 Gamepad C-Right": "L, X1 RStickRight",
+      "P1 Gamepad L": "Q, J1 B5, X1 LeftShoulder",
+      "P1 Gamepad R": "W, J1 B6, X1 RightShoulder",
+      "P1 Gamepad Z": "Shift, LeftShift, J1 B7, X1 LeftTrigger",
+      "P1 Gamepad Start": "Enter, J1 B10, X1 Start"
+    },
     "Famicom / NES Controller": {
       "P1 Up": "Up, J1 POV1U, X1 DpadUp",
       "P1 Down": "Down, J1 POV1D, X1 DpadDown",
@@ -318,6 +334,18 @@
   "AllTrollersAutoFire": {},
   "AllTrollersAnalog": {
     "Nintendo 64 Controller": {
+      "P1 Gamepad X-Axis": {
+        "Value": "X1 LStickX",
+        "Mult": 1.0,
+        "Deadzone": 0.1
+      },
+      "P1 Gamepad Y-Axis": {
+        "Value": "X1 LStickY",
+        "Mult": 1.0,
+        "Deadzone": 0.1
+      }
+    },
+    "Nintendo 64DD Controller": {
       "P1 Gamepad X-Axis": {
         "Value": "X1 LStickX",
         "Mult": 1.0,

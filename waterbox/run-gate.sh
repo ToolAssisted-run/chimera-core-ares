@@ -477,6 +477,11 @@ with_local rewind     SGX  120 --frames 300
 with_local_as compare  ST  SFC --frames 400
 with_local_as rerecord ST  SFC --frames 200
 with_local_as rewind   ST  SFC 120 --frames 400
+# A Nintendo 64DD with its drive EMPTY: the drive's IPL ROM (tests/firmware/
+# n64ddIpl) starts, loads itself and waits for a disk. Booted from the drive by
+# the core's own boot (patch 0027), so this needs no disk, only the IPL.
+compare  "N64DD IPL, no disk"  N64DD - --frames 300
+rerecord "N64DD IPL, no disk"  N64DD - --frames 200
 # A Nintendo 64DD: its IPL ROM in tests/firmware/n64ddIpl, a disk in
 # tests/local/N64DD/. It boots from the drive with its cartridge slot empty.
 with_local compare    N64DD --frames 600

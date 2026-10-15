@@ -267,11 +267,11 @@ namespace machines
 
 			/* A Nintendo 64 with the disk drive under it and no cartridge: it
 			 * boots from the drive's IPL ROM (the user's firmware) and reads the
-			 * disk. The cartridge slot stays empty, which is what makes it boot
+			 * disk - or, with the drive empty, starts and waits for one. The cartridge slot stays empty, which is what makes it boot
 			 * from the drive (patch 0027); the medium is the disk. */
 			{"N64DD", "Nintendo 64DD", "Nintendo 64DD", "Nintendo 64DD", ares::Nintendo64::load,
 			 "[Nintendo] Nintendo 64DD (NTSC-J)", nullptr,
-			 640, 480, 640, 480, "ndd d64 n64dd", "Gamepad Mouse", "n64ddIpl", false,
+			 640, 480, 640, 480, "ndd d64 n64dd", "Gamepad Mouse", "n64ddIpl", true,
 			 0, 0, 0, 0, ares::Nintendo64::option, kNintendo64Options,
 			 nullptr, "Nintendo 64DD Disk", nullptr, nullptr, nullptr, "Cartridge Slot"},
 

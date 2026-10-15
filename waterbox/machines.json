@@ -78,10 +78,65 @@
       "virtualWidth": 640,
       "virtualHeight": 480,
       "regions": ["ntsc"],
-      "bootsWithoutMedium": false,
+      "bootsWithoutMedium": true,
       "firmware": [{"id": "n64ddIpl"}],
-      "loads": false,
-      "why": "its console BIOS was not provided to this run"
+      "loads": true,
+      "console": [],
+      "settings": [],
+      "ports": [
+        {
+          "name": "Controller Port 1",
+          "devices": [
+            {
+              "name": "Gamepad",
+              "inputs": [{"name": "X-Axis", "path": "Controller Port 1/Gamepad/X-Axis", "axis": true}, {"name": "Y-Axis", "path": "Controller Port 1/Gamepad/Y-Axis", "axis": true}, {"name": "Up", "path": "Controller Port 1/Gamepad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 1/Gamepad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 1/Gamepad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 1/Gamepad/Right", "axis": false}, {"name": "B", "path": "Controller Port 1/Gamepad/B", "axis": false}, {"name": "A", "path": "Controller Port 1/Gamepad/A", "axis": false}, {"name": "C-Up", "path": "Controller Port 1/Gamepad/C-Up", "axis": false}, {"name": "C-Down", "path": "Controller Port 1/Gamepad/C-Down", "axis": false}, {"name": "C-Left", "path": "Controller Port 1/Gamepad/C-Left", "axis": false}, {"name": "C-Right", "path": "Controller Port 1/Gamepad/C-Right", "axis": false}, {"name": "L", "path": "Controller Port 1/Gamepad/L", "axis": false}, {"name": "R", "path": "Controller Port 1/Gamepad/R", "axis": false}, {"name": "Z", "path": "Controller Port 1/Gamepad/Z", "axis": false}, {"name": "Start", "path": "Controller Port 1/Gamepad/Start", "axis": false}]
+            },
+            {
+              "name": "Mouse",
+              "inputs": [{"name": "X", "path": "Controller Port 1/Mouse/X", "axis": true}, {"name": "Y", "path": "Controller Port 1/Mouse/Y", "axis": true}, {"name": "Left", "path": "Controller Port 1/Mouse/Left", "axis": false}, {"name": "Right", "path": "Controller Port 1/Mouse/Right", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Controller Port 2",
+          "devices": [
+            {
+              "name": "Gamepad",
+              "inputs": [{"name": "X-Axis", "path": "Controller Port 2/Gamepad/X-Axis", "axis": true}, {"name": "Y-Axis", "path": "Controller Port 2/Gamepad/Y-Axis", "axis": true}, {"name": "Up", "path": "Controller Port 2/Gamepad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 2/Gamepad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 2/Gamepad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 2/Gamepad/Right", "axis": false}, {"name": "B", "path": "Controller Port 2/Gamepad/B", "axis": false}, {"name": "A", "path": "Controller Port 2/Gamepad/A", "axis": false}, {"name": "C-Up", "path": "Controller Port 2/Gamepad/C-Up", "axis": false}, {"name": "C-Down", "path": "Controller Port 2/Gamepad/C-Down", "axis": false}, {"name": "C-Left", "path": "Controller Port 2/Gamepad/C-Left", "axis": false}, {"name": "C-Right", "path": "Controller Port 2/Gamepad/C-Right", "axis": false}, {"name": "L", "path": "Controller Port 2/Gamepad/L", "axis": false}, {"name": "R", "path": "Controller Port 2/Gamepad/R", "axis": false}, {"name": "Z", "path": "Controller Port 2/Gamepad/Z", "axis": false}, {"name": "Start", "path": "Controller Port 2/Gamepad/Start", "axis": false}]
+            },
+            {
+              "name": "Mouse",
+              "inputs": [{"name": "X", "path": "Controller Port 2/Mouse/X", "axis": true}, {"name": "Y", "path": "Controller Port 2/Mouse/Y", "axis": true}, {"name": "Left", "path": "Controller Port 2/Mouse/Left", "axis": false}, {"name": "Right", "path": "Controller Port 2/Mouse/Right", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Controller Port 3",
+          "devices": [
+            {
+              "name": "Gamepad",
+              "inputs": [{"name": "X-Axis", "path": "Controller Port 3/Gamepad/X-Axis", "axis": true}, {"name": "Y-Axis", "path": "Controller Port 3/Gamepad/Y-Axis", "axis": true}, {"name": "Up", "path": "Controller Port 3/Gamepad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 3/Gamepad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 3/Gamepad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 3/Gamepad/Right", "axis": false}, {"name": "B", "path": "Controller Port 3/Gamepad/B", "axis": false}, {"name": "A", "path": "Controller Port 3/Gamepad/A", "axis": false}, {"name": "C-Up", "path": "Controller Port 3/Gamepad/C-Up", "axis": false}, {"name": "C-Down", "path": "Controller Port 3/Gamepad/C-Down", "axis": false}, {"name": "C-Left", "path": "Controller Port 3/Gamepad/C-Left", "axis": false}, {"name": "C-Right", "path": "Controller Port 3/Gamepad/C-Right", "axis": false}, {"name": "L", "path": "Controller Port 3/Gamepad/L", "axis": false}, {"name": "R", "path": "Controller Port 3/Gamepad/R", "axis": false}, {"name": "Z", "path": "Controller Port 3/Gamepad/Z", "axis": false}, {"name": "Start", "path": "Controller Port 3/Gamepad/Start", "axis": false}]
+            },
+            {
+              "name": "Mouse",
+              "inputs": [{"name": "X", "path": "Controller Port 3/Mouse/X", "axis": true}, {"name": "Y", "path": "Controller Port 3/Mouse/Y", "axis": true}, {"name": "Left", "path": "Controller Port 3/Mouse/Left", "axis": false}, {"name": "Right", "path": "Controller Port 3/Mouse/Right", "axis": false}]
+            }
+          ]
+        },
+        {
+          "name": "Controller Port 4",
+          "devices": [
+            {
+              "name": "Gamepad",
+              "inputs": [{"name": "X-Axis", "path": "Controller Port 4/Gamepad/X-Axis", "axis": true}, {"name": "Y-Axis", "path": "Controller Port 4/Gamepad/Y-Axis", "axis": true}, {"name": "Up", "path": "Controller Port 4/Gamepad/Up", "axis": false}, {"name": "Down", "path": "Controller Port 4/Gamepad/Down", "axis": false}, {"name": "Left", "path": "Controller Port 4/Gamepad/Left", "axis": false}, {"name": "Right", "path": "Controller Port 4/Gamepad/Right", "axis": false}, {"name": "B", "path": "Controller Port 4/Gamepad/B", "axis": false}, {"name": "A", "path": "Controller Port 4/Gamepad/A", "axis": false}, {"name": "C-Up", "path": "Controller Port 4/Gamepad/C-Up", "axis": false}, {"name": "C-Down", "path": "Controller Port 4/Gamepad/C-Down", "axis": false}, {"name": "C-Left", "path": "Controller Port 4/Gamepad/C-Left", "axis": false}, {"name": "C-Right", "path": "Controller Port 4/Gamepad/C-Right", "axis": false}, {"name": "L", "path": "Controller Port 4/Gamepad/L", "axis": false}, {"name": "R", "path": "Controller Port 4/Gamepad/R", "axis": false}, {"name": "Z", "path": "Controller Port 4/Gamepad/Z", "axis": false}, {"name": "Start", "path": "Controller Port 4/Gamepad/Start", "axis": false}]
+            },
+            {
+              "name": "Mouse",
+              "inputs": [{"name": "X", "path": "Controller Port 4/Mouse/X", "axis": true}, {"name": "Y", "path": "Controller Port 4/Mouse/Y", "axis": true}, {"name": "Left", "path": "Controller Port 4/Mouse/Left", "axis": false}, {"name": "Right", "path": "Controller Port 4/Mouse/Right", "axis": false}]
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "NES",

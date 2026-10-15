@@ -759,6 +759,22 @@ in the table, waiting only for the owner's IPL ROM and a disk:
   builds and runs 60 frames, where it used to die before the first. Nothing
   more can be said without the real IPL: tests/local/N64DD's two tests say
   SKIP until then.
+- Later the same day the owner's IPL ROM arrived: "64DD IPL (JPN)", id NDDJ
+  (v1.2, SHA-1 BF861922...). ares gives it the drive's CIC 8303. With it in
+  tests/firmware the 64DD is in the package (30 machines). With the drive
+  empty the IPL starts, its boot code reaches the RSP's memory, it fills 164
+  pages of RAM and settles to wait for a disk (black picture), the same
+  picture a boot through Nintendo's PIF ROM shows at frame 200 - though that
+  boot, in ares, never copies the IPL in at all (RAM all zeros), so it is no
+  reference for the rest. The machine may start with no disk
+  (bootsWithoutMedium), and two tests run it so: native == sandbox, and a
+  savestate every frame changes nothing. A disk is still needed to see a
+  game start.
+- The file offered as a disk, "Doshin the Giant (Japan).n64", is not one: it
+  is Zoinkity's cartridge conversion (CIC 5167, his name in the ROM, 65,090,560
+  bytes, which is no disk format ares reads). As an N64 cartridge it stays on
+  a black screen in ares, through the core's boot and through Nintendo's PIF
+  ROM alike (the same digests), so that is ares and not this core.
 
 One real fix came out of it and stayed: `g_isN64` asked which ID this was, so it
 caught the Nintendo 64 and would have missed every other machine ares builds
