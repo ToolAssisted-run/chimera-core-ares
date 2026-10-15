@@ -86,6 +86,8 @@ What the machines have in common:
   its firmware and the disk as the game (`patches/ares/0027`). A 64DD game
   saves on its disk, so Export Save Data hands out the written disk, which a
   new project takes as its game.
+- **A Sufami Turbo takes two minicarts**: the base cartridge is the game and
+  the minicarts go into its two slots, so the games that link two carts work.
 - **The refresh rate is the machine's own**, not a nominal 60: a Game Boy
   reports 262144/4389 = 59.7275Hz, taken from ares' own hint and turned back
   into the exact ratio it came from.

@@ -721,6 +721,14 @@ in. The Satellaview's three local tests still pass through the new code; the
 Sufami Turbo's (tests/local/ST and ST-sub) say SKIP until the base cartridge
 and minicarts are here.
 
+Later that day the owner's cartridges arrived: "SuFami Turbo (Japan).sfc" (the
+base cartridge, 256 KB) and SD Gundam Generation minicarts, a series whose
+games link two. With one minicart (Zanscare Senki) the game starts and plays
+its introduction; with two (Zanscare Senki in A, Ichinen Sensouki in B) the
+game shows its linked-mode text instead, so the second cart is seen. The three
+local tests run on the base cartridge with both minicarts and pass: native ==
+sandbox, a savestate every frame, and a return to a frame it left.
+
 ## A Nintendo 64DD is not one line (tried, 2026-09-11)
 
 It looks like the Mega CD: the same machine with a drive under it, the disk
