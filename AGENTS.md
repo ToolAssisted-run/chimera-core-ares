@@ -4,7 +4,7 @@ This repository builds the ares multi-system emulator as a core for Chimera
 (https://github.com/ToolAssisted-run/chimera), a frontend for tool-assisted
 speedruns. It produces one file, `ares.chimeraCore`: the emulator as a
 sandboxed guest (`core.wbx`) plus the declarations Chimera reads. One
-package holds every machine (twenty-nine); the `machine` setting picks one.
+package holds every machine (thirty); the `machine` setting picks one.
 Upstream ares and angrylion's rasteriser are submodules; everything else
 here is the machine layer, the generators, the build and the gates.
 

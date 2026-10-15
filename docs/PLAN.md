@@ -775,6 +775,32 @@ in the table, waiting only for the owner's IPL ROM and a disk:
   bytes, which is no disk format ares reads). As an N64 cartridge it stays on
   a black screen in ares, through the core's boot and through Nintendo's PIF
   ROM alike (the same digests), so that is ares and not this core.
+- Then a real disk: SimCity 64 (Japan), a retail .ndd of 64,931,840 bytes
+  (SHA-1 5D7D5046...). It boots through the IPL to the 64DD logo (frame 400)
+  and the title screen (frame 2400), Start opens its menu, and Beginner mode
+  plays into a city. The two disk tests run on it now.
+- **The disk was not the same disk twice.** Native and sandbox agreed on the
+  picture and the sound but not on RAM, and the native build did not even
+  agree with itself from run to run. mia, converting a .ndd into the layout
+  ares keeps (MAME's), stamps the disk's id with the host's clock and a
+  random byte "to tell disk files apart when swapping"; the IPL copies the id
+  into RAM. In the sandbox the clock is frozen, so there it was steady - but a
+  movie would have been made on a disk that is not the dump. Patch 0029 leaves
+  the id as it was dumped. Since then native and sandbox agree on every digest
+  and native repeats itself.
+- **A 64DD game saves on its disk**, so Export Save Data hands out the disk
+  once a game has written to it (patch 0028 marks the write; a disk nobody
+  wrote to exports nothing). It comes out whole, 70,627,520 bytes in MAME's
+  layout, under the project's own file name, and a new project takes it as its
+  game. ares holds the disk a 32-bit word at a time in the host's byte order,
+  so the first export, handed out as it sat in memory, had every word's bytes
+  reversed and stopped in the IPL; the export is now a copy in the file's
+  order, made when asked and dropped at the next frame so that savestates do
+  not carry it. Measured on SimCity 64: it first writes between 1,300 and 1,900
+  frames into Beginner mode; the exported disk starts like the original; on it the
+  game writes a segment sooner (it found its earlier save); and the same
+  inputs on it export a byte-identical disk. A test does exactly that, and
+  was seen to fail on the reversed export.
 
 One real fix came out of it and stayed: `g_isN64` asked which ID this was, so it
 caught the Nintendo 64 and would have missed every other machine ares builds

@@ -50,6 +50,9 @@ struct gate_core
 	/* The sandbox's own savestate, to and from a file: --state-out/--state-in.
 	 * NULL for a driver that has none. Returns 1 on success. */
 	int (*state_file)(const char *path, int save);
+	/* What Export Save Data would hand out: its name, or NULL when the
+	 * machine has none (--save-out). NULL for a driver that cannot say. */
+	const char *(*save_data)(const uint8_t **data, int64_t *size);
 };
 
 struct gate_press
@@ -77,6 +80,7 @@ struct gate_opts
 	int press_count;
 	const char *dump_path;
 	const char *dump_state;
+	const char *save_out;
 	const char *dump_bus;
 	int list_inputs;
 };
@@ -125,6 +129,7 @@ static int gate_parse_opts(int argc, char **argv, int from, struct gate_opts *o)
 		else if (!strcmp(a, "--dump-frame")) o->dump_frame = atoi(GATE_NEXT());
 		else if (!strcmp(a, "--dump-to")) o->dump_path = GATE_NEXT();
 		else if (!strcmp(a, "--dump-state")) o->dump_state = GATE_NEXT();
+		else if (!strcmp(a, "--save-out")) o->save_out = GATE_NEXT();
 		else if (!strcmp(a, "--dump-bus")) o->dump_bus = GATE_NEXT();
 		else if (!strcmp(a, "--no-render")) o->render = 0;
 		else if (!strcmp(a, "--rewind-at")) o->rewind_at = atoi(GATE_NEXT());
@@ -441,6 +446,21 @@ static int gate_run(const struct gate_core *c, const struct gate_opts *o)
 			if (f) { fwrite(data, 1, (size_t)size, f); fclose(f); }
 			fprintf(stderr, "wrote %s (%lld bytes)\n", o->dump_state, (long long)size);
 		}
+	}
+
+	if (o->save_out && c->save_data)
+	{
+		const uint8_t *data = NULL;
+		int64_t size = 0;
+		const char *name = c->save_data(&data, &size);
+		if (name && data && size > 0)
+		{
+			FILE *f = fopen(o->save_out, "wb");
+			if (f) { fwrite(data, 1, (size_t)size, f); fclose(f); }
+			fprintf(stderr, "save data %s (%lld bytes) to %s\n", name, (long long)size, o->save_out);
+		}
+		else
+			fprintf(stderr, "no save data\n");
 	}
 
 	/* Memory first, then the state - see the note above. */

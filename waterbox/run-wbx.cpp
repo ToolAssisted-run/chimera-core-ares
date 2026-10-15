@@ -69,6 +69,9 @@ static i64fn_i g_GetBusSize;
 static intfn_ii g_PeekBus;
 static i64fn g_CaptureState;
 static ptrfn g_GetStateBuffer;
+static intfn g_GetSaveDataFileCount;
+static ptrfn_i g_GetSaveDataFileName, g_GetSaveDataFileBuffer;
+static i64fn_i g_GetSaveDataFileSize;
 static ptrfn g_GetLoadError, g_GetVideoBgra, g_GetAudio;
 static setfn g_SetButton, g_SetAxis;
 static framefn g_FrameAdvance;
@@ -167,6 +170,16 @@ static void core_snapshot(int save)
 			" first difference at %zu\n", g_rewind.len, again.len, at);
 		exit(3);
 	}
+}
+
+/* The first file Export Save Data would hand out, read through the same
+ * exports Chimera calls. */
+static const char *core_save_data(const uint8_t **data, int64_t *size)
+{
+	if (g_GetSaveDataFileCount() < 1) return NULL;
+	*size = g_GetSaveDataFileSize(0);
+	*data = (const uint8_t *)g_GetSaveDataFileBuffer(0);
+	return (const char *)g_GetSaveDataFileName(0);
 }
 
 static int core_state_file(const char *path, int save)
@@ -296,6 +309,10 @@ int main(int argc, char **argv)
 	g_PeekBus = (intfn_ii)proc(g_host, "PeekBus");
 	g_CaptureState = (i64fn)proc(g_host, "CaptureState");
 	g_GetStateBuffer = (ptrfn)proc(g_host, "GetStateBuffer");
+	g_GetSaveDataFileCount = (intfn)proc(g_host, "GetSaveDataFileCount");
+	g_GetSaveDataFileName = (ptrfn_i)proc(g_host, "GetSaveDataFileName");
+	g_GetSaveDataFileSize = (i64fn_i)proc(g_host, "GetSaveDataFileSize");
+	g_GetSaveDataFileBuffer = (ptrfn_i)proc(g_host, "GetSaveDataFileBuffer");
 
 	/* Init runs before Seal - the loaded machine is the sealed baseline. */
 	if (g_Init() != 1)
@@ -316,6 +333,7 @@ int main(int argc, char **argv)
 		core_domain_count, core_domain_name, core_domain_ptr, core_domain_size,
 		core_bus_count, core_bus_name, core_bus_size, core_bus_peek, core_state,
 		core_set_rendering, core_pre_frame, core_snapshot, core_state_file,
+		core_save_data,
 	};
 	int ret = gate_run(&core, &opts);
 

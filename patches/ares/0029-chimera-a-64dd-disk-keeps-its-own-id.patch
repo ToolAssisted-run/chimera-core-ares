@@ -1,0 +1,16 @@
+--- a/mia/medium/nintendo-64dd.cpp
++++ b/mia/medium/nintendo-64dd.cpp
+@@ -515,7 +515,12 @@ auto Nintendo64DD::transform(std::span<const u8> input, std::vector<u8> errorTab
+   }
+ 
+   //add new timestamp to differenciate every disk file for swapping
+-  {
++  //
++  //Not in Chimera: the stamp is the host's clock and a random byte, so the
++  //same dump would be a different disk on every load and on every computer,
++  //and a movie made on one would not be played on another. A Chimera project
++  //has one disk per drive, so the disk keeps the id it was made with.
++  if(false) {
+     //get current time
+     chrono::timeinfo timeinfo = chrono::local::timeinfo();
+ 

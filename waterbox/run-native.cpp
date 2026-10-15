@@ -44,6 +44,13 @@ namespace
 	void core_set_rendering(int on) { machine::setRenderingEnabled(on != 0); }
 	void core_pre_frame(void) { }
 
+	const char *core_save_data(const uint8_t **data, int64_t *size)
+	{
+		*size = machine::saveDataSize();
+		*data = machine::saveData();
+		return *size > 0 ? machine::saveDataName() : nullptr;
+	}
+
 	/* --rewind-at on the reference: ares' own serializer, saved aside and put
 	 * back. No sandbox anywhere near it, so a divergence here is the machine's
 	 * serialization and nothing else. */
@@ -200,6 +207,7 @@ int main(int argc, char **argv)
 		core_domain_count, core_domain_name, core_domain_ptr, core_domain_size,
 		core_bus_count, core_bus_name, core_bus_size, core_bus_peek, core_state,
 		core_set_rendering, core_pre_frame, core_snapshot, nullptr,
+		core_save_data,
 	};
 	int rc = gate_run(&core, &opts);
 	if (reportRefresh)

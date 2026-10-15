@@ -486,6 +486,71 @@ rerecord "N64DD IPL, no disk"  N64DD - --frames 200
 # tests/local/N64DD/. It boots from the drive with its cartridge slot empty.
 with_local compare    N64DD --frames 600
 with_local rerecord   N64DD --frames 200
+
+# A 64DD game saves on its disk, and Export Save Data hands the disk out once a
+# game has written to it (patch 0028). The route is SimCity 64's to its first
+# save: Start, Beginner mode, and A through Dr. Wright's welcome. A disk that
+# does not write on that route says SKIP. Then the exported disk is the game:
+# it must boot the same in both builds, and the same route on it must export
+# the same disk again - a disk that came out in the wrong byte order, or lost
+# what was written, does neither.
+dd_route() {  # <work dir> <out disk> : the route, in the sandbox
+	dw="$1"; out="$2"
+	rm -f "$out"
+	"$runwbx" "$wbx" "$dw" --machine N64DD --quiet --frames 3000 \
+		--press 2400:6 "P1 Gamepad Start" --press 2700:6 "P1 Gamepad A" \
+		--state-out "$work/dd-0.state" > /dev/null 2>&1 || return 1
+	for i in 1 2 3 4; do
+		set --
+		k=0
+		while [ $k -lt 16 ]; do
+			set -- "$@" --press "$((k * 40 + 10)):5" "P1 Gamepad A"
+			k=$((k + 1))
+		done
+		"$runwbx" "$wbx" "$dw" --machine N64DD --quiet --frames 640 "$@" \
+			--state-in "$work/dd-$((i - 1)).state" --state-out "$work/dd-$i.state" \
+			--save-out "$out" > /dev/null 2>&1 || return 1
+	done
+}
+
+if [ -n "$(local_content N64DD)" ] && [ -f "$root/tests/firmware/n64ddIpl" ]; then
+	rm -rf "$content/.local-N64DD-export"
+	ln -s "$(local_content N64DD)" "$content/.local-N64DD-export"
+	setup_work N64DD .local-N64DD-export
+	rm -rf "$content/.local-N64DD-export"
+	dd_route "$work/w" "$work/dd-export.ndd"
+	if [ ! -s "$work/dd-export.ndd" ]; then
+		echo "SKIP N64DD disk export (the local disk wrote nothing on SimCity 64's route)"
+	else
+		# the exported disk as the project's game, under the name a project gives it
+		mkdir -p "$work/dd"
+		rm -f "$work/dd"/*
+		cp "$work/dd-export.ndd" "$work/dd/game.ndd"
+		cp "$work/w/settings" "$work/w/n64ddIpl" "$work/dd/"
+		printf '{"rom":["game.ndd"]}' > "$work/dd/slots"
+		a="$("$native" --machine N64DD --quiet --firmware "$root/tests/firmware/n64ddIpl" --rom "$work/dd/game.ndd" --frames 600 | tail -1)"
+		b="$("$runwbx" "$wbx" "$work/dd" --machine N64DD --quiet --frames 600 | tail -1)"
+		# and it starts the way the disk it came from does: the same picture
+		# at frame 600 (a disk in the wrong byte order stops in the IPL)
+		o="$("$native" --machine N64DD --quiet --firmware "$root/tests/firmware/n64ddIpl" --rom "$work/w/rom" --frames 600 | tail -1)"
+		if is_digest "$a" && [ "$a" = "$b" ] && [ "${a%%  audio*}" = "${o%%  audio*}" ]; then
+			say_pass "N64DD disk export: the written disk boots like the original, native == sandbox"
+			echo "     $a"
+		else
+			say_fail "N64DD disk export: the written disk boots like the original, native == sandbox" "native   $a
+     sandbox  $b
+     original $o"
+		fi
+		dd_route "$work/dd" "$work/dd-export2.ndd"
+		if [ -s "$work/dd-export2.ndd" ] && cmp -s "$work/dd-export.ndd" "$work/dd-export2.ndd"; then
+			say_pass "N64DD disk export: the same route on the exported disk exports the same disk"
+		else
+			say_fail "N64DD disk export: the same route on the exported disk exports the same disk" "the second export differs or is missing"
+		fi
+	fi
+else
+	echo "SKIP N64DD disk export (nothing in tests/local/N64DD, or no tests/firmware/n64ddIpl)"
+fi
 with_local_as compare  BSX SFC --frames 400
 with_local_as rerecord BSX SFC --frames 200
 with_local_as rewind   BSX SFC 120 --frames 400

@@ -8,10 +8,10 @@ deterministic sandbox and packaged as a Chimera core (`core.wbx` +
 [chimera-core-dosbox-x](https://github.com/ToolAssisted-run/chimera-core-dosbox-x)
 and [chimera-core-gpgx](https://github.com/ToolAssisted-run/chimera-core-gpgx).
 
-Status: **twenty-nine machines declared.** Which are proven by the gate, which
+Status: **thirty machines declared.** Which are proven by the gate, which
 against a real game and which are only declared is in `docs/PLAN.md`, "What is
 proven and what is only declared". It
-carries no firmware but ares' own: nineteen of the twenty-nine ask the user for a
+carries no firmware but ares' own: twenty of the thirty ask the user for a
 console BIOS, and ten need nothing but a cartridge. It
 runs on Windows as well as Linux, but only with **miniBox ab677a2 or newer**:
 libco takes its coroutine stacks from `mmap(MAP_STACK)` rather than from malloc
@@ -70,8 +70,8 @@ What the machines have in common:
 - **This core ships no firmware but ares' own.** ares compiles console boot ROMs
   in as resources - Nintendo's, Sega's, Bandai's, Amstrad's - and a package built
   from it carried all of them. It carries none of them now (`patches/ares/0020`
-  and the five after it): ten of the twenty-nine machines need nothing but a
-  cartridge, and the other nineteen ask for their console BIOS, which the user
+  and the five after it): ten of the thirty machines need nothing but a
+  cartridge, and the other twenty ask for their console BIOS, which the user
   supplies and Chimera pins by hash. ares' own material - the game databases it
   wrote - stays. Checked by searching the built `core.wbx` for every firmware
   file ares ships: not one twenty-four byte run of any of them survives.
@@ -82,6 +82,10 @@ What the machines have in common:
   leg boots the same cartridge both ways and names every difference that remains.
   A run recorded here therefore starts at the cartridge, ninety frames earlier
   than one recorded against a real boot ROM, and the two are not interchangeable.
+- **A Nintendo 64DD boots from its own drive**, with the owner's IPL ROM as
+  its firmware and the disk as the game (`patches/ares/0027`). A 64DD game
+  saves on its disk, so Export Save Data hands out the written disk, which a
+  new project takes as its game.
 - **The refresh rate is the machine's own**, not a nominal 60: a Game Boy
   reports 262144/4389 = 59.7275Hz, taken from ares' own hint and turned back
   into the exact ratio it came from.
@@ -92,7 +96,7 @@ What the machines have in common:
 The equivalence gate (`waterbox/run-gate.sh`) compares native
 against sandbox on every digest for the machines it has content for, the machine
 round-tripped through a savestate before every frame, every one of the
-twenty-nine rebuilt and re-enumerated against its committed declaration, **each
+thirty rebuilt and re-enumerated against its committed declaration, **each
 machine's refresh rate checked against its own clock**, input proven to
 reach the machine, the picture compared **pixel for pixel against real
 hardware**, **the HLE boot compared against a real one**, and **jsmolka's ARM
@@ -150,7 +154,7 @@ and left out, so regenerate only with every BIOS there.
 
 The changes this core needs live in `patches/`, one directory per submodule,
 applied to the pristine pins by `waterbox/apply-patches.sh` (idempotent, and run
-automatically at configure time). There are twenty-seven, all small; six of them are
+automatically at configure time). There are twenty-nine, all small; six of them are
 plain bugs in ares that only show up in a build like this one - without Vulkan,
 with more than one machine, or inside a sandbox - and are worth offering
 upstream. `docs/PLAN.md` explains every one.

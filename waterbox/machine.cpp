@@ -74,6 +74,11 @@ namespace
 	const machines::Spec *g_spec = nullptr;
 	const machines::MachineInputs *g_inputs = nullptr;
 	bool g_isN64 = false;
+	/* The medium's file name as the project gave it, for the name a written
+	 * 64DD disk is exported under. */
+	std::string g_mediumFile;
+	/* A 64DD disk being exported, in the file's byte order (saveData). */
+	std::vector<uint8_t> g_diskExport;
 
 	std::shared_ptr<mia::Pak> g_systemPak;
 	std::shared_ptr<mia::Pak> g_cartridgePak;
@@ -601,6 +606,7 @@ namespace machine
 		 * output pointer stayed null and the first frame took the process with
 		 * it. The question is which MACHINE this is, so ask that. */
 		g_isN64 = g_spec->load == ares::Nintendo64::load;
+		g_mediumFile = config.romFile ? config.romFile : "";
 		g_pal = config.pal && g_spec->configPal != nullptr;
 		g_refreshRate = 0.0;
 		g_streams.clear();
@@ -880,6 +886,8 @@ namespace machine
 
 	void frame(void)
 	{
+		/* a disk export's copy, read by now (see diskInFileOrder) */
+		if (!g_diskExport.empty()) std::vector<uint8_t>().swap(g_diskExport);
 		FenvGuard guard(machineFenv());
 		if (g_isN64) angrylion::OutFrameBuffer = g_rendering ? g_video : nullptr;
 
@@ -1023,8 +1031,39 @@ namespace machine
 	}
 
 	/* Export Save Data hands back whichever save chip a Nintendo 64 cartridge
-	 * has. The other machines save through mia, which this core does not let
-	 * write to a host; their save data is inside the savestate instead. */
+	 * has, or a 64DD's disk once a game has written to it (patch 0028): a
+	 * 64DD game saves on its disk. The disk comes out whole, in the layout
+	 * ares keeps it in (MAME's, 0x435B0C0 bytes), which ares reads back as a
+	 * disk, under the name of the disk the project gave. The other machines
+	 * save through mia, which this core does not let write to a host; their
+	 * save data is inside the savestate instead. */
+	static bool writtenDisk(void)
+	{
+		using namespace ares::Nintendo64;
+		return dd.node && dd.disk.size && dd.chimeraWritten;
+	}
+
+	/* ares holds the disk a 32-bit word at a time in the host's byte order,
+	 * so each word's bytes are reversed against the file. The export is a
+	 * copy in the file's order, made when it is asked for and let go at the
+	 * next frame, so that no savestate carries 70MB it does not need. */
+
+	static const uint8_t *diskInFileOrder(void)
+	{
+		using namespace ares::Nintendo64;
+		const uint8_t *d = (const uint8_t *)dd.disk.data;
+		size_t n = dd.disk.size & ~(size_t)3;
+		g_diskExport.assign(n, 0);
+		for (size_t i = 0; i < n; i += 4)
+		{
+			g_diskExport[i + 0] = d[i + 3];
+			g_diskExport[i + 1] = d[i + 2];
+			g_diskExport[i + 2] = d[i + 1];
+			g_diskExport[i + 3] = d[i + 0];
+		}
+		return g_diskExport.data();
+	}
+
 	const uint8_t *saveData(void)
 	{
 		if (!g_isN64) return nullptr;
@@ -1032,6 +1071,7 @@ namespace machine
 		if (cartridge.ram.size) return (const uint8_t *)cartridge.ram.data;
 		if (cartridge.eeprom.size) return (const uint8_t *)cartridge.eeprom.data;
 		if (cartridge.flash.size) return (const uint8_t *)cartridge.flash.data;
+		if (writtenDisk()) return diskInFileOrder();
 		return nullptr;
 	}
 
@@ -1042,6 +1082,7 @@ namespace machine
 		if (cartridge.ram.size) return (int64_t)cartridge.ram.size;
 		if (cartridge.eeprom.size) return (int64_t)cartridge.eeprom.size;
 		if (cartridge.flash.size) return (int64_t)cartridge.flash.size;
+		if (writtenDisk()) return (int64_t)(dd.disk.size & ~(size_t)3);
 		return 0;
 	}
 
@@ -1052,6 +1093,18 @@ namespace machine
 		if (cartridge.ram.size) return "save.ram";
 		if (cartridge.eeprom.size) return "save.eeprom";
 		if (cartridge.flash.size) return "save.flash";
+		if (writtenDisk())
+		{
+			static std::string name;
+			const std::string &path = g_mediumFile;
+			size_t slash = path.find_last_of("/\\");
+			name = slash == std::string::npos ? path : path.substr(slash + 1);
+			size_t dot = name.find_last_of('.');
+			if (dot != std::string::npos && dot > 0) name.resize(dot);
+			if (name.empty()) name = "disk";
+			name += ".ndd";
+			return name.c_str();
+		}
 		return nullptr;
 	}
 

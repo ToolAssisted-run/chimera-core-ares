@@ -75,7 +75,7 @@
         "fla",
         "ram"
       ],
-      "help": "The saved game that a cartridge with a battery starts with. This is the file that Emulator > Export Save Data... writes (EEPROM, SRAM or Flash, whichever the cartridge has). Put it here to continue a run from where another one stopped. The file is never changed. The project and the movie record exactly which file it was, so a movie that starts from a saved game can be played back by anyone who has the same file. Only the Nintendo 64 exports and loads its saves this way so far. The other machines keep their saves inside the savestate. A cartridge with no save memory keeps nothing, and the project says so. Leave this empty to start with a fresh cartridge."
+      "help": "The saved game that a cartridge with a battery starts with. This is the file that Emulator > Export Save Data... writes (EEPROM, SRAM or Flash, whichever the cartridge has). Put it here to continue a run from where another one stopped. The file is never changed. The project and the movie record exactly which file it was, so a movie that starts from a saved game can be played back by anyone who has the same file. Only the Nintendo 64 exports and loads its saves this way so far. A Nintendo 64DD game saves on its disk instead: Export Save Data hands out the disk it wrote to, and that disk goes in the game slot of a new project. The other machines keep their saves inside the savestate. A cartridge with no save memory keeps nothing, and the project says so. Leave this empty to start with a fresh cartridge."
     },
     {
       "id": "subcart",
