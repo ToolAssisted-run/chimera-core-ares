@@ -149,6 +149,11 @@ namespace machine
 	int64_t busSize(int i);
 	int busWritable(int i);
 	int busPeek(int bus, int address);
+	/* len bytes from address on, as busPeek reads them one by one; false for a
+	 * bus there is not */
+	bool busRead(int bus, int64_t address, uint8_t *out, int len);
+	/* 1 for a block a bus also shows (see waterbox.cpp) */
+	int memoryDomainHidden(int i);
 	void busPoke(int bus, int address, int value);
 
 	/* The WHOLE machine, as ares serialises it. This is what the gate compares:

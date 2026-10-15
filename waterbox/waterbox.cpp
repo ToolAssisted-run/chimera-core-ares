@@ -221,6 +221,25 @@ ECL_EXPORT int GetBusWritable(int i) { return machine::busWritable(i); }
 ECL_EXPORT int PeekBus(int bus, int address) { return machine::busPeek(bus, address); }
 ECL_EXPORT void PokeBus(int bus, int address, int value) { machine::busPoke(bus, address, value); }
 
+/* RAM Search reads a whole bus, and through PeekBus every byte was a call into
+ * the sandbox: 8 MB of a Nintendo 64's RDRAM was eight million of them. Up to
+ * 64 KiB at once, into memory no savestate carries (docs/porting-a-core.md,
+ * ReadBus; chimera#288). */
+static ECL_INVISIBLE uint8_t s_busChunk[64 * 1024];
+ECL_EXPORT const uint8_t *ReadBus(int bus, int64_t address, int len)
+{
+	if (len <= 0 || len > (int)sizeof s_busChunk) return nullptr;
+	return machine::busRead(bus, address, s_busChunk, len) ? s_busChunk : nullptr;
+}
+
+/* A Nintendo 64's memory is published twice: as blocks, for the gate's digests,
+ * and as the buses ares' debugger gives every machine. The blocks are ares'
+ * storage, each 32-bit word's bytes in the host's order; the buses read the
+ * console's own order. One memory, two orders, mostly under one name - so a
+ * memory tool lists only the bus (chimera#288), and the block stays for the
+ * digests. */
+ECL_EXPORT int GetMemoryDomainHidden(int i) { return machine::memoryDomainHidden(i); }
+
 /* The whole machine as ares serialises it, for the equivalence gate. The
  * frontend does not need this - miniBox savestates the arena, which is the
  * point of a waterbox core - but the gate does, because it is the only

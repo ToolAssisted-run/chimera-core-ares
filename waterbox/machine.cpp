@@ -13,6 +13,7 @@
  * ares' nodes are generated (waterbox/machines.inc), because the order of a
  * controller's buttons is what a movie is written in.
  */
+#include <algorithm>
 #include "machine.h"
 #include "machines.h"
 #include "machines.inc"
@@ -554,6 +555,21 @@ namespace
 	void publishBuses(void)
 	{
 		g_buses = g_root->find<Node::Debugger::Memory>();
+		/* A Nintendo 64's buses in the order of its blocks (publishDomains,
+		 * RDRAM first), the rest after: the blocks are hidden from memory tools
+		 * (waterbox.cpp, GetMemoryDomainHidden), and a tool opens on the first
+		 * memory it lists - which was the cartridge's ROM in ares' own order. */
+		if (g_domainCount > 0)
+		{
+			auto rank = [](const Node::Debugger::Memory &bus) {
+				const std::string name = (const char *)bus->name();
+				for (int i = 0; i < g_domainCount; i++)
+					if (name == g_domains[i].name || name == std::string("Cartridge ") + g_domains[i].name) return i;
+				return g_domainCount;
+			};
+			std::stable_sort(g_buses.begin(), g_buses.end(),
+				[&](const Node::Debugger::Memory &a, const Node::Debugger::Memory &b) { return rank(a) < rank(b); });
+		}
 		g_busNames.clear();
 		for (auto &bus : g_buses) g_busNames.push_back((const char *)bus->name());
 	}
@@ -1035,6 +1051,25 @@ namespace machine
 	{
 		if (bus < 0 || bus >= (int)g_buses.size()) return 0;
 		return g_buses[bus]->read((u32)address);
+	}
+
+	bool busRead(int bus, int64_t address, uint8_t *out, int len)
+	{
+		if (bus < 0 || bus >= (int)g_buses.size()) return false;
+		auto &memory = g_buses[bus];
+		for (int k = 0; k < len; k++) out[k] = memory->read((u32)(address + k));
+		return true;
+	}
+
+	/* every Nintendo 64 block has a bus: the same name, or the cartridge's
+	 * memories as "Cartridge SRAM", "Cartridge EEPROM" and "Cartridge Flash" */
+	int memoryDomainHidden(int i)
+	{
+		if (i < 0 || i >= g_domainCount) return 0;
+		const std::string name = g_domains[i].name;
+		for (const std::string &bus : g_busNames)
+			if (bus == name || bus == "Cartridge " + name) return 1;
+		return 0;
 	}
 
 	void busPoke(int bus, int address, int value)

@@ -270,6 +270,35 @@ compare() {
 	fi
 }
 
+# What a memory tool is offered (chimera#288). A Nintendo 64 published every
+# memory twice: as a block (ares' storage, each 32-bit word's bytes swapped)
+# and as a bus of the same name (the console's own order), so RDRAM was listed
+# twice and the two disagreed. The blocks are hidden now and the buses come in
+# the blocks' order. The run's ReadBus must give what PeekBus gives, and the
+# list must name each memory once, starting with $4 when that is given.
+memories() {
+	leg="$1"; id="$2"; rom="$3"; first="$4"; shift 4
+	if ! setup_work "$id" "$rom"; then
+		echo "SKIP $leg (no console BIOS in tests/firmware)"
+		return
+	fi
+	out="$("$runwbx" "$wbx" "$work/w" --machine "$id" --quiet --check-memories "$@" 2>&1)"
+	rc=$?
+	list="$(printf '%s\n' "$out" | grep '^memories:')"
+	if [ $rc -ne 0 ] || [ -z "$list" ]; then
+		say_fail "$leg (each memory listed once, ReadBus == PeekBus)" "$(printf '%s\n' "$out" | grep -v '^ ' | tail -5)"
+		return
+	fi
+	case "$list" in
+	"memories: $first"*)
+		say_pass "$leg (each memory listed once, ReadBus == PeekBus)"
+		echo "     $list" ;;
+	*)
+		say_fail "$leg (each memory listed once, ReadBus == PeekBus)" "the first memory is not $first:
+     $list" ;;
+	esac
+}
+
 # The same, but the sandbox saves and reloads the WHOLE machine before every
 # frame. Anything of the machine living outside the arena shows up here.
 rerecord() {
@@ -521,6 +550,11 @@ compare "MSX BASIC"          MSX -                  --frames 400
 # still name the keyboard there, which must keep loading.
 compare "MSX gamepad in port 1" MSX -             --frames 400 --port 1 gamepad
 compare "MSX, port 1 naming the keyboard" MSX -   --frames 400 --port 1 japanese
+
+echo
+echo "== a memory tool is offered each memory once =="
+memories "N64 helloworld-cpu" N64 helloworld-cpu.n64 RDRAM --frames 30
+memories "GB libbet"          GB  libbet.gb          ""    --frames 30
 
 echo
 echo "== the machine survives being saved and reloaded =="

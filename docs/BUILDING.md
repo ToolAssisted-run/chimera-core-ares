@@ -235,6 +235,10 @@ Each kind of leg compares one thing:
 - `is the same machine twice running`: two native runs agree.
 - `refresh is ...`: the rate the machine reports is the one expected, and
   the one `waterbox/machines.h` declares where it declares one.
+- `each memory listed once, ReadBus == PeekBus`: the memories a memory tool
+  is offered name each memory once (on the Nintendo 64, RDRAM first), and
+  reading a bus 64 KiB at a time gives what reading it a byte at a time
+  gives. Run on `helloworld-cpu.n64` and `libbet.gb`.
 
 **With nothing provided** the content is `tests/content/`, which is in the
 repository and free to distribute (`tests/content/README.md`). These run:

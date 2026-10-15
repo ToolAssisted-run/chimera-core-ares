@@ -314,7 +314,17 @@ ways that take a while to reach the screen.
 buses (`GetBusCount`, `PeekBus`) - a Game Boy's WRAM, HRAM, VRAM, OAM. Every
 ares machine has these, which is why they are here, but they are only the memory
 ares happens to *name*. The Nintendo 64 additionally publishes blocks, which is
-what a RAM search and a fast digest want.
+what a fast digest wants.
+
+A memory tool (RAM Search, RAM Watch, the Hex Editor) is offered only the buses
+(chimera#288). The blocks are ares' storage, with each 32-bit word's bytes in
+the host's order; the buses read the console's own order. Most have the same
+name, so RDRAM was listed twice and the two copies disagreed on every value
+wider than a byte. The blocks say they are hidden (`GetMemoryDomainHidden`) and
+stay for the digests; the buses come in the blocks' order, RDRAM first; and
+`ReadBus` hands out up to 64 KiB of a bus at once, so a search over the 8 MB of
+RDRAM is not eight million calls into the sandbox. The gate's "each memory
+listed once" test holds all three.
 
 **State** is the whole machine, as ares serialises it. This is the strong
 comparison, and it earned its place immediately: on the Game Boy the buses were

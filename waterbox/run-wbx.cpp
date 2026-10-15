@@ -67,6 +67,9 @@ static intfn_i g_IsButtonActive, g_IsAxisActive, g_GetBusWritable;
 static ptrfn_i g_GetBusName;
 static i64fn_i g_GetBusSize;
 static intfn_ii g_PeekBus;
+static intfn_i g_GetMemoryDomainHidden;
+typedef uintptr_t (MB_GUEST_ABI *readfn)(int, int64_t, int);
+static readfn g_ReadBus;
 static i64fn g_CaptureState;
 static ptrfn g_GetStateBuffer;
 static intfn g_GetSaveDataFileCount;
@@ -99,6 +102,8 @@ static int core_bus_count(void) { return g_GetBusCount(); }
 static const char *core_bus_name(int i) { return (const char *)g_GetBusName(i); }
 static int64_t core_bus_size(int i) { return g_GetBusSize(i); }
 static int core_bus_peek(int b, int a) { return g_PeekBus(b, a); }
+static const uint8_t *core_bus_read(int b, int64_t a, int len) { return (const uint8_t *)g_ReadBus(b, a, len); }
+static int core_domain_hidden(int i) { return g_GetMemoryDomainHidden(i); }
 
 static int core_state(const uint8_t **data, int64_t *size)
 {
@@ -307,6 +312,8 @@ int main(int argc, char **argv)
 	g_GetBusSize = (i64fn_i)proc(g_host, "GetBusSize");
 	g_GetBusWritable = (intfn_i)proc(g_host, "GetBusWritable");
 	g_PeekBus = (intfn_ii)proc(g_host, "PeekBus");
+	g_ReadBus = (readfn)proc(g_host, "ReadBus");
+	g_GetMemoryDomainHidden = (intfn_i)proc(g_host, "GetMemoryDomainHidden");
 	g_CaptureState = (i64fn)proc(g_host, "CaptureState");
 	g_GetStateBuffer = (ptrfn)proc(g_host, "GetStateBuffer");
 	g_GetSaveDataFileCount = (intfn)proc(g_host, "GetSaveDataFileCount");
@@ -333,7 +340,7 @@ int main(int argc, char **argv)
 		core_domain_count, core_domain_name, core_domain_ptr, core_domain_size,
 		core_bus_count, core_bus_name, core_bus_size, core_bus_peek, core_state,
 		core_set_rendering, core_pre_frame, core_snapshot, core_state_file,
-		core_save_data,
+		core_save_data, core_bus_read, core_domain_hidden,
 	};
 	int ret = gate_run(&core, &opts);
 

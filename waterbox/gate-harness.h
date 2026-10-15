@@ -53,6 +53,11 @@ struct gate_core
 	/* What Export Save Data would hand out: its name, or NULL when the
 	 * machine has none (--save-out). NULL for a driver that cannot say. */
 	const char *(*save_data)(const uint8_t **data, int64_t *size);
+	/* ReadBus and GetMemoryDomainHidden, as a frontend calls them; NULL for a
+	 * driver that does not go through the exports (only --check-memories
+	 * needs them). */
+	const uint8_t *(*bus_read)(int bus, int64_t address, int len);
+	int (*domain_hidden)(int i);
 };
 
 struct gate_press
@@ -82,6 +87,7 @@ struct gate_opts
 	const char *dump_state;
 	const char *save_out;
 	const char *dump_bus;
+	int check_memories;
 	int list_inputs;
 };
 
@@ -98,6 +104,8 @@ static void gate_usage(void)
 		"  --dump-to PATH    where --dump-frame writes (default frame.ppm)\n"
 		"  --dump-state PATH write the whole serialised machine there at the end\n"
 		"  --dump-bus PATH   write every bus there, one file per bus, at the end\n"
+		"  --check-memories  at the end, compare ReadBus with PeekBus and print the\n"
+		"                    memories a memory tool lists\n"
 		"  --save-out PATH   write what Export Save Data would hand out there\n"
 		"  --no-render       run with drawing off (turbo)\n"
 		"  --rewind-at F     save at frame F, run a frame, put the save back\n"
@@ -132,6 +140,7 @@ static int gate_parse_opts(int argc, char **argv, int from, struct gate_opts *o)
 		else if (!strcmp(a, "--dump-state")) o->dump_state = GATE_NEXT();
 		else if (!strcmp(a, "--save-out")) o->save_out = GATE_NEXT();
 		else if (!strcmp(a, "--dump-bus")) o->dump_bus = GATE_NEXT();
+		else if (!strcmp(a, "--check-memories")) o->check_memories = 1;
 		else if (!strcmp(a, "--no-render")) o->render = 0;
 		else if (!strcmp(a, "--rewind-at")) o->rewind_at = atoi(GATE_NEXT());
 		else if (!strcmp(a, "--set-on-change")) o->set_on_change = 1;
@@ -209,6 +218,70 @@ static int gate_find_button(const struct gate_core *c, const char *name)
 		if (n && !strcmp(n, name)) return i;
 	}
 	return -1;
+}
+
+/* What a frontend's memory tools see (chimera#288). ReadBus must give, in
+ * pieces of up to 64 KiB, the bytes PeekBus gives one by one - the last
+ * piece of a bus is shorter - and nothing for a bus there is not. Then the
+ * memories a tool lists, as Chimera lists them: the blocks not hidden, then
+ * the buses. A name listed twice is a failure; the list is printed so the
+ * gate can say which memory comes first. 0 when all is well. */
+static int gate_check_memories(const struct gate_core *c)
+{
+	if (!c->bus_read || !c->domain_hidden)
+	{
+		fprintf(stderr, "this driver does not go through ReadBus\n");
+		return 1;
+	}
+	int bad = 0;
+	for (int b = 0; b < c->bus_count() && !bad; b++)
+	{
+		int64_t size = c->bus_size(b);
+		for (int64_t a = 0; a < size && !bad; a += 65536)
+		{
+			int len = size - a < 65536 ? (int)(size - a) : 65536;
+			const uint8_t *p = c->bus_read(b, a, len);
+			if (!p)
+			{
+				fprintf(stderr, "ReadBus gave nothing: %s, %d bytes at 0x%llx\n", c->bus_name(b), len, (long long)a);
+				bad = 1;
+				break;
+			}
+			for (int k = 0; k < len; k++)
+			{
+				int peek = (uint8_t)c->bus_peek(b, (int)(a + k));
+				if (p[k] != peek)
+				{
+					fprintf(stderr, "ReadBus differs from PeekBus: %s at 0x%llx, %02x against %02x\n",
+						c->bus_name(b), (long long)(a + k), p[k], peek);
+					bad = 1;
+					break;
+				}
+			}
+		}
+	}
+	if (c->bus_read(c->bus_count(), 0, 1))
+	{
+		fprintf(stderr, "ReadBus answered for bus %d, past the last\n", c->bus_count());
+		bad = 1;
+	}
+
+	const char *names[256];
+	int n = 0;
+	for (int d = 0; d < c->domain_count() && n < 256; d++)
+		if (!c->domain_hidden(d)) names[n++] = c->domain_name(d);
+	for (int b = 0; b < c->bus_count() && n < 256; b++) names[n++] = c->bus_name(b);
+	printf("memories:");
+	for (int i = 0; i < n; i++) printf("%s %s", i ? "," : "", names[i]);
+	printf("\n");
+	for (int i = 0; i < n; i++)
+		for (int j = i + 1; j < n; j++)
+			if (!strcmp(names[i], names[j]))
+			{
+				fprintf(stderr, "listed twice: %s\n", names[i]);
+				bad = 1;
+			}
+	return bad;
 }
 
 /* The machine's memory, whichever way it publishes it. Blocks are a pointer, so
@@ -414,6 +487,8 @@ static int gate_run(const struct gate_core *c, const struct gate_opts *o)
 			fprintf(stderr, "wrote %s (%s, %lld bytes)\n", path, c->bus_name(b), (long long)size);
 		}
 	}
+
+	if (o->check_memories && gate_check_memories(c)) return 1;
 
 	/* Before any of the digests, and in particular before the state capture,
 	 * which synchronises. */
