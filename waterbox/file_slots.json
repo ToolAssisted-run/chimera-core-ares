@@ -78,7 +78,7 @@
       "id": "subcart",
       "title": "Cartridge in the cartridge",
       "min": 0,
-      "max": 1,
+      "max": 2,
       "formats": [
         "bs",
         "st",
@@ -91,7 +91,7 @@
           "sfc"
         ]
       },
-      "help": "Some Super Famicom cartridges have a slot of their own, and this is the cartridge that goes into it. A Satellaview memory pack (.bs) goes into the BS-X cartridge. Choose the BS-X as the game above and the pack here. A Sufami Turbo minicart (.st) goes into the Sufami Turbo cartridge, and a Game Boy cartridge goes into a Super Game Boy. The core finds the right slot from the file itself. Leave this empty for an ordinary cartridge, which is almost every game. A game that has no such slot reports an error when a file is given here."
+      "help": "Some Super Famicom cartridges have a slot of their own, and this is the cartridge that goes into it. A Satellaview memory pack (.bs) goes into the BS-X cartridge. Choose the BS-X as the game above and the pack here. A Sufami Turbo minicart (.st) goes into the Sufami Turbo cartridge (a second one goes into its slot B, for the games that link two), and a Game Boy cartridge goes into a Super Game Boy. The core finds the right slot from the file itself. Leave this empty for an ordinary cartridge, which is almost every game. A game that has no such slot reports an error when a file is given here."
     }
   ]
 }

@@ -73,12 +73,17 @@ medium_in_dir() {
 # Satellaview memory pack, a Sufami Turbo minicart, a Game Boy cartridge for a
 # Super Game Boy. tests/local/<machine>-sub/ holds it, beside the base cartridge
 # in tests/local/<machine>/, because it is a second file rather than a second
-# machine.
+# machine. A Sufami Turbo takes two minicarts: the first file (in name order)
+# goes into slot A, a second into slot B. One a line.
 local_subcart() {
 	dir="$root/tests/local/$1-sub"
 	[ -d "$dir" ] || return 0
+	n=0
 	for f in "$dir"/*; do
-		[ -f "$f" ] && { echo "$f"; return 0; }
+		[ -f "$f" ] || continue
+		echo "$f"
+		n=$((n + 1))
+		[ "$n" -lt 2 ] || return 0
 	done
 	return 0
 }
@@ -128,6 +133,7 @@ firmware_for() {
 		MSX) echo "$root/tests/firmware/msxBios" ;;
 		MSX2) echo "$root/tests/firmware/msx2Main" ;;
 		SFC) echo "$root/tests/firmware/sfcIpl" ;;
+		N64DD) echo "$root/tests/firmware/n64ddIpl" ;;
 		32X) echo "$root/tests/firmware/m32xVector" ;;
 		MCD) echo "$root/tests/firmware/megaCdBios" ;;
 		MCD32X) echo "$root/tests/firmware/megaCdBios" ;;
@@ -207,11 +213,18 @@ setup_work() {
 	# named in the slot map, exactly as the medium is; $nativesub is the path
 	# the reference is handed.
 	nativesub=""
-	sub="$(local_subcart "${contentid:-$id}")"
-	if [ -n "$sub" ] && [ "$rom" != "-" ]; then
-		cp "$sub" "$work/w/$(basename "$sub")"
-		nativesub="$sub"
-		printf '{"rom":["%s"],"subcart":["%s"]}' "$workrom" "$(basename "$sub")" > "$work/w/slots"
+	nativesub2=""
+	subs="$(local_subcart "${contentid:-$id}")"
+	if [ -n "$subs" ] && [ "$rom" != "-" ]; then
+		names=""
+		while IFS= read -r sub; do
+			cp "$sub" "$work/w/$(basename "$sub")"
+			if [ -z "$nativesub" ]; then nativesub="$sub"; else nativesub2="$sub"; fi
+			names="$names${names:+,}\"$(basename "$sub")\""
+		done <<EOF_SUBS
+$subs
+EOF_SUBS
+		printf '{"rom":["%s"],"subcart":[%s]}' "$workrom" "$names" > "$work/w/slots"
 	fi
 	printf '{"machine":"%s"}' "$(echo "$id" | tr 'A-Z' 'a-z')" > "$work/w/settings"
 	fw="$(firmware_for "$id")"
@@ -238,6 +251,7 @@ compare() {
 	set -- "$@"
 	[ "$rom" = "-" ] || set -- "$@" --rom "$work/w/$workrom"
 	[ -z "$nativesub" ] || set -- "$@" --subrom "$nativesub"
+	[ -z "$nativesub2" ] || set -- "$@" --subrom "$nativesub2"
 	[ -z "$nativefw" ] || set -- "$@" --firmware "$nativefw"
 	a="$("$native" --machine "$id" --quiet "$@" | tail -1)"
 	b="$("$runwbx" "$wbx" "$work/w" --machine "$id" --quiet "$@" | tail -1)"
@@ -458,6 +472,15 @@ with_local rewind     SGX  120 --frames 300
 # The Super Famicom, the 32X and the two MSXes: cartridges nobody may hand out.
 # The MSX is here as well as in the BASIC leg above because a machine with a
 # CARTRIDGE in it exercises a different path - it is the one that was broken.
+# A Sufami Turbo: the base cartridge in tests/local/ST/, its minicarts in
+# tests/local/ST-sub/ (one or two: a second goes into slot B).
+with_local_as compare  ST  SFC --frames 400
+with_local_as rerecord ST  SFC --frames 200
+with_local_as rewind   ST  SFC 120 --frames 400
+# A Nintendo 64DD: its IPL ROM in tests/firmware/n64ddIpl, a disk in
+# tests/local/N64DD/. It boots from the drive with its cartridge slot empty.
+with_local compare    N64DD --frames 600
+with_local rerecord   N64DD --frames 200
 with_local_as compare  BSX SFC --frames 400
 with_local_as rerecord BSX SFC --frames 200
 with_local_as rewind   BSX SFC 120 --frames 400

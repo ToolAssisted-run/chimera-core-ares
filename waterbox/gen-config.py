@@ -277,6 +277,14 @@ def render_inc(machines):
 # actually built the machine with, so the package pins what was verified rather
 # than what somebody hoped would work.
 FIRMWARE_TEXT = {
+    "n64ddIpl": (
+        "Nintendo 64DD IPL ROM",
+        "The 64DD disk drive's own boot ROM (4 MB). The console starts from it"
+        " when no cartridge is in, and it reads the disk. It is Nintendo's and"
+        " you have to supply it. The Japanese IPL is the one the Japanese "
+        "disks, which are almost all of them, were made for.",
+        "64DD_IPL.bin",
+    ),
     "megaCdBios": (
         "Mega CD / Sega CD BIOS",
         "The BIOS of the Mega CD disc drive. It is Sega's and you have to "
@@ -578,6 +586,12 @@ def render_firmware(machines, already=None):
 
         path = os.path.join(HERE, "..", "tests", "firmware", fwid)
         if not declare(path, name):
+            # A BIOS no machine of this run was built with, and never declared
+            # before: the machines that want it are not offered (gen-config
+            # leaves out a machine that does not load), so neither is it. The
+            # Nintendo 64DD until its IPL ROM is in tests/firmware.
+            if not any(m["loads"] for m in machines if m["id"].lower() in machineIds):
+                continue
             raise SystemExit(
                 f"{fwid}: machines.json describes a machine built with this BIOS, and\n"
                 f"neither tests/firmware/{fwid} nor an existing declaration is there to\n"
@@ -705,6 +719,7 @@ SYSTEM_NAMES = {
     "SFC": "Super Famicom / SNES", "32X": "Mega Drive 32X", "MSX2": "MSX2",
     "MCD": "Mega CD / Sega CD", "PCE": "PC Engine / TurboGrafx-16", "SGX": "SuperGrafx",
     "MCD32X": "Mega CD 32X / Sega CD 32X", "PCECD": "PC Engine CD",
+    "N64DD": "Nintendo 64DD",
 }
 
 
@@ -983,14 +998,15 @@ def render_slots(machines, slots):
             "id": "subcart",
             "title": "Cartridge in the cartridge",
             "min": 0,
-            "max": 1,
+            "max": 2,
             "formats": subformats,
             "exposedWhen": {"setting": "machine", "in": sorted(set(subwhen))},
             "help": "Some Super Famicom cartridges have a slot of their own, and"
                 " this is the cartridge that goes into it. A Satellaview "
                 "memory pack (.bs) goes into the BS-X cartridge. Choose the "
                 "BS-X as the game above and the pack here. A Sufami Turbo "
-                "minicart (.st) goes into the Sufami Turbo cartridge, and a "
+                "minicart (.st) goes into the Sufami Turbo cartridge (a second"
+                " one goes into its slot B, for the games that link two), and a "
                 "Game Boy cartridge goes into a Super Game Boy. The core "
                 "finds the right slot from the file itself. Leave this empty"
                 " for an ordinary cartridge, which is almost every game. A "

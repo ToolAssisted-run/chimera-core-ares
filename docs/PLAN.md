@@ -711,6 +711,16 @@ base cartridge. A .st minicart goes into the Sufami Turbo cartridge, and that
 cartridge's own ROM is not in this developer's collection. Nothing in the core
 is waiting on anything else.
 
+2026-10-15 (owner: "let's unblock Sufami Turbo and 64DD; I'll bring you the
+required roms later"): the Sufami Turbo cartridge has TWO minicart slots, and
+some games link two minicarts. The subcart slot now takes two files: the first
+.st goes into slot A, the second into slot B (a slot an earlier file took is
+not offered again). Both minicart nodes are called "Sufami Turbo Cartridge",
+so a request for a medium is answered by the node's name AND the slot it sits
+in. The Satellaview's three local tests still pass through the new code; the
+Sufami Turbo's (tests/local/ST and ST-sub) say SKIP until the base cartridge
+and minicarts are here.
+
 ## A Nintendo 64DD is not one line (tried, 2026-09-11)
 
 It looks like the Mega CD: the same machine with a drive under it, the disk
@@ -726,6 +736,29 @@ does not carry.
 
 So the 64DD needs either Nintendo's PIF ROM or an HLE boot for the disk drive's
 own path, and a disk image to test with, and this developer has none. Left out.
+
+2026-10-15: the HLE boot for the drive's path is written, and the machine is
+in the table, waiting only for the owner's IPL ROM and a disk:
+
+- Patch 0027: with a drive and no cartridge, PIF::bootHLE does what the boot
+  ROM does when the cartridge slot is empty - IPL3 and the bus timing come
+  out of the drive's IPL ROM, osRomType (s3) is 1, and the bus address is
+  left after the IPL ROM (0x0600'1000). ares already chose the drive's CIC
+  (8303, seed 0xDD) for a machine with no cartridge.
+- The segfault was a second thing as well: the core opened every slot that
+  takes no device, and an opened N64 cartridge slot that is handed nothing
+  still makes a cartridge node, whose ROM was never allocated - so the boot
+  believed a cartridge was in. Spec.portLeftEmpty leaves the 64DD's
+  "Cartridge Slot" unopened, which is what makes it boot from the drive.
+- The entry: machine N64DD, ares' "[Nintendo] Nintendo 64DD (NTSC-J)", the
+  disk as the medium (mediumNode "Nintendo 64DD Disk"; .ndd, .d64, .n64dd),
+  firmware n64ddIpl (the 4 MB IPL ROM). gen-machines leaves it out while
+  tests/firmware/n64ddIpl is absent, and gen-config now skips a BIOS no built
+  machine wants instead of stopping, so the package does not offer it yet.
+- Measured: on a blank IPL ROM and a blank disk (zeros, nobody's) the machine
+  builds and runs 60 frames, where it used to die before the first. Nothing
+  more can be said without the real IPL: tests/local/N64DD's two tests say
+  SKIP until then.
 
 One real fix came out of it and stayed: `g_isN64` asked which ID this was, so it
 caught the Nintendo 64 and would have missed every other machine ares builds

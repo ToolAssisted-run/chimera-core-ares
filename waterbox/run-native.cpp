@@ -95,7 +95,12 @@ int main(int argc, char **argv)
 	{
 		const char *a = argv[i];
 		if (!strcmp(a, "--rom") && i + 1 < argc) config.romFile = argv[++i];
-		else if (!strcmp(a, "--subrom") && i + 1 < argc) config.subRomFile = argv[++i];
+		else if (!strcmp(a, "--subrom") && i + 1 < argc)
+		{
+			/* given twice: the second goes into a second slot (a Sufami Turbo's B) */
+			if (config.subRomFile == nullptr) config.subRomFile = argv[++i];
+			else config.subRomFile2 = argv[++i];
+		}
 		else if (!strcmp(a, "--firmware") && i + 1 < argc) config.firmwareFile = argv[++i];
 		else if (!strcmp(a, "--pif-rom") && i + 1 < argc) config.pifRomFile = argv[++i];
 		else if (!strcmp(a, "--boot-probe")) config.bootProbe = true;

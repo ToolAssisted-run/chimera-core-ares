@@ -70,6 +70,20 @@
       ]
     },
     {
+      "id": "N64DD",
+      "label": "Nintendo 64DD",
+      "extensions": "ndd d64 n64dd",
+      "maxWidth": 640,
+      "maxHeight": 480,
+      "virtualWidth": 640,
+      "virtualHeight": 480,
+      "regions": ["ntsc"],
+      "bootsWithoutMedium": false,
+      "firmware": [{"id": "n64ddIpl"}],
+      "loads": false,
+      "why": "its console BIOS was not provided to this run"
+    },
+    {
       "id": "NES",
       "label": "Famicom / NES",
       "extensions": "fc nes unf unif",
@@ -699,7 +713,7 @@
       "virtualHeight": 242,
       "regions": ["ntsc", "pal"],
       "bootsWithoutMedium": false,
-      "subExtensions": "bs st gb gbc",
+      "subExtensions": "bs st st gb gbc",
       "firmware": [{"id": "sfcIpl"}],
       "loads": true,
       "console": [{"name": "Reset", "path": "Controls/Reset", "axis": false}],

@@ -30,6 +30,9 @@ namespace machine
 		 * decided by its extension (machines.h, SubSlot). Null for the ordinary
 		 * case, which is every other machine. */
 		const char *subRomFile;
+		/* A second one, for a cartridge with two such slots: a Sufami Turbo's
+		 * slot B, which some games link to slot A. Null when absent. */
+		const char *subRomFile2;
 		/* The console BIOS, for a machine that needs one. Mounted under the id
 		 * waterbox/machines.h names, which is also what the package declares. */
 		const char *firmwareFile;

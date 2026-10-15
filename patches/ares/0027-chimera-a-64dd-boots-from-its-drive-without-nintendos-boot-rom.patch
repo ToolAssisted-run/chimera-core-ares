@@ -1,0 +1,44 @@
+--- a/ares/n64/pif/hle.cpp
++++ b/ares/n64/pif/hle.cpp
+@@ -414,8 +414,15 @@
+   //0x40 for exactly that reason. Copying them as well leaves the header sitting
+   //in data memory where a real machine has zeros - measured, and the reason this
+   //loop does not start where it looks like it should.
++  //
++  //A Nintendo 64DD with no cartridge in it boots from the drive instead: the
++  //boot ROM finds nothing in the cartridge slot and reads IPL3, and the bus
++  //timing, out of the drive's own IPL ROM (at 0x0600'0000), and tells IPL3
++  //which it booted from (osRomType, s3, below).
++  bool const fromDrive = !cartridge.node && dd.node && dd.iplrom;
++  Memory::Readable& boot = fromDrive ? dd.iplrom : cartridge.rom;
+   for(u32 address = 0x40; address < 0x1000; address += 4) {
+-    rsp.dmem.write<Word>(address, cartridge.rom.read<Word>(address));
++    rsp.dmem.write<Word>(address, boot.read<Word>(address));
+   }
+ 
+   //The PIF's boot handshake, run to the point the processor would have reached
+@@ -451,6 +458,7 @@
+   r[ 8].u64 = 0x0000'00f0;                        //t0
+   r[10].u64 = 0x0000'0040;                        //t2
+   r[11].u64 = s32(0xa400'0040);                   //t3: where it is about to jump
++  r[19].u64 = fromDrive ? 1 : 0;                  //s3: osRomType, 1 for the disk drive
+   r[20].u64 = ntsc ? 1 : 0;                       //s4: osTvType
+   r[22].u64 = cic.seed;                           //s6: the CIC's seed
+   r[23].u64 = ntsc ? 1 : 7;                       //s7: osVersion
+@@ -462,12 +470,12 @@
+ 
+   //The cartridge's own bus timing, which the boot ROM programs out of the first
+   //four bytes of the ROM header before it can read the rest.
+-  n8 config = cartridge.rom.read<Byte>(1);
+-  pi.bsd1.latency         = cartridge.rom.read<Byte>(3);
+-  pi.bsd1.pulseWidth      = cartridge.rom.read<Byte>(2);
++  n8 config = boot.read<Byte>(1);
++  pi.bsd1.latency         = boot.read<Byte>(3);
++  pi.bsd1.pulseWidth      = boot.read<Byte>(2);
+   pi.bsd1.pageSize        = config.bit(0,3);
+   pi.bsd1.releaseDuration = config.bit(4,5);
+-  pi.io.pbusAddress       = 0x1000'1000;          //where the IPL3 transfer ended
++  pi.io.pbusAddress       = fromDrive ? 0x0600'1000 : 0x1000'1000;   //where the IPL3 transfer ended
+   vi.io.coincidence       = 0x3ff;               //no scanline interrupt asked for
+ 
+   //ares raises every interrupt line at power; a boot leaves three of them.

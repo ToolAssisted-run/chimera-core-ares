@@ -193,6 +193,13 @@ namespace machines
 		/* What this machine's CARTRIDGE can take, null-terminated; null for a
 		 * machine whose cartridges take nothing. See SubSlot. */
 		const SubSlot *subSlots;
+
+		/* A slot of the console that is left with nothing in it, never even
+		 * opened, by ares' port name; null for none. A Nintendo 64DD boots
+		 * from its drive when its cartridge slot is EMPTY, and an opened slot
+		 * that was handed nothing still makes a cartridge node - the machine
+		 * then believes a cartridge is in and reads one that has no ROM. */
+		const char *portLeftEmpty;
 	};
 
 	/* Ordered as a person would look for them, not as ares stores them. */
@@ -216,6 +223,9 @@ namespace machines
 	inline constexpr SubSlot kSuperFamicomSubSlots[] = {
 		{"bs", "BS Memory", "BS Memory Slot", "BS Memory Cartridge"},
 		{"st", "Sufami Turbo", "Sufami Turbo Slot A", "Sufami Turbo Cartridge"},
+		/* the second minicart goes into slot B (a slot already taken is not
+		 * offered again; machine.cpp) */
+		{"st", "Sufami Turbo", "Sufami Turbo Slot B", "Sufami Turbo Cartridge"},
 		{"gb gbc", "Game Boy Color", "Super Game Boy/Cartridge Slot",
 		 "Game Boy Color Cartridge"},
 		{nullptr, nullptr, nullptr, nullptr},
@@ -254,6 +264,16 @@ namespace machines
 			 "[Nintendo] Nintendo 64 (NTSC)", "[Nintendo] Nintendo 64 (PAL)",
 			 640, 576, 640, 480, "n64 v64 z64", "Gamepad Mouse", nullptr, false,
 			 0, 0, 0, 0, ares::Nintendo64::option, kNintendo64Options},
+
+			/* A Nintendo 64 with the disk drive under it and no cartridge: it
+			 * boots from the drive's IPL ROM (the user's firmware) and reads the
+			 * disk. The cartridge slot stays empty, which is what makes it boot
+			 * from the drive (patch 0027); the medium is the disk. */
+			{"N64DD", "Nintendo 64DD", "Nintendo 64DD", "Nintendo 64DD", ares::Nintendo64::load,
+			 "[Nintendo] Nintendo 64DD (NTSC-J)", nullptr,
+			 640, 480, 640, 480, "ndd d64 n64dd", "Gamepad Mouse", "n64ddIpl", false,
+			 0, 0, 0, 0, ares::Nintendo64::option, kNintendo64Options,
+			 nullptr, "Nintendo 64DD Disk", nullptr, nullptr, nullptr, "Cartridge Slot"},
 
 			{"NES", "Famicom / NES", "Famicom", "Famicom", ares::Famicom::load,
 			 "[Nintendo] Famicom (NTSC-J)", "[Nintendo] Famicom (PAL)",

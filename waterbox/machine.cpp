@@ -82,8 +82,8 @@ namespace
 	std::shared_ptr<mia::Pak> g_firmwarePak;
 	/* What went into a slot on the cartridge - a Satellaview memory pack, a
 	 * Sufami Turbo minicart - and which SubSlot it was. See machines.h. */
-	std::shared_ptr<mia::Pak> g_subPak;
-	const machines::SubSlot *g_subSlot = nullptr;
+	struct SubCart { std::shared_ptr<mia::Pak> pak; const machines::SubSlot *slot = nullptr; };
+	std::vector<SubCart> g_subs;
 	Node::System g_root;
 
 	/* What each declared input binds to, resolved once at init. A null entry is
@@ -172,9 +172,13 @@ namespace
 
 			/* A cartridge's own slot. Asked for by a different node than the
 			 * cartridge itself, so it is answered before anything else. */
-			if (g_subPak && g_subSlot != nullptr && node->name() == g_subSlot->node)
+			/* Answered by the node's name AND the slot it sits in: a Sufami
+			 * Turbo's two minicarts are both "Sufami Turbo Cartridge". */
+			for (const SubCart &sub : g_subs)
 			{
-				return g_subPak->pak;
+				if (node->name() != sub.slot->node) continue;
+				auto parent = node->parent().lock();
+				if (parent && parent->name() == sub.slot->port) return sub.pak->pak;
 			}
 
 			/* The card slot of a machine whose BIOS is a medium. Asked for
@@ -579,7 +583,7 @@ namespace machine
 			g_root.reset();
 		}
 		g_cartridgePak.reset();
-		g_subPak.reset();
+		g_subs.clear();
 		g_firmwarePak.reset();
 		g_systemPak.reset();
 	}
@@ -718,13 +722,20 @@ namespace machine
 		/* Something in a slot ON the cartridge. Which slot is decided by the
 		 * file's extension, because a Super Famicom cartridge may have any of
 		 * three and the file is what says which. See machines.h. */
-		g_subPak.reset();
-		g_subSlot = nullptr;
-		if (config.subRomFile != nullptr && *config.subRomFile && g_spec->subSlots != nullptr)
+		g_subs.clear();
+		for (const char *subFile : { config.subRomFile, config.subRomFile2 })
 		{
-			string ext = Location::suffix(config.subRomFile).trimLeft(".", 1L).downcase();
+			if (subFile == nullptr || !*subFile) continue;
+			if (g_spec->subSlots == nullptr) return fail("this machine has no slot for that file");
+			const machines::SubSlot *found = nullptr;
+			string ext = Location::suffix(subFile).trimLeft(".", 1L).downcase();
 			for (const machines::SubSlot *slot = g_spec->subSlots; slot->extensions != nullptr; slot++)
 			{
+				/* a slot an earlier file already took is not offered again: a
+				 * second minicart goes into slot B */
+				bool taken = false;
+				for (const SubCart &sub : g_subs) taken = taken || nall::string{sub.slot->port} == slot->port;
+				if (taken) continue;
 				/* a space separated list, matched whole: "gb" must not match
 				 * inside "gbc" */
 				const char *at = slot->extensions;
@@ -735,17 +746,17 @@ namespace machine
 					if ((size_t)(end - at) == ext.size()
 						&& memcmp(at, ext.data(), ext.size()) == 0)
 					{
-						g_subSlot = slot;
+						found = slot;
 						break;
 					}
 					at = (*end == '\0') ? end : end + 1;
 				}
-				if (g_subSlot != nullptr) break;
+				if (found != nullptr) break;
 			}
-			if (g_subSlot == nullptr) return fail("this machine has no slot for that file");
-			g_subPak = mia::Medium::create(g_subSlot->miaMedium);
-			if (!g_subPak) return fail("ares has no such medium");
-			auto subResult = g_subPak->load(config.subRomFile);
+			if (found == nullptr) return fail("this machine has no slot for that file");
+			auto subPak = mia::Medium::create(found->miaMedium);
+			if (!subPak) return fail("ares has no such medium");
+			auto subResult = subPak->load(subFile);
 			if (subResult != successful)
 			{
 				snprintf(g_error, sizeof g_error,
@@ -755,6 +766,7 @@ namespace machine
 					subResult.info ? (const char *)subResult.info : "");
 				return false;
 			}
+			g_subs.push_back({subPak, found});
 		}
 
 		if (g_isN64)
@@ -792,6 +804,7 @@ namespace machine
 		for (auto &port : g_root->find<Node::Port>())
 		{
 			if (!port->supported().empty()) continue;
+			if (g_spec->portLeftEmpty != nullptr && port->name() == g_spec->portLeftEmpty) continue;
 			port->allocate();
 			port->connect();
 		}
@@ -805,12 +818,12 @@ namespace machine
 		 * a Satellaview pack needs a BS-X cartridge to go into, and an ordinary
 		 * Super Famicom game silently ignoring the second file is how somebody
 		 * spends an afternoon wondering why nothing changed. */
-		if (g_subPak && g_subSlot != nullptr)
+		for (const SubCart &sub : g_subs)
 		{
 			Node::Port slot;
 			for (auto &port : g_root->find<Node::Port>())
 			{
-				if (port->name() == g_subSlot->port) { slot = port; break; }
+				if (port->name() == sub.slot->port) { slot = port; break; }
 			}
 			if (!slot) return fail("this cartridge has no slot for that file");
 			slot->allocate();

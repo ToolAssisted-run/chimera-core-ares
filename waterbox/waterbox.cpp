@@ -93,6 +93,18 @@ ECL_EXPORT int Init(void)
 		else subRom = nullptr;
 	}
 
+	/* A second one: a Sufami Turbo's slot B. */
+	static char subName2[512];
+	const char *subRom2 = nullptr;
+	if (wbx_slot_count("subcart") > 1 && wbx_slot_name("subcart", 1, subName2, (int)sizeof subName2) != nullptr)
+	{
+		if (FILE *probe = fopen(subName2, "rb"))
+		{
+			if (fseek(probe, 0, SEEK_END) == 0 && ftell(probe) > 0) subRom2 = subName2;
+			fclose(probe);
+		}
+	}
+
 	static char machineName[32];
 	if (wbx_setting_str("machine", machineName, (int)sizeof machineName) < 0)
 	{
@@ -106,6 +118,7 @@ ECL_EXPORT int Init(void)
 	config.machine = machineName;
 	config.romFile = rom;
 	config.subRomFile = subRom;
+	config.subRomFile2 = subRom2;
 
 	char region[16];
 	config.pal = wbx_setting_str("region", region, (int)sizeof region) >= 0 && !strcmp(region, "pal");
