@@ -335,36 +335,36 @@
   "AllTrollersAnalog": {
     "Nintendo 64 Controller": {
       "P1 Gamepad X-Axis": {
-        "Value": "X1 LStickX",
+        "Value": "X1 LeftThumbX Axis",
         "Mult": 1.0,
         "Deadzone": 0.1
       },
       "P1 Gamepad Y-Axis": {
-        "Value": "X1 LStickY",
-        "Mult": 1.0,
+        "Value": "X1 LeftThumbY Axis",
+        "Mult": -1.0,
         "Deadzone": 0.1
       }
     },
     "Nintendo 64DD Controller": {
       "P1 Gamepad X-Axis": {
-        "Value": "X1 LStickX",
+        "Value": "X1 LeftThumbX Axis",
         "Mult": 1.0,
         "Deadzone": 0.1
       },
       "P1 Gamepad Y-Axis": {
-        "Value": "X1 LStickY",
-        "Mult": 1.0,
+        "Value": "X1 LeftThumbY Axis",
+        "Mult": -1.0,
         "Deadzone": 0.1
       }
     },
     "Atari 5200 Controller": {
       "P1 X-Axis": {
-        "Value": "X1 LStickX",
+        "Value": "X1 LeftThumbX Axis",
         "Mult": 1.0,
         "Deadzone": 0.1
       },
       "P1 Y-Axis": {
-        "Value": "X1 LStickY",
+        "Value": "X1 LeftThumbY Axis",
         "Mult": 1.0,
         "Deadzone": 0.1
       }

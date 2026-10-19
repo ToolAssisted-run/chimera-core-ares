@@ -448,6 +448,23 @@ compare "N64 helloworld-rdp" N64 helloworld-rdp.n64 --frames 130
 compare "N64 input-cpu"      N64 input-cpu.n64      --frames 200
 compare "N64 input, A held and the stick over" N64 input-cpu.n64 --frames 200 --hold "P1 Gamepad A" --stick 100 -60
 
+# The save data slot takes the files Export Save Data writes, and the files ares
+# writes: save.ram, save.eeprom and save.flash. It took .fla but not .flash, so
+# a Flash save exported here, or saved by ares itself, could not be put back
+# (chimera#313).
+missing="$(python3 - "$here/file_slots.json" "$here/machine.cpp" <<'PYEOF'
+import json, re, sys
+formats = next(s["formats"] for s in json.load(open(sys.argv[1]))["slots"] if s["id"] == "savedata")
+exported = set(re.findall(r'return "save\.(\w+)";', open(sys.argv[2]).read()))
+print(" ".join(sorted(e for e in exported if e not in formats)))
+PYEOF
+)"
+if [ -z "$missing" ]; then
+	say_pass "N64 save data: the slot takes every kind of file Export Save Data writes (.ram, .eeprom, .flash)"
+else
+	say_fail "N64 save data: the slot takes every kind of file Export Save Data writes" "not taken: $missing"
+fi
+
 # A cartridge's save chip, filled from the project's save data and handed out
 # again by Export Save Data. ares holds the chip a 32-bit word at a time in the
 # host's byte order; the file is in the order ares reads and writes, and a save
