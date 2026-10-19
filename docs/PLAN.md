@@ -60,21 +60,36 @@ one.
 
 ### 2. The recompilers
 
-ares recompiles both the CPU and the RSP through sljit. miniBox does allow
-executable pages, so a recompiled core is not impossible in principle - but
-generated code is memory the guest writes and then executes, and a movie's
-promise is that the same input produces the same machine on every host that
-replays it. An interpreter is the version of that promise that can be checked.
+ares recompiles both the CPU and the RSP through sljit. Until 2026-10-19 this
+core forced its interpreters on, on the belief that generated code could not
+be shown to replay. It can (chimera#315, the owner decided to ship it, with
+the recompiler as the default):
 
-`patches/ares/0002` turns ares' existing `Accuracy` switches into build options
-(`WANT_CPU_INTERPRETER`, `WANT_RSP_INTERPRETER`), which is precisely what
-BizHawk's port did, and both flavours of this core force them on so the
-reference and the sandbox are the same emulator. sljit is still compiled and
-linked, because ares references its allocator regardless; it is simply never
-asked to generate anything.
+- **The code is guest memory.** sljit's buffer is memory the guest maps and
+  writes, so miniBox's savestate carries it with everything else, and a
+  machine put back to a frame runs on with exactly the code it had.
+- **Measured on Super Mario 64, 1200 frames** with Start and A pressed: the
+  sandbox is the native build at every frame checked; a state saved and loaded
+  before every frame is the straight run; a state put back at frame 700 (and
+  at 100, 400, 1000) runs on to the straight run's exact end. 10.2 s against
+  the interpreter's 28.1 s in the sandbox, about 118 frames a second against
+  43.
+- **One trap, and only in the tests.** ares empties the recompilers' caches
+  whenever it serialises the machine, and its results depend on when the cache
+  was last emptied. Chimera never asks ares to serialise (its states are the
+  sandbox's), but the test runners' "state" digest does: two runs compare only
+  when they take their digests at the same frames, which every leg does.
 
-**Open:** the interpreter is slow. Whether an N64 core is fast enough to TAS
-with is a question this port has not measured yet - see "Not done" below.
+The interpreters are still there, chosen by the setting **n64Cpu**
+(`recompiler` by default, or `interpreter`). The two time instructions
+differently, so they are two machines: a movie needs the one it was made with,
+and a project made before the setting existed was made with the interpreter.
+`patches/ares/0002` makes ares' `Accuracy` switches build options
+(`WANT_CPU_INTERPRETER`, `WANT_RSP_INTERPRETER`); both are now off by default,
+so the recompilers are built in, and machine.cpp sets ares' "Recompiler" option
+from the setting. A state holds generated code for the computer that made it,
+so a state from a newer processor may not run on an older one; a movie, which
+starts from power-on, always does.
 
 ### 3. Time and entropy
 
@@ -1414,10 +1429,9 @@ renderer is not the problem either**: running with drawing off is not faster
 (53 fps against 59), so the cost is the CPU and RSP interpreters and the
 machine's own stepping, not angrylion.
 
-So the answer, when somebody gets to it, is the recompilers. miniBox does allow
-executable pages, and BizHawk ships a recompiled ares64, so it is possible;
-what it costs is the argument in "The recompilers" above, and a way to prove a
-generated-code core replays identically.
+So the answer was the recompilers, and since 2026-10-19 they are the default
+(see "The recompilers" above): Super Mario 64 runs at about 118 frames a second
+in the sandbox, against 43 with the interpreter.
 
 ### The SSE4.1 question, measured and deliberately declined
 

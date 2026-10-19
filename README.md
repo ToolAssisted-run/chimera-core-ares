@@ -58,8 +58,10 @@ What the machines have in common:
   Vulkan; this core uses **angrylion's software rasteriser** instead, so the
   picture is decided entirely by code Chimera compiles and is identical on every
   machine. No GPU, no driver, no graphics context in a savestate.
-- **Interpreters, not recompilers**, for the N64's CPU and RSP - the same choice
-  for the same reason.
+- **Recompilers by default** for the N64's CPU and RSP, about three times as
+  fast as the interpreters: the code they generate lives in the sandbox, so a
+  savestate carries it and a movie replays. The setting CPU (n64Cpu) chooses the
+  interpreters instead, which projects made before 2026-10-19 used.
 - **Nothing depends on the host.** Not the clock a cartridge's RTC starts from,
   not the entropy a console's uninitialised memory is filled with, and not a
   second thread to draw on. All three were real, and all three are patched.

@@ -226,7 +226,8 @@ $subs
 EOF_SUBS
 		printf '{"rom":["%s"],"subcart":[%s]}' "$workrom" "$names" > "$work/w/slots"
 	fi
-	printf '{"machine":"%s"}' "$(echo "$id" | tr 'A-Z' 'a-z')" > "$work/w/settings"
+	# $extra_settings: more of the project's settings, as JSON members after a comma
+	printf '{"machine":"%s"%s}' "$(echo "$id" | tr 'A-Z' 'a-z')" "${extra_settings:-}" > "$work/w/settings"
 	fw="$(firmware_for "$id")"
 	nativefw=""
 	if [ -n "$fw" ]; then
@@ -447,6 +448,23 @@ compare "N64 helloworld-cpu" N64 helloworld-cpu.n64 --frames 130
 compare "N64 helloworld-rdp" N64 helloworld-rdp.n64 --frames 130
 compare "N64 input-cpu"      N64 input-cpu.n64      --frames 200
 compare "N64 input, A held and the stick over" N64 input-cpu.n64 --frames 200 --hold "P1 Gamepad A" --stick 100 -60
+
+# The Nintendo 64 runs on ares' recompilers by default and on its interpreters
+# when the project's n64Cpu setting says so (chimera#315); the legs above are the
+# recompiler's. The interpreter must still be the same machine in both flavours,
+# and the two choices must really be two machines: a setting that reached
+# nothing would leave them the same.
+extra_settings=',"n64Cpu":"interpreter"'
+compare "N64 input-cpu, interpreter" N64 input-cpu.n64 --frames 200 --interpreter
+extra_settings=""
+recompiled="$("$native" --machine N64 --quiet --rom "$content/input-cpu.n64" --frames 200 | tail -1)"
+interpreted="$("$native" --machine N64 --quiet --rom "$content/input-cpu.n64" --frames 200 --interpreter | tail -1)"
+if is_digest "$recompiled" && is_digest "$interpreted" && [ "$recompiled" != "$interpreted" ]; then
+	say_pass "N64 CPU setting: the recompiler and the interpreter are two machines"
+else
+	say_fail "N64 CPU setting: the recompiler and the interpreter are two machines" "recompiler  $recompiled
+     interpreter $interpreted"
+fi
 
 # The save data slot takes the files Export Save Data writes, and the files ares
 # writes: save.ram, save.eeprom and save.flash. It took .fla but not .flash, so
@@ -716,6 +734,10 @@ echo
 echo "== a machine put back to a frame it has left =="
 rewind "N64 helloworld-cpu" N64 helloworld-cpu.n64 60  --frames 130
 rewind "N64 input, A held"  N64 input-cpu.n64      120 --frames 200 --hold "P1 Gamepad A"
+# the recompiler's generated code is guest memory, so it goes back with the rest
+extra_settings=',"n64Cpu":"interpreter"'
+rewind "N64 input, A held, interpreter" N64 input-cpu.n64 120 --frames 200 --hold "P1 Gamepad A"
+extra_settings=""
 rewind "GB libbet"          GB  libbet.gb          120 --frames 200
 rewind "GBA arm tests"      GBA gba-arm.gba        120 --frames 200
 rewind "PS1 BIOS shell"     PS1 -                  200 --frames 400

@@ -115,6 +115,7 @@ int main(int argc, char **argv)
 		else if (!strcmp(a, "--machine") && i + 1 < argc) config.machine = argv[++i];
 		else if (!strcmp(a, "--pal")) config.pal = true;
 		else if (!strcmp(a, "--fast-vi")) config.fastVI = true;
+		else if (!strcmp(a, "--interpreter")) config.interpreter = true;
 		else if (!strcmp(a, "--time") && i + 1 < argc) config.initTimeUnix = strtoull(argv[++i], nullptr, 10);
 		else if (!strcmp(a, "--set") && i + 1 < argc)
 		{
@@ -166,7 +167,8 @@ int main(int argc, char **argv)
 			"  --time N          a cartridge clock's starting Unix time\n"
 			"  --port N DEVICE   what to plug into port N, by ares' name, or none\n"
 			"  --set KEY=VALUE   one of ares' own settings, e.g. gb.fastBoot=true\n"
-			"  --fast-vi         skip the Nintendo 64's video filtering\n");
+			"  --fast-vi         skip the Nintendo 64's video filtering\n"
+			"  --interpreter     the Nintendo 64's CPU and RSP interpreted (setting n64Cpu)\n");
 		gate_usage();
 		return 2;
 	}

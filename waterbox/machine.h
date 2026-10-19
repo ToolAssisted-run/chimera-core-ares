@@ -82,6 +82,10 @@ namespace machine
 		/* Picture only - neither changes the emulated machine. Nintendo 64. */
 		bool fastVI;
 		bool bobDeinterlace;
+		/* Nintendo 64: run the CPU and the RSP with ares' interpreters rather
+		 * than its recompilers (chimera#315). It changes the machine: the two
+		 * time instructions differently, so a movie needs the same choice. */
+		bool interpreter;
 	};
 
 	/* Builds the machine. False means it could not be built; error() says why. */

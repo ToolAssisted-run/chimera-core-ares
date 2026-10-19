@@ -854,6 +854,11 @@ namespace machine
 				g_spec->option(o->name, o->value);
 			}
 		}
+		/* The Nintendo 64's CPU and RSP: ares' recompilers unless the project
+		 * asks for the interpreters (setting n64Cpu, chimera#315). The code
+		 * they generate is guest memory, so a savestate carries it and a
+		 * machine put back to a frame runs on exactly as it did. */
+		if (g_isN64) g_spec->option("Recompiler", config.interpreter ? "false" : "true");
 
 		const char *name = g_pal ? g_spec->configPal : g_spec->configNtsc;
 		if (name == nullptr) name = g_spec->configNtsc ? g_spec->configNtsc : g_spec->configPal;

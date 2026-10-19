@@ -144,6 +144,10 @@ ECL_EXPORT int Init(void)
 
 	config.fastVI = wbx_setting_bool("fastVI", 0) != 0;
 	config.bobDeinterlace = wbx_setting_bool("bobDeinterlace", 0) != 0;
+	{
+		char cpu[16];
+		config.interpreter = wbx_setting_str("n64Cpu", cpu, (int)sizeof cpu) >= 0 && !strcmp(cpu, "interpreter");
+	}
 
 	/* Null when the project said nothing, so the machine chooses its own
 	 * ordinary controller - "Gamepad" on a Famicom, "Control Pad" on a Mega
