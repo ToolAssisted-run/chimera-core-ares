@@ -855,11 +855,18 @@ DEFAULT_KEYS = {
     "Trigger": "X, J1 B1, X1 A",
 }
 
-# The analogue axes of the first pad.
+# The analogue axes of the first pad, by the names Chimera sends a game
+# controller's stick as ("X1 LStickX" is not one, so the stick was never bound:
+# chimera#314).
 DEFAULT_AXES = {
-    "X-Axis": {"Value": "X1 LStickX", "Mult": 1.0, "Deadzone": 0.1},
-    "Y-Axis": {"Value": "X1 LStickY", "Mult": 1.0, "Deadzone": 0.1},
+    "X-Axis": {"Value": "X1 LeftThumbX Axis", "Mult": 1.0, "Deadzone": 0.1},
+    "Y-Axis": {"Value": "X1 LeftThumbY Axis", "Mult": 1.0, "Deadzone": 0.1},
 }
+
+# Machines whose stick reads up as positive, as the Nintendo 64's byte does
+# (the core hands the console's byte through unchanged); SDL reports a stick
+# pushed down as positive, so their vertical axis is flipped.
+UP_IS_POSITIVE = {"N64", "N64DD"}
 
 
 # A machine whose controller IS a keyboard is played on the keyboard in front
@@ -921,7 +928,12 @@ def render_keybinds(machines):
             if leaf in DEFAULT_AXES and (not m["ports"] or declared.split(" ")[0] == first_port_name):
                 bound_axes.setdefault(leaf, declared)
         if bound_axes:
-            analog[name] = {declared: DEFAULT_AXES[leaf] for leaf, declared in bound_axes.items()}
+            def axis_bind(leaf):
+                bind = dict(DEFAULT_AXES[leaf])
+                if leaf == "Y-Axis" and m["id"] in UP_IS_POSITIVE:
+                    bind["Mult"] = -1.0
+                return bind
+            analog[name] = {declared: axis_bind(leaf) for leaf, declared in bound_axes.items()}
 
     return {
         "_comment": [
