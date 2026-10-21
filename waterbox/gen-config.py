@@ -819,10 +819,10 @@ def render_machines(machines):
 # choice and the right one - a second pad is something you plug in deliberately,
 # and the keys it would take are the ones player one already has.
 DEFAULT_KEYS = {
-    "Up": "Up, J1 POV1U, X1 DpadUp",
-    "Down": "Down, J1 POV1D, X1 DpadDown",
-    "Left": "Left, J1 POV1L, X1 DpadLeft",
-    "Right": "Right, J1 POV1R, X1 DpadRight",
+    "Up": "Up, J1 POV0U, X1 DpadUp",
+    "Down": "Down, J1 POV0D, X1 DpadDown",
+    "Left": "Left, J1 POV0L, X1 DpadLeft",
+    "Right": "Right, J1 POV0R, X1 DpadRight",
     "A": "X, J1 B1, X1 A",
     "B": "Z, J1 B3, X1 X",
     "C": "C, J1 B4, X1 Y",
