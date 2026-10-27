@@ -1013,8 +1013,8 @@ The package is not finished when the gate is green - the gate loads the guest
 directly, and Chimera loads it through a project, a core manager, an input
 system and an encoder. So the whole of that was walked once, headless: a
 hand-written `.chimeraProject` naming the package and a Game Boy ROM, opened
-headless in Chimera's C# window (`--dump-type ffmpeg`; the gate now has Chimera's
-Qt window record with Encode Video from a script), and the result read back with
+headless in Chimera's window (the gate has it record with Encode Video from a
+script), and the result read back with
 `ffprobe`.
 
 It works, and it found one thing that no digest could have.
@@ -1520,11 +1520,10 @@ without the fix and pass with it.
 ## 2026-10-14: the default bindings name keys Chimera sends
 
 P1 Gamepad Z (the Nintendo 64 pad) was on LeftShift alone; it is on Shift and
-LeftShift. Chimera hands a key to the bindings under one name: the name its
-DistinctKeyNameOverrides gives it ("Number1", "Enter", "Backtick",
-"KeypadAdd") or else its DistinctKey name ("Up"); and unless told otherwise it
+LeftShift. Chimera hands a key to the bindings under one name: the name Chimera gives it ("Number1", "Enter", "Backtick",
+"KeypadAdd") or else its own name ("Up"); and unless told otherwise it
 reads the left and right Shift, Ctrl and Alt as one key each, "Shift", "Ctrl"
-and "Alt" (Input.cs, Config.MergeLAndRModifierKeys). A default binding to
+and "Alt". A default binding to
 another name never fired, so those controls shipped unbound on the keyboard.
 Checked on a virtual display: with 1, Return, left Shift and Up held, Chimera reports
 Number1, Enter, Shift and Up. Left and right names stay beside the merged one,
