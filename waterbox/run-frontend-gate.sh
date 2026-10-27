@@ -1,22 +1,23 @@
 #!/bin/sh
-# Runs the package through Chimera itself, headless, and reads back what came
-# out of it. This is the leg run-gate.sh cannot be: the gate loads the guest
+# Runs the package through Chimera's window, headless (it needs no display), and
+# reads back what came out of it. This is the leg run-gate.sh cannot be: the gate loads the guest
 # directly, and everything between the guest and a video file - the settings a
 # project carries, the wizard's file form, the arena Chimera hands the sandbox,
 # the rate a movie records - is invisible to it. Four faults lived in that gap
 # at once; see docs/PLAN.md, "In the frontend".
 #
 # It is separate from run-gate.sh because it needs things the core's own build
-# does not: a built Chimera with its ffmpeg (tools/fetch-ffmpeg.sh puts one in
-# build/dll), Mono, an X server and ffprobe. By hand it SKIPS rather than fails
-# when one is missing, and says which.
+# does not: a built Chimera with its window (tools/ci-chimera.sh builds it), the
+# ffmpeg Chimera records with (tools/fetch-ffmpeg.sh puts one in build/dll) and
+# ffprobe. By hand it SKIPS rather than fails when one is missing, and says
+# which.
 #
 # FRONTEND_GATE_REQUIRED=1 turns that around, and CI sets it: a gate that
 # skipped everything left the job green for weeks while proving nothing - the
 # runner's Chimera had no ffmpeg - so where the gate is the job, a missing
 # piece is a failure, and so is a run in which nothing passed.
 #
-#   CHIMERA_BUILD=/path/to/chimera/build ./waterbox/run-frontend-gate.sh
+#   CHIMERA_ROOT=/path/to/chimera ./waterbox/run-frontend-gate.sh
 set -u
 
 here="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
@@ -33,9 +34,10 @@ say_skip() { echo "SKIP $1"; skip=$((skip + 1)); }
 cleanup() { rm -rf "$work"; }
 trap cleanup EXIT
 
-chimera="${CHIMERA_BUILD:-$root/../../chimera/build}"
+chimera="${CHIMERA_ROOT:-$root/../../chimera}"
+chimera_exe="$chimera/build/meson-linux/source/ui/chimera"
 package="$root/build/Cores/ares.chimeraCore"
-[ -f "$package" ] || package="$chimera/Cores/ares.chimeraCore"
+[ -f "$package" ] || package="$chimera/build/Cores/ares.chimeraCore"
 
 nothing() {
 	echo "SKIP everything: $1"
@@ -48,10 +50,14 @@ for need in "$native:the reference runner (ninja -C build/meson-native)" \
 	what="${need%%:*}"; why="${need#*:}"
 	[ -f "$what" ] || nothing "no $why"
 done
-[ -x "$chimera/ChimeraMono.sh" ] || nothing "no Chimera at $chimera (set CHIMERA_BUILD)"
+[ -x "$chimera_exe" ] || nothing "no Chimera window at $chimera_exe (set CHIMERA_ROOT; Chimera's tools/ci-chimera.sh builds it)"
 command -v ffprobe >/dev/null 2>&1 || nothing "no ffprobe"
-command -v xvfb-run >/dev/null 2>&1 || nothing "no xvfb-run"
-[ -x "$chimera/dll/ffmpeg" ] || nothing "no ffmpeg in $chimera/dll (Chimera's tools/fetch-ffmpeg.sh linux <chimera>/build/dll)"
+[ -x "$chimera/build/dll/ffmpeg" ] || nothing "no ffmpeg in $chimera/build/dll (Chimera's tools/fetch-ffmpeg.sh linux <chimera>/build/dll)"
+
+# The window with the cores installed in the checkout, and its settings, cache
+# and recovery files the run's own: nothing is carried over from a Chimera
+# installed on this machine.
+export ALSOFT_DRIVERS=null CHIMERA_CORES_DIR="$chimera/build/Cores"
 
 # What the core itself says, so the frontend's answer is compared against the
 # core's rather than against a number typed here.
@@ -75,16 +81,14 @@ one() {
 	[ -n "$want_rate" ] || { say_fail "$leg" "the core reported no refresh rate"; return; }
 
 	w="$work/$setting"
-	rm -rf "$w"; mkdir -p "$w/data/UnpackedCores" "$w/data/Projects"
-	cp -r "$chimera/dll" "$w/data/" 2>/dev/null
-	# The package is named outright. Chimera reads cores from one folder, the
-	# one beside it, and a data directory's Cores is no longer among them.
-	set -- --project "$w/p.chimeraProject" "--core=$package"
+	rm -rf "$w"; mkdir -p "$w"
+	# The package is named outright, as well as installed in the cores folder.
+	set -- "--project=$w/p.chimeraProject" "--core=$package"
 	if [ "$rom" != "-" ]; then cp "$content/$rom" "$w/$rom"; fi
 	case "$id" in
-		GB)  set -- "$@" --firmware "gbBoot=$firmware/gbBoot";;
-		GBA) set -- "$@" --firmware "gbaBios=$firmware/gbaBios";;
-		PS1) set -- "$@" --firmware "ps1Bios=$firmware/ps1Bios";;
+		GB)  set -- "$@" "--firmware=gbBoot=$firmware/gbBoot";;
+		GBA) set -- "$@" "--firmware=gbaBios=$firmware/gbaBios";;
+		PS1) set -- "$@" "--firmware=ps1Bios=$firmware/ps1Bios";;
 	esac
 
 	if ! python3 "$here/tests/make-project.py" "$package" "$setting" \
@@ -93,9 +97,13 @@ one() {
 		say_fail "$leg" "the project could not be written: $(tail -1 "$w/mk.err")"; return
 	fi
 
-	CHIMERA_DATA_HOME="$w/data" timeout -s KILL 900 xvfb-run -a \
-		"$chimera/ChimeraMono.sh" --headless --chromeless "$@" \
-		--dump-type=ffmpeg --dump-name="$w/o.avi" --dump-length="$frames" --dump-close \
+	# The window records the run with Chimera's Encode Video, from a script
+	# (encode.lua), and leaves when it is done.
+	CHIMERA_QT_CACHE="$w/qt-cache" CHIMERA_QT_RECOVERY="$w/qt-recovery" \
+		CHIMERA_QT_HASHES="$w/qt-file-hashes.txt" CHIMERA_QT_CHIMERA_SETTINGS="$w/no-chimera-config.ini" \
+		ARES_ENCODE_OUT="$w/o.avi" ARES_ENCODE_FRAMES="$frames" \
+		timeout -s KILL 900 "$chimera_exe" --headless "--config=$w/settings.json" "$@" \
+		"--lua=$here/tests/encode.lua" \
 		>"$w/log.txt" 2>&1
 
 	if [ ! -f "$w/o.avi" ]; then
@@ -118,7 +126,7 @@ one() {
 	elif [ "$sbrk" != "0" ]; then
 		say_fail "$leg" "the guest ran out of sbrk $sbrk times - raise memoryLayoutMiB"
 	else
-		say_pass "$leg opens in Chimera and records $got_size at $got_rate"
+		say_pass "$leg opens in Chimera's window and records $got_size at $got_rate"
 	fi
 }
 

@@ -1013,7 +1013,8 @@ The package is not finished when the gate is green - the gate loads the guest
 directly, and Chimera loads it through a project, a core manager, an input
 system and an encoder. So the whole of that was walked once, headless: a
 hand-written `.chimeraProject` naming the package and a Game Boy ROM, opened
-with `--headless --chromeless --dump-type ffmpeg`, and the result read back with
+headless in Chimera's C# window (`--dump-type ffmpeg`; the gate now has Chimera's
+Qt window record with Encode Video from a script), and the result read back with
 `ffprobe`.
 
 It works, and it found one thing that no digest could have.
@@ -1165,12 +1166,12 @@ compares is what the *core* says against what *Chimera wrote*: the refresh rate,
 the picture size, 44100 stereo sound, and no `sbrk heap exhausted` anywhere in
 the log.
 
-It is separate from `run-gate.sh` because it needs a built Chimera, Mono, an X
-server, ffprobe and ffmpeg. It skips, loudly, when they are missing, so it stays
+It is separate from `run-gate.sh` because it needs a built Chimera with its
+window, ffprobe and ffmpeg. It skips, loudly, when they are missing, so it stays
 a developer's leg rather than a public runner's:
 
 ```
-CHIMERA_BUILD=/path/to/chimera/build ./waterbox/run-frontend-gate.sh
+CHIMERA_ROOT=/path/to/chimera ./waterbox/run-frontend-gate.sh
 ```
 
 It was checked against the fault it exists for rather than assumed to work:
@@ -1525,6 +1526,6 @@ DistinctKeyNameOverrides gives it ("Number1", "Enter", "Backtick",
 reads the left and right Shift, Ctrl and Alt as one key each, "Shift", "Ctrl"
 and "Alt" (Input.cs, Config.MergeLAndRModifierKeys). A default binding to
 another name never fired, so those controls shipped unbound on the keyboard.
-Checked on Xvfb: with 1, Return, left Shift and Up held, Chimera reports
+Checked on a virtual display: with 1, Return, left Shift and Up held, Chimera reports
 Number1, Enter, Shift and Up. Left and right names stay beside the merged one,
 for a setup with the merging off.

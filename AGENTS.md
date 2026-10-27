@@ -76,9 +76,9 @@ tree). It is for testing. CI stamps the commit through `CORE_VERSION`.
 Chimera ships no cores and downloads none. `build-package.sh -r <chimera>`
 writes the package into `<chimera>/build/Cores/`, which is the cores folder
 of a source checkout. For a release bundle, copy `ares.chimeraCore` into
-the `Cores` folder beside `Chimera.exe` (or the folder set in File > Core
-Manager > Change folder...). File > Core Manager lists the folder; Refresh
-List rescans it. The same file works on Linux and on Windows.
+the `cores` folder beside Chimera's program (or the folder set in Tools >
+Core Manager... > Change folder...). Tools > Core Manager... lists the folder;
+Refresh List rescans it. The same file works on Linux and on Windows.
 
 ## Test before you commit
 
@@ -93,7 +93,7 @@ that machine's BIOS in `tests/firmware/` and, for most, a game in
 
 The package inside a built Chimera:
 
-    CHIMERA_BUILD=<chimera>/build ./waterbox/run-frontend-gate.sh
+    CHIMERA_ROOT=<chimera> ./waterbox/run-frontend-gate.sh
 
 If it prints `SKIP everything: no ...` it tested nothing and still exits 0;
 with `FRONTEND_GATE_REQUIRED=1`, as CI sets it, that is a failure instead.

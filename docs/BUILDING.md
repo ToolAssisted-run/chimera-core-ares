@@ -35,13 +35,12 @@ submodule `<chimera>/extern/chimera-common-minibox`.
 
       sudo apt-get install -y --no-install-recommends \
         meson ninja-build build-essential cmake pkg-config python3 \
-        mono-complete xvfb ffmpeg \
+        ffmpeg \
         libgl1-mesa-dev libx11-dev libxext-dev libasound2-dev
 
-  and the .NET SDK 8.0. The workflow gets it from `actions/setup-dotnet@v4`
-  with `dotnet-version: '8.0'`; by hand, Chimera's README gives
-
-      curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 8.0
+  and Qt 6.12, for Chimera's window. Chimera's `tools/ci-chimera.sh`
+  installs it (from Qt's own archives, with aqt) and builds Chimera; the
+  workflow keeps Qt in `~/qt` between runs.
 
 ## Get the sources
 
@@ -72,7 +71,7 @@ Where the scripts look when they are not told:
 | `waterbox/build-package.sh` | `-r <chimera>` | `../chimera` beside this repository, then `$HOME/chimera` (then the same two under the older name `miniHawk`) |
 | `waterbox/build-package.sh` | `-m <miniBox>` or `MINIBOX_DIR` | `<chimera>/extern/chimera-common-minibox` |
 | `waterbox/run-gate.sh` | `MINIBOX_DIR` (for its `check-wbx` leg only) | `$HOME/chimera/extern/chimera-common-minibox` |
-| `waterbox/run-frontend-gate.sh` | `CHIMERA_BUILD` (Chimera's `build` directory) | `../../chimera/build`, two levels above this repository |
+| `waterbox/run-frontend-gate.sh` | `CHIMERA_ROOT` (the Chimera checkout) | `../../chimera`, two levels above this repository |
 
 The defaults are not all the same place. Pass the paths, as the workflow
 does.
@@ -194,12 +193,12 @@ gets there as a file.
 
 - **A Chimera source checkout.** The cores folder is `<chimera>/build/Cores/`
   and `build-package.sh -r <chimera>` has already written the package there.
-  Start Chimera (`<chimera>/build/ChimeraMono.sh` on Linux).
-- **A release bundle.** Copy `ares.chimeraCore` into the `Cores` folder
-  beside `Chimera.exe`, or into the folder chosen in File > Core Manager >
-  Change folder... The same file serves a Linux and a Windows Chimera.
+  Start Chimera (`<chimera>/build/meson-linux/source/ui/chimera` on Linux).
+- **A release bundle.** Copy `ares.chimeraCore` into the `cores` folder
+  beside Chimera's program, or into the folder chosen in Tools > Core
+  Manager... > Change folder... The same file serves a Linux and a Windows Chimera.
 
-File > Core Manager lists the packages in that folder; Refresh List rescans
+Tools > Core Manager... lists the packages in that folder; Refresh List rescans
 it. A hand-built version reads as its commit followed by `local`.
 
 To use a published build instead, download `ares-<version>.chimeraCore`
@@ -285,26 +284,22 @@ track. A second cartridge for a slot on the cartridge goes in
 
 ### The frontend gate
 
-    CHIMERA_BUILD=<chimera>/build ./waterbox/run-frontend-gate.sh
+    CHIMERA_ROOT=<chimera> ./waterbox/run-frontend-gate.sh
 
-The script takes no options. It runs the package inside Chimera, headless,
-and reads back the video file Chimera recorded. It needs:
+The script takes no options. It runs the package inside Chimera's window,
+headless (no display is needed), and reads back the video file Chimera
+recorded with its Encode Video (`waterbox/tests/encode.lua` asks for it). It needs:
 
 - `build/meson-native/waterbox/run-native` (the workflow builds only that
   target in this job: `ninja -C build/meson-native waterbox/run-native`);
 - the package: `build/Cores/ares.chimeraCore` in this repository if it is
   there, else `<chimera>/build/Cores/ares.chimeraCore`;
-- a built Chimera, with `<chimera>/build/ChimeraMono.sh`, built as the
-  workflow builds it:
+- Chimera built with its window, at
+  `<chimera>/build/meson-linux/source/ui/chimera`, as the workflow builds it:
 
-      cd <chimera>
-      meson setup build/meson-linux --prefix "$PWD/build" --libdir dll
-      meson compile -C build/meson-linux
-      meson install -C build/meson-linux
-      dotnet build source/gui/Chimera.sln -c Release /nodeReuse:false -p:UseSharedCompilation=false
+      <chimera>/tools/ci-chimera.sh
 
-- `mono`, `ffprobe` and `xvfb-run` on the PATH (the `mono-complete`,
-  `ffmpeg` and `xvfb` packages);
+- `ffprobe` on the PATH (the `ffmpeg` package);
 - an executable `<chimera>/build/dll/ffmpeg`. Chimera's
   `tools/fetch-ffmpeg.sh linux <chimera>/build/dll` puts one there, and the
   workflow runs it; the meson install alone does not.
@@ -316,7 +311,7 @@ in the environment, as CI sets it, the same case is a failure, and so is a
 run in which no leg passed.
 
 Its legs, each a project written by `waterbox/tests/make-project.py`,
-opened in Chimera and recorded for 120 frames:
+opened in Chimera's window and recorded for 120 frames:
 
 | Leg | Needs |
 | --- | --- |
@@ -335,10 +330,7 @@ the native reference reports, 44100 Hz stereo sound, and the log has no
 The workflow's `frontend-gate` job then runs Chimera's own tests against
 the installed package. They need the built Chimera above:
 
-    cd <chimera>
-    CHIMERA_CORES_DIR=<chimera>/build/Cores dotnet test source/gui/Chimera.Tests.Client.Common/Chimera.Tests.Client.Common.csproj \
-      -c Release --nologo \
-      --filter "FullyQualifiedName~InstalledCorePackagesTests|FullyQualifiedName~MnemonicUniquenessTests"
+    CHIMERA_CORES_DIR=<chimera>/build/Cores <chimera>/build/meson-linux/source/ui/test-packages
 
 They prove the package is readable, is built for a guest ABI this frontend
 runs, becomes a working factory, binds only buttons its controllers

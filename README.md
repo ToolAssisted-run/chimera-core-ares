@@ -44,7 +44,7 @@ test from the gate and found four faults the gate structurally could not: audio
 streams concatenated instead of mixed, a monaural machine's right channel left
 uninitialised, every machine with a controller port refusing to load, and a
 wizard that would offer no cartridge but a Nintendo 64's. That pass is a script
-now - `waterbox/run-frontend-gate.sh` opens a project headless, records it and
+now - `waterbox/run-frontend-gate.sh` opens a project in Chimera's window, headless, records it and
 reads the file back with ffprobe - and `docs/PLAN.md` has the details under
 "In the frontend".
 
@@ -118,8 +118,8 @@ Boy Advance and the rest need a BIOS in `tests/firmware/` and are run by hand.
 Chimera includes no cores and downloads none. Download
 `ares-<version>.chimeraCore` from this repository's
 [Releases](https://github.com/ToolAssisted-run/chimera-core-ares/releases)
-page, or build it, and put it in the `Cores` folder beside `Chimera.exe`.
-File > Core Manager lists that folder and can point Chimera at another. The
+page, or build it, and put it in the `cores` folder beside Chimera's program.
+Tools > Core Manager... lists that folder and can point Chimera at another. The
 same file works on Linux and on Windows.
 
 ## Building
