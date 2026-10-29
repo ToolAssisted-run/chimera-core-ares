@@ -516,7 +516,7 @@ PYEOF
 	fi
 	printf '{"rom":["rom"],"savedata":["short.eep"]}' > "$sw/slots"
 	why="$("$runwbx" "$wbx" "$sw" --machine N64 --quiet --frames 2 2>&1)" || true
-	if echo "$why" | grep -q "save chip holds 512"; then
+	if echo "$why" | grep -q "error.save_size[^a-z].*[^0-9]512"; then
 		say_pass "N64 save data: a save of the wrong size is refused, and says why"
 	else
 		say_fail "N64 save data: a save of the wrong size is refused, and says why" "$(echo "$why" | tail -1)"

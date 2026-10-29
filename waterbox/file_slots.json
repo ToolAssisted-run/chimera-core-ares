@@ -3,7 +3,7 @@
   "slots": [
     {
       "id": "rom",
-      "title": "Cartridge, disc or tape",
+      "title": "slot.rom",
       "min": 0,
       "max": 1,
       "formats": [
@@ -61,11 +61,11 @@
         "pce",
         "sgx"
       ],
-      "help": "The game the machine loads. For most machines this is a cartridge. The PlayStation takes a .cue file, the ZX Spectrum a .tzx or .tape file and the Neo Geo a .zip romset. Only the kinds that fit the chosen machine are offered. A Nintendo 64 cartridge can be in any of its three byte orders (.z64, .n64 or .v64) and the core works out which one it is. A PlayStation and an MSX can start with nothing here. The PlayStation then shows its BIOS menu and the MSX starts its BASIC. Every other machine needs a game and says so when there is none. Some machines also need their console BIOS, which is asked for on another page. The Nintendo 64 needs none."
+      "help": "slot.rom.help"
     },
     {
       "id": "savedata",
-      "title": "Save data",
+      "title": "slot.savedata",
       "min": 0,
       "max": 1,
       "formats": [
@@ -77,11 +77,11 @@
         "flash",
         "ram"
       ],
-      "help": "The saved game that a cartridge with a battery starts with. This is the file that Emulator > Export Save Data... writes (EEPROM, SRAM or Flash, whichever the cartridge has, named save.eeprom, save.ram or save.flash as ares names them; a .eep, .fla, .sav or .srm of the same bytes is taken too). Put it here to continue a run from where another one stopped. It must be the size of the cartridge's save chip, and is in the byte order ares writes its own save files in (as Export Save Data writes it). The file is never changed. The project and the movie record exactly which file it was, so a movie that starts from a saved game can be played back by anyone who has the same file. Only the Nintendo 64 exports and loads its saves this way so far. A Nintendo 64DD game saves on its disk instead: Export Save Data hands out the disk it wrote to, and that disk goes in the game slot of a new project. The other machines keep their saves inside the savestate. A cartridge with no save memory keeps nothing, and the project says so. Leave this empty to start with a fresh cartridge."
+      "help": "slot.savedata.help"
     },
     {
       "id": "subcart",
-      "title": "Cartridge in the cartridge",
+      "title": "slot.subcart",
       "min": 0,
       "max": 2,
       "formats": [
@@ -96,7 +96,7 @@
           "sfc"
         ]
       },
-      "help": "Some Super Famicom cartridges have a slot of their own, and this is the cartridge that goes into it. A Satellaview memory pack (.bs) goes into the BS-X cartridge. Choose the BS-X as the game above and the pack here. A Sufami Turbo minicart (.st) goes into the Sufami Turbo cartridge (a second one goes into its slot B, for the games that link two), and a Game Boy cartridge goes into a Super Game Boy. The core finds the right slot from the file itself. Leave this empty for an ordinary cartridge, which is almost every game. A game that has no such slot reports an error when a file is given here."
+      "help": "slot.subcart.help"
     }
   ]
 }

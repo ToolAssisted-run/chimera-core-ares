@@ -25,6 +25,11 @@
 #include <string.h>
 #include <string>
 
+/* A text a person reads is a key of languages/en.json, each of its
+ * arguments after a TEXT_ARG (chimera docs/translations.md). TEXT_ARG is a
+ * string of its own so the byte after it is never read as more of its hex. */
+#define TEXT_ARG "\x1f"
+
 using namespace ares;
 
 namespace
@@ -421,7 +426,7 @@ namespace
 			 * refused (chimera#141). */
 			if (isBuiltInKeyboard(port))
 			{
-				if (!port->allocate(port->supported().front())) return fail("the machine's keyboard could not be connected");
+				if (!port->allocate(port->supported().front())) return fail("error.no_keyboard");
 				port->connect();
 				continue;
 			}
@@ -446,10 +451,10 @@ namespace
 			nall::string resolved;
 			for (auto &supported : port->supported())
 				if (sameDeviceName(device, supported)) { resolved = supported; break; }
-			if (!resolved) return fail("this machine has no such device for that port");
+			if (!resolved) return fail("error.no_device");
 
 			auto peripheral = port->allocate(resolved);
-			if (!peripheral) return fail("this machine has no such device for that port");
+			if (!peripheral) return fail("error.no_device");
 			port->connect();
 
 			if (accessory != nullptr && *accessory)
@@ -462,7 +467,7 @@ namespace
 					plugged = true;
 					break;
 				}
-				if (!plugged) return fail("this device has no slot for that accessory");
+				if (!plugged) return fail("error.no_accessory_slot");
 			}
 		}
 		return true;
@@ -619,7 +624,7 @@ namespace machine
 	static bool seedSave(const char *path)
 	{
 		auto bytes = file::read(path);
-		if (bytes.empty()) return fail("the save data would not open");
+		if (bytes.empty()) return fail("error.save_not_opened");
 		for (const char *name : {"save.ram", "save.eeprom", "save.flash"})
 		{
 			auto fp = g_cartridgePak->pak->write(name);
@@ -627,14 +632,14 @@ namespace machine
 			if ((uint64_t)bytes.size() != (uint64_t)fp->size())
 			{
 				snprintf(g_error, sizeof g_error,
-					"the save data is %llu bytes, and this cartridge's save chip holds %llu",
+					"error.save_size" TEXT_ARG "%llu" TEXT_ARG "%llu",
 					(unsigned long long)bytes.size(), (unsigned long long)fp->size());
 				return false;
 			}
 			fp->write({bytes.data(), bytes.size()});
 			return true;
 		}
-		return fail("this cartridge has no save chip, so it takes no save data");
+		return fail("error.no_save_chip");
 	}
 
 	bool init(const Config &config)
@@ -642,7 +647,7 @@ namespace machine
 		g_error[0] = 0;
 
 		g_spec = machines::find(config.machine ? config.machine : "N64");
-		if (g_spec == nullptr) return fail("this core has no such machine");
+		if (g_spec == nullptr) return fail("error.no_machine");
 		/* Every machine ares builds through Nintendo64::load has angrylion for
 		 * its rasteriser, and angrylion has to be told where to draw before the
 		 * first frame. Asking by ID caught the Nintendo 64 and missed the
@@ -669,7 +674,7 @@ namespace machine
 		 * machine expects. Using it rather than a loader of our own is what
 		 * makes each additional machine a table entry. */
 		g_systemPak = mia::System::create(g_spec->miaSystem);
-		if (!g_systemPak) return fail("ares has no such system");
+		if (!g_systemPak) return fail("error.no_system");
 		/* A machine that needs a console BIOS is handed the file it was mounted
 		 * as; one that carries its own boot code is handed nothing. */
 		string firmware;
@@ -689,14 +694,14 @@ namespace machine
 			 * ordinary HuCard in the cartridge slot, not a file the system pak
 			 * holds. See machines.h. */
 			g_firmwarePak = mia::Medium::create(g_spec->firmwareMedium);
-			if (!g_firmwarePak) return fail("ares has no such firmware medium");
+			if (!g_firmwarePak) return fail("error.no_firmware_medium");
 			if (g_firmwarePak->load(firmware) != successful)
 			{
-				return fail("the console BIOS would not load");
+				return fail("error.bios_not_loaded");
 			}
 			if (g_systemPak->load() != successful)
 			{
-				return fail("this machine's system pak would not load");
+				return fail("error.system_pak");
 			}
 		}
 		else if (g_spec->extraFirmware != nullptr)
@@ -716,13 +721,13 @@ namespace machine
 			}
 			if (!g_systemPak->loadMultiple(firmwares))
 			{
-				return fail("the console BIOS would not load");
+				return fail("error.bios_not_loaded");
 			}
 		}
 		else if (g_systemPak->load(firmware) != successful)
 		{
-			return fail(g_spec->firmware ? "the console BIOS would not load"
-			                             : "this machine's system pak would not load");
+			return fail(g_spec->firmware ? "error.bios_not_loaded"
+			                             : "error.system_pak");
 		}
 
 		/* The reference runner's PIF ROM, if it was given one: the machine then
@@ -731,16 +736,16 @@ namespace machine
 		if (config.pifRomFile && *config.pifRomFile && g_isN64)
 		{
 			auto rom = file::read(config.pifRomFile);
-			if (rom.empty()) return fail("the PIF boot ROM would not open");
+			if (rom.empty()) return fail("error.pif");
 			g_systemPak->pak->append(config.pal ? "pif.pal.rom" : "pif.ntsc.rom", rom);
 		}
 
 		bool haveMedium = config.romFile != nullptr && *config.romFile;
-		if (!haveMedium && !g_spec->bootsWithoutMedium) return fail("no cartridge given");
+		if (!haveMedium && !g_spec->bootsWithoutMedium) return fail("error.no_file");
 		if (haveMedium)
 		{
 			g_cartridgePak = mia::Medium::create(g_spec->miaMedium);
-			if (!g_cartridgePak) return fail("ares has no such medium");
+			if (!g_cartridgePak) return fail("error.no_medium");
 			/* mia says WHY, and the reason is the difference between "this file is
 			 * not for this machine" and "this machine wants a database this core
 			 * does not carry". Passing it on costs nothing and saves an hour. */
@@ -748,23 +753,23 @@ namespace machine
 			if (result != successful)
 			{
 				static const char *why[] = {
-					"loaded", "no file was chosen", "its game database is missing",
-					"it is not in the game database", "the file was not found",
-					"the file is not a game this machine takes",
-					"this core does not support that medium",
-					"that file is for a different machine",
-					"its manifest could not be read", "it needs firmware", "it would not load",
+					"error.why.loaded", "error.why.no_file", "error.why.no_database",
+					"error.why.not_in_database", "error.why.not_found",
+					"error.why.not_a_game",
+					"error.why.medium",
+					"error.why.other_machine",
+					"error.why.manifest", "error.why.needs_firmware", "error.why.not_loaded",
 				};
 				int at = (int)result.result;
 				const char *reason = (at >= 0 && at < (int)(sizeof why / sizeof *why))
-					? why[at] : "it would not load";
+					? why[at] : "error.why.not_loaded";
 				if (result.info)
 				{
-					snprintf(g_error, sizeof g_error, "the game would not load: %s (%s)",
+					snprintf(g_error, sizeof g_error, "error.game_not_loaded_info" TEXT_ARG "%s" TEXT_ARG "%s",
 						reason, (const char *)result.info);
 					return false;
 				}
-				snprintf(g_error, sizeof g_error, "the game would not load: %s", reason);
+				snprintf(g_error, sizeof g_error, "error.game_not_loaded" TEXT_ARG "%s", reason);
 				return false;
 			}
 		}
@@ -775,7 +780,7 @@ namespace machine
 		if (config.saveFile != nullptr && *config.saveFile)
 		{
 			if (!g_isN64 || !g_cartridgePak)
-				return fail("only a Nintendo 64 cartridge takes save data here; the other machines keep their saves in the savestate");
+				return fail("error.save_n64_only");
 			if (!seedSave(config.saveFile)) return false;
 		}
 
@@ -786,7 +791,7 @@ namespace machine
 		for (const char *subFile : { config.subRomFile, config.subRomFile2 })
 		{
 			if (subFile == nullptr || !*subFile) continue;
-			if (g_spec->subSlots == nullptr) return fail("this machine has no slot for that file");
+			if (g_spec->subSlots == nullptr) return fail("error.no_slot");
 			const machines::SubSlot *found = nullptr;
 			string ext = Location::suffix(subFile).trimLeft(".", 1L).downcase();
 			for (const machines::SubSlot *slot = g_spec->subSlots; slot->extensions != nullptr; slot++)
@@ -813,14 +818,14 @@ namespace machine
 				}
 				if (found != nullptr) break;
 			}
-			if (found == nullptr) return fail("this machine has no slot for that file");
+			if (found == nullptr) return fail("error.no_slot");
 			auto subPak = mia::Medium::create(found->miaMedium);
-			if (!subPak) return fail("ares has no such medium");
+			if (!subPak) return fail("error.no_medium");
 			auto subResult = subPak->load(subFile);
 			if (subResult != successful)
 			{
 				snprintf(g_error, sizeof g_error,
-					"the second cartridge would not load (mia said %d%s%s)",
+					"error.second_cart" TEXT_ARG "%d" TEXT_ARG "%s" TEXT_ARG "%s",
 					(int)subResult.result,
 					subResult.info ? ": " : "",
 					subResult.info ? (const char *)subResult.info : "");
@@ -862,7 +867,7 @@ namespace machine
 
 		const char *name = g_pal ? g_spec->configPal : g_spec->configNtsc;
 		if (name == nullptr) name = g_spec->configNtsc ? g_spec->configNtsc : g_spec->configPal;
-		if (!g_spec->load(g_root, name)) return fail("ares would not build the machine");
+		if (!g_spec->load(g_root, name)) return fail("error.not_built");
 
 		/* Every machine has a slot for its medium, and it is the one port that
 		 * takes no device name. */
@@ -890,7 +895,7 @@ namespace machine
 			{
 				if (port->name() == sub.slot->port) { slot = port; break; }
 			}
-			if (!slot) return fail("this cartridge has no slot for that file");
+			if (!slot) return fail("error.cartridge_no_slot");
 			slot->allocate();
 			slot->connect();
 		}

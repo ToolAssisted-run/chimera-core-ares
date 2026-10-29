@@ -18,7 +18,31 @@ the emulator rather than typing it twice is what makes that true.
 """
 import json
 import os
+import re
 import sys
+
+# ---- the texts a person reads ----------------------------------------------
+# Every one is a key of languages/en.json (chimera docs/translations.md):
+# text() records the key's English and returns the key, each of its
+# arguments after it behind a 0x1F; write_texts() puts them in the table,
+# beside the keys the core's code names.
+TEXTS = {}
+
+
+def text(key, english, *args):
+    if TEXTS.setdefault(key, english) != english:
+        sys.exit("%s has two texts: %r and %r" % (key, TEXTS[key], english))
+    return "\x1f".join([key] + [str(a) for a in args])
+
+
+def write_texts(path):
+    table = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {"texts": {}}
+    table["texts"].update(TEXTS)
+    table["texts"] = dict(sorted(table["texts"].items()))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(table, f, indent="\t", ensure_ascii=False)
+        f.write("\n")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -510,8 +534,8 @@ def firmware_variant_settings(firmware, declared_ids):
         declared.sort(key=order.index)
         out.append({
             "name": key,
-            "display": display,
-            "description": description,
+            "display": text("setting." + key, display),
+            "description": text("setting." + key + ".about", description),
             "type": "enum",
             "default": declared[0],
             "options": declared,
@@ -555,8 +579,9 @@ def render_firmware(machines, already=None):
             blob = open(path, "rb").read()
             entry = {
                 "id": fwid,
-                "display": display,
-                "description": description,
+                "display": text("firmware." + re.sub(r"[^a-z0-9]+", "_", fwid.lower()).strip("_"), display),
+                "description": text("firmware." + re.sub(r"[^a-z0-9]+", "_", fwid.lower()).strip("_") + ".about",
+                                    description),
                 "size": len(blob),
                 "sha1": hashlib.sha1(blob).hexdigest().upper(),
                 "name": entry_name,
@@ -1008,12 +1033,12 @@ def render_slots(machines, slots):
     if subformats:
         slots["slots"].append({
             "id": "subcart",
-            "title": "Cartridge in the cartridge",
+            "title": text("slot.subcart", "Cartridge in the cartridge"),
             "min": 0,
             "max": 2,
             "formats": subformats,
             "exposedWhen": {"setting": "machine", "in": sorted(set(subwhen))},
-            "help": "Some Super Famicom cartridges have a slot of their own, and"
+            "help": text("slot.subcart.help", "Some Super Famicom cartridges have a slot of their own, and"
                 " this is the cartridge that goes into it. A Satellaview "
                 "memory pack (.bs) goes into the BS-X cartridge. Choose the "
                 "BS-X as the game above and the pack here. A Sufami Turbo "
@@ -1023,7 +1048,7 @@ def render_slots(machines, slots):
                 "finds the right slot from the file itself. Leave this empty"
                 " for an ordinary cartridge, which is almost every game. A "
                 "game that has no such slot reports an error when a file is "
-                "given here.",
+                "given here."),
         })
     return json.dumps(slots, indent=2) + "\n"
 
@@ -1123,10 +1148,11 @@ def main():
         for key, _path, decl in machine_settings(m):
             entry = {
                 "name": key,
-                "display": f'{m["label"]}: {decl["name"]}',
-                "description": SETTING_TEXT.get(
-                    decl["name"],
-                    f'The {m["label"]} option that ares calls "{decl["name"]}". It has no description yet.'),
+                "display": text("setting.machine_option", "%1: %2", m["label"], decl["name"]),
+                "description": text("setting.ares." + re.sub(r"[^a-z0-9]+", "_", decl["name"].lower()).strip("_") + ".about",
+                                    SETTING_TEXT[decl["name"]]) if decl["name"] in SETTING_TEXT else text(
+                    "setting.ares_option.about", 'The %1 option that ares calls "%2". It has no description yet.',
+                    m["label"], decl["name"]),
                 "type": decl["type"],
                 "fromAres": True,
                 "when": list(m["when"]) if m.get("when") else [m["id"].lower()],
@@ -1145,7 +1171,7 @@ def main():
                     entry["options"] = list(decl["options"])
             cfg["settings"].append(entry)
 
-    text = json.dumps(cfg, indent=2) + "\n"
+    cfg_text = json.dumps(cfg, indent=2) + "\n"
 
     keys_path = os.path.join(HERE, "default_keybinds.json")
     keys = json.dumps(render_keybinds(machines), indent=2) + "\n"
@@ -1166,7 +1192,7 @@ def main():
         bad = []
         if open(inc_path).read() != inc:
             bad.append("waterbox/machines.inc")
-        if open(cfg_path).read() != text:
+        if open(cfg_path).read() != cfg_text:
             bad.append("waterbox/waterbox.config")
         if open(keys_path).read() != keys:
             bad.append("waterbox/default_keybinds.json")
@@ -1194,10 +1220,11 @@ def main():
         return 0
 
     open(inc_path, "w").write(inc)
-    open(cfg_path, "w").write(text)
+    open(cfg_path, "w").write(cfg_text)
     open(keys_path, "w").write(keys)
     open(layout_path, "w").write(layout)
     open(slots_path, "w").write(slots)
+    write_texts(os.path.join(HERE, "languages", "en.json"))
     total = sum(1 for m in machines if m["loads"])
     print(f"wrote machines.inc, waterbox.config, default_keybinds.json, file_slots.json and memory-layout.h: {total} machines")
     return 0
