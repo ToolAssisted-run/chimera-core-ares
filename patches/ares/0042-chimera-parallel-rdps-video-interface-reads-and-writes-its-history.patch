@@ -1,0 +1,76 @@
+--- a/ares/n64/vulkan/parallel-rdp/parallel-rdp/video_interface.cpp
++++ b/ares/n64/vulkan/parallel-rdp/parallel-rdp/video_interface.cpp
+@@ -26,6 +26,7 @@
+ #include "luts.hpp"
+ #include "bitops.hpp"
+ #include <cmath>
++#include <string.h>
+ 
+ #ifndef PARALLEL_RDP_SHADER_DIR
+ #include "shaders/slangmosh.hpp"
+@@ -1212,6 +1213,65 @@
+ 	per_line_state.ended = true;
+ }
+ 
++void VideoInterface::chimera_read_history(uint32_t counters[3], uint8_t *pixels, size_t max_bytes, unsigned &width, unsigned &height)
++{
++	counters[0] = frame_count;
++	counters[1] = last_valid_frame_count;
++	counters[2] = previous_frame_blank ? 1u : 0u;
++	width = height = 0;
++	if (!prev_scanout_image || prev_image_is_external ||
++	    prev_scanout_image->get_format() != VK_FORMAT_R8G8B8A8_UNORM)
++		return;
++	const unsigned w = prev_scanout_image->get_width();
++	const unsigned h = prev_scanout_image->get_height();
++	const size_t size = size_t(w) * h * 4;
++	if (size == 0 || size > max_bytes)
++		return;
++
++	Vulkan::BufferCreateInfo info = {};
++	info.size = size;
++	info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
++	info.domain = Vulkan::BufferDomain::CachedHost;
++	auto buffer = device->create_buffer(info);
++
++	auto cmd = device->request_command_buffer();
++	cmd->image_barrier(*prev_scanout_image, prev_image_layout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
++	                   layout_to_stage(prev_image_layout), layout_to_access(prev_image_layout),
++	                   VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
++	cmd->copy_image_to_buffer(*buffer, *prev_scanout_image, 0, {}, { w, h, 1 }, 0, 0,
++	                          { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 });
++	cmd->image_barrier(*prev_scanout_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, prev_image_layout,
++	                   VK_PIPELINE_STAGE_2_COPY_BIT, 0,
++	                   layout_to_stage(prev_image_layout), layout_to_access(prev_image_layout));
++	cmd->barrier(VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
++	             VK_PIPELINE_STAGE_HOST_BIT, VK_ACCESS_2_HOST_READ_BIT);
++	Vulkan::Fence fence;
++	device->submit(cmd, &fence);
++	fence->wait();
++
++	memcpy(pixels, device->map_host_buffer(*buffer, Vulkan::MEMORY_ACCESS_READ_BIT), size);
++	device->unmap_host_buffer(*buffer, Vulkan::MEMORY_ACCESS_READ_BIT);
++	width = w;
++	height = h;
++}
++
++void VideoInterface::chimera_write_history(const uint32_t counters[3], const uint8_t *pixels, unsigned width, unsigned height)
++{
++	frame_count = counters[0];
++	last_valid_frame_count = counters[1];
++	previous_frame_blank = counters[2] != 0;
++	prev_scanout_image.reset();
++	prev_image_is_external = false;
++	if (width == 0 || height == 0)
++		return;
++
++	auto info = Vulkan::ImageCreateInfo::immutable_2d_image(width, height, VK_FORMAT_R8G8B8A8_UNORM);
++	info.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
++	Vulkan::ImageInitialData data = { pixels, 0, 0 };
++	prev_scanout_image = device->create_image(info, &data);
++	prev_image_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
++}
++
+ Vulkan::ImageHandle VideoInterface::scanout(VkImageLayout target_layout, const ScanoutOptions &options, unsigned scaling_factor_)
+ {
+ 	unsigned downscale_steps = std::min(8u, options.downscale_steps);

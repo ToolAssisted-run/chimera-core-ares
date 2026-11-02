@@ -1,0 +1,268 @@
+--- a/ares/n64/vulkan/vulkan.cpp
++++ b/ares/n64/vulkan/vulkan.cpp
+@@ -4,6 +4,17 @@
+ //parsed in this translation unit
+ #include "rdp_device.hpp"
+ 
++#if defined(CHIMERA_VK_BRIDGE)
++//Chimera: in the sandbox the Vulkan commands are the bridge's, which take the
++//calls out to the frontend's device; there is no loader to open. A load is a
++//new context there (the context id changes), and the old objects are let go
++//with the bridge quiet (the core's waterbox.cpp), since none of them exists.
++extern "C" void *chimera_vk_lookup(const char *name);
++extern "C" uint64_t chimera_vk_context_id(void);
++extern "C" void chimera_vk_forget_mappings(void);
++extern "C" void chimera_vk_quiet(bool on);
++#endif
++
+ namespace ares::Nintendo64 {
+ 
+ Vulkan vulkan;
+@@ -45,41 +56,179 @@
+   std::condition_variable condition;
+   u32 scanoutCount = 0;
+   u32 endCount = 0;
++
++  //Chimera: the bridge context these objects were made in
++  u64 contextId = 0;
+ };
+ 
+ auto Vulkan::load(Node::Object) -> bool {
++  //Chimera: the core makes the device when it builds the machine, so that a
++  //computer that cannot draw it is told so then; the first frame finds it made.
++  if (vulkan.enable && implementation) return true;
+   if (vulkan.enable) {
+     Util::set_thread_logging_interface(&loggingInterface);
+     delete implementation;
++    //Chimera: a machine powered on has no RDP state to keep yet
++    memory::fill(&kept, sizeof(kept));
+     implementation = new Vulkan::Implementation(rdram.ram.data, rdram.ram.size);
+     if(!implementation->processor) {
+       delete implementation;
+       implementation = nullptr;
+     }
+ 
++    //Chimera: the ninth bits the CPU sees stay the machine's (rdram.cpp); the
++    //RDP keeps its own on the device, and a savestate keeps a copy of those.
+     if (!implementation) {
+       platform->status("Vulkan init failed: No RDP rendering support");
+       vulkan.enable = false;
+-      rdram.hidden.data = nullptr;
+     } else {
+       platform->status("Vulkan Enabled: using paraLLEl-RDP");
+-      rdram.hidden.data = (u8*)implementation->processor->begin_read_hidden_rdram();
+     }
+   } else {
+     platform->status("Vulkan Disabled: No RDP rendering support");
+-    rdram.hidden.data = nullptr;
+   }
+ 
+   return true;
+ }
+ 
+ auto Vulkan::unload() -> void {
+-  rdram.hidden.data = nullptr;
++  #if defined(CHIMERA_VK_BRIDGE)
++  //objects of a context that is gone are let go without a word to the host
++  bool gone = implementation && implementation->contextId != chimera_vk_context_id();
++  if(gone) chimera_vk_quiet(true);
+   if (implementation) delete implementation;
++  if(gone) { chimera_vk_quiet(false); chimera_vk_forget_mappings(); }
++  #else
++  if (implementation) delete implementation;
++  #endif
+   implementation = nullptr;
+ }
+ 
++auto Vulkan::keep(u32 code, const u32* words) -> void {
++  switch(code) {
++  case 0x2a: case 0x2b: case 0x2c: case 0x2d: case 0x2e: case 0x2f:
++  case 0x37: case 0x38: case 0x39: case 0x3a: case 0x3b: case 0x3c: case 0x3d: case 0x3e: case 0x3f:
++    kept.state[code][0] = words[0];
++    kept.state[code][1] = words[1];
++    kept.stateSet |= 1ull << code;
++    break;
++  case 0x35: {  //SetTile
++    u32 tile = words[1] >> 24 & 7;
++    kept.tile[tile][0] = words[0];
++    kept.tile[tile][1] = words[1];
++    kept.tileSet |= 1 << tile;
++    break;
++  }
++  case 0x30: case 0x32: case 0x33: case 0x34: {
++    //SetTileSize, and the three loads, which leave the tile the same size
++    //(paraLLEl-RDP reads the same four fields from all of them): kept as the
++    //SetTileSize they amount to, since a load would load again
++    u32 tile = words[1] >> 24 & 7;
++    kept.tileSize[tile][0] = (words[0] & ~(63u << 24)) | 0x32u << 24;
++    kept.tileSize[tile][1] = words[1];
++    kept.tileSizeSet |= 1 << tile;
++    break;
++  }
++  }
++}
++
++auto Vulkan::checkContext() -> void {
++  if(!implementation) return;
++  #if defined(CHIMERA_VK_BRIDGE)
++  if(implementation->contextId != chimera_vk_context_id()) { rebuild(); return; }
++  #endif
++  if(kept.restorePending) rebuild();
++}
++
++auto Vulkan::rebuild() -> void {
++  kept.restorePending = false;
++  //a command cut in two by the end of a list stays to be finished
++  u32 queueSize = 0, queueOffset = 0;
++  static u32 queue[0x10000];
++  if(implementation) {
++    queueSize = implementation->queueSize;
++    queueOffset = implementation->queueOffset;
++    memory::copy(queue, implementation->buffer, sizeof(queue));
++  }
++  unload();
++  implementation = new Vulkan::Implementation(rdram.ram.data, rdram.ram.size);
++  if(!implementation->processor) {
++    delete implementation;
++    implementation = nullptr;
++    vulkan.enable = false;
++    return;
++  }
++  implementation->queueSize = queueSize;
++  implementation->queueOffset = queueOffset;
++  memory::copy(implementation->buffer, queue, sizeof(queue));
++  auto& processor = *implementation->processor;
++  if(kept.valid) {
++    processor.chimera_write_tmem(kept.tmem);
++    processor.chimera_write_hidden_rdram(kept.hidden, sizeof(kept.hidden));
++    processor.chimera_set_noise_base(kept.noiseBase);
++  }
++  for(u32 code : range(64)) {
++    if(kept.stateSet >> code & 1) processor.enqueue_command(2, kept.state[code]);
++  }
++  for(u32 tile : range(8)) {
++    if(kept.tileSet >> tile & 1) processor.enqueue_command(2, kept.tile[tile]);
++    if(kept.tileSizeSet >> tile & 1) processor.enqueue_command(2, kept.tileSize[tile]);
++  }
++  for(u32 reg : range(16)) {
++    if(kept.viSet >> reg & 1) processor.set_vi_register(::RDP::VIRegister(reg), kept.vi[reg]);
++  }
++  if(kept.valid) processor.chimera_write_vi_history(kept.viCounters, kept.viPicture, kept.viWidth, kept.viHeight);
++}
++
++auto Vulkan::idle() -> void {
++  checkContext();
++  if(!implementation) return;
++  implementation->processor->idle();
++}
++
++auto Vulkan::stateSaving() -> void {
++  //Nothing has run since a load: what is kept is what was loaded, and a
++  //state taken now is the same bytes as the one loaded.
++  if(kept.restorePending) return;
++  #if defined(CHIMERA_VK_BRIDGE)
++  if(implementation && implementation->contextId != chimera_vk_context_id()) return;
++  #endif
++  if(!implementation) return;
++  auto& processor = *implementation->processor;
++  processor.idle();
++  processor.chimera_read_tmem(kept.tmem);
++  processor.chimera_read_hidden_rdram(kept.hidden, sizeof(kept.hidden));
++  kept.noiseBase = processor.chimera_noise_base();
++  unsigned width = 0, height = 0;
++  processor.chimera_read_vi_history(kept.viCounters, kept.viPicture, sizeof(kept.viPicture), width, height);
++  kept.viWidth = width;
++  kept.viHeight = height;
++  kept.valid = true;
++}
++
++auto Vulkan::serialize(serializer& s) -> void {
++  if(s.writing()) stateSaving();
++  s(kept.valid);
++  s(kept.stateSet);
++  s(kept.tileSet);
++  s(kept.tileSizeSet);
++  s(kept.viSet);
++  s(kept.noiseBase);
++  s(kept.viCounters);
++  s(kept.viWidth);
++  s(kept.viHeight);
++  s(kept.viPicture);
++  for(auto& w : kept.state) s(w);
++  for(auto& w : kept.tile) s(w);
++  for(auto& w : kept.tileSize) s(w);
++  s(kept.vi);
++  s(kept.tmem);
++  s(kept.hidden);
++  if(s.reading()) kept.restorePending = true;
++}
++
+ auto Vulkan::render() -> bool {
++  checkContext();
+   if(!implementation) return false;
+ 
+   static constexpr u32 commandLength[64] = {
+@@ -130,6 +279,7 @@
+     }
+ 
+     if(code >= 8) {
++      keep(code, buffer + queueOffset * 2);
+       implementation->processor->enqueue_command(length * 2, buffer + queueOffset * 2);
+     }
+ 
+@@ -148,16 +298,23 @@
+ }
+ 
+ auto Vulkan::frame() -> void {
++  checkContext();
+   if(!implementation) return;
+   implementation->processor->begin_frame_context();
+ }
+ 
+ auto Vulkan::writeWord(u32 address, u32 data) -> void {
++  if(address < 16) {
++    kept.vi[address] = data;
++    kept.viSet |= 1 << address;
++  }
++  checkContext();
+   if(!implementation) return;
+   implementation->processor->set_vi_register(::RDP::VIRegister(address), data);
+ }
+ 
+ auto Vulkan::scanoutAsync(bool field) -> bool {
++  checkContext();
+   if(!implementation) return false;
+ 
+   { //wait until we're done reading in thread before we clobber the readback buffer
+@@ -229,12 +386,20 @@
+ }
+ 
+ Vulkan::Implementation::Implementation(u8* data, u32 size) {
++  #if defined(CHIMERA_VK_BRIDGE)
++  auto getInstanceProcAddr = (PFN_vkGetInstanceProcAddr)chimera_vk_lookup("vkGetInstanceProcAddr");
++  if(!getInstanceProcAddr || !::Vulkan::Context::init_loader(getInstanceProcAddr)) return;
++  #else
+   if(!::Vulkan::Context::init_loader(nullptr)) return;
++  #endif
+   if(!context.init_instance_and_device(nullptr, 0, nullptr, 0, 0)) return;
+   device.set_context(context);
+   device.init_frame_contexts(3);
+ 
+-  ::RDP::CommandProcessorFlags flags = ::RDP::COMMAND_PROCESSOR_FLAG_HOST_VISIBLE_HIDDEN_RDRAM_BIT;
++  //Chimera: no flags. The hidden bits are the machine's own (rdram.cpp), and
++  //what the RDP keeps of them and of TMEM stays in the device's own memory,
++  //copied out for a savestate (rdp_device.cpp, chimera_read_tmem and the rest).
++  ::RDP::CommandProcessorFlags flags = 0;
+   switch(vulkan.internalUpscale) {
+   case 2: flags |= ::RDP::COMMAND_PROCESSOR_FLAG_UPSCALING_2X_BIT; break;
+   case 4: flags |= ::RDP::COMMAND_PROCESSOR_FLAG_UPSCALING_4X_BIT; break;
+@@ -257,6 +422,9 @@
+   }
+ 
+   processor->set_validation_interface(&validator);
++  #if defined(CHIMERA_VK_BRIDGE)
++  contextId = chimera_vk_context_id();
++  #endif
+ }
+ 
+ Vulkan::Implementation::~Implementation() {

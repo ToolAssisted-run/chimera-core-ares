@@ -1,8 +1,8 @@
 {
   "package": "ares",
-  "effectiveTerms": "MAME licence (non-commercial) over ISC, with MIT integration",
-  "commercialUse": "prohibited",
-  "note": "ares itself is ISC and would permit commercial use, but this core replaces ares' Vulkan renderer with angrylion's software RDP, which descends from MESS and carries the MAME licence: redistribution is permitted, sale and commercial use are not. The built core is therefore distributable under those terms and no others. The same shape as the gpgx, opera and snes9x packages.",
+  "effectiveTerms": "ISC, with MIT and Apache-2.0 components",
+  "commercialUse": "allowed",
+  "note": "ares is ISC. The Nintendo 64's display processor is ares' own paraLLEl-RDP (MIT), loaded through volk (MIT) against the Vulkan headers (Apache-2.0), all vendored inside ares. Until 2026-11-02 the core drew the Nintendo 64 with angrylion's software RDP, under the MAME licence, which forbade commercial use; that is gone, and with it the restriction.",
   "components": [
     {
       "name": "chimera-core-ares (the integration)",
@@ -20,12 +20,28 @@
       "file": "extern/ares/LICENSE"
     },
     {
-      "name": "angrylion RDP (mylittle-nocomment)",
-      "license": "MAME licence (non-commercial)",
-      "url": "https://github.com/TASEmulators/angrylion-rdp",
-      "commit": "{submodule:extern/angrylion-rdp}",
-      "file": "extern/angrylion-rdp/mylittle-nocomment/MAME License.txt",
-      "note": "The N64's display processor, rasterised in software. This is what makes the core's picture the same on every machine; ares' own renderer needs a Vulkan driver, which a movie cannot depend on."
+      "name": "paraLLEl-RDP",
+      "license": "MIT",
+      "url": "https://github.com/Themaister/parallel-rdp-standalone",
+      "commit": "{submodule:extern/ares}",
+      "file": "extern/ares/ares/n64/vulkan/parallel-rdp/LICENSE",
+      "note": "The Nintendo 64's display processor, on the frontend's Vulkan device through miniBox's bridge; vendored inside ares (ares/n64/vulkan/parallel-rdp), with Granite's Vulkan backend."
+    },
+    {
+      "name": "volk",
+      "license": "MIT",
+      "url": "https://github.com/zeux/volk",
+      "commit": "{submodule:extern/ares}",
+      "file": "extern/ares/ares/n64/vulkan/parallel-rdp/volk/volk.h",
+      "note": "paraLLEl-RDP's Vulkan loader; its licence is at the end of the header."
+    },
+    {
+      "name": "Vulkan headers",
+      "license": "Apache-2.0",
+      "url": "https://github.com/KhronosGroup/Vulkan-Headers",
+      "commit": "{submodule:extern/ares}",
+      "file": "extern/ares/ares/n64/vulkan/parallel-rdp/vulkan-headers/include/vulkan/vulkan_core.h",
+      "note": "Headers only."
     },
     {
       "name": "sljit",
@@ -33,7 +49,7 @@
       "url": "https://github.com/zherczeg/sljit",
       "commit": "{submodule:extern/ares}",
       "file": "extern/ares/thirdparty/sljit/LICENSE",
-      "note": "ares' recompiler back end. Compiled in but not used: this core forces both interpreters, because a sandbox cannot host generated code and a movie cannot depend on it."
+      "note": "ares' recompiler back end, used by the Nintendo 64's CPU and RSP unless a project asks for the interpreters."
     },
     {
       "name": "TZXFile",

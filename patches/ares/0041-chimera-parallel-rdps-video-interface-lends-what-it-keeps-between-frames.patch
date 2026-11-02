@@ -1,0 +1,18 @@
+--- a/ares/n64/vulkan/parallel-rdp/parallel-rdp/video_interface.hpp
++++ b/ares/n64/vulkan/parallel-rdp/parallel-rdp/video_interface.hpp
+@@ -119,6 +119,15 @@
+ 	void latch_vi_register_for_scanline(unsigned vi_line);
+ 	void end_vi_register_per_scanline();
+ 
++	// Chimera: what this carries from one frame to the next - the picture it
++	// last made (woven with the next field, and shown again for a frame the VI
++	// does not draw) and its counters, one of which seeds its dither - read
++	// and written whole, for a savestate and for a video interface made again
++	// after one. The picture is RGBA8, at most max_bytes; width and height are
++	// 0 when there is none.
++	void chimera_read_history(uint32_t counters[3], uint8_t *pixels, size_t max_bytes, unsigned &width, unsigned &height);
++	void chimera_write_history(const uint32_t counters[3], const uint8_t *pixels, unsigned width, unsigned height);
++
+ private:
+ 	Vulkan::Device *device = nullptr;
+ 	Renderer *renderer = nullptr;

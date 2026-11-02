@@ -1,0 +1,11 @@
+--- a/ares/n64/system/serialization.cpp
++++ b/ares/n64/system/serialization.cpp
+@@ -58,4 +58,8 @@
+   s(rsp);
+   s(dd);
+   s(aleck64);
++  #if defined(VULKAN)
++  //Chimera: the RDP's own state, read back from the device (vulkan.cpp)
++  s(vulkan);
++  #endif
+ }

@@ -1,0 +1,14 @@
+--- a/ares/n64/vulkan/parallel-rdp/vulkan/device.cpp
++++ b/ares/n64/vulkan/parallel-rdp/vulkan/device.cpp
+@@ -2916,7 +2916,10 @@
+ 	case BufferDomain::LinkedDeviceHost:
+ 		prio[0] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+ 		prio[1] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+-		prio[2] = prio[1];
++		// Chimera: a device with no coherent memory at all (miniBox's Vulkan
++		// bridge reports none) still has visible memory, which is mapped,
++		// flushed and invalidated like any other.
++		prio[2] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+ 		break;
+ 
+ 	case BufferDomain::LinkedDeviceHostPreferDevice:

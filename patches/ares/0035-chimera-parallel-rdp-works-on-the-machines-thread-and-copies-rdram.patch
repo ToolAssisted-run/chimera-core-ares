@@ -1,0 +1,119 @@
+--- a/ares/n64/vulkan/parallel-rdp/parallel-rdp/rdp_device.cpp
++++ b/ares/n64/vulkan/parallel-rdp/parallel-rdp/rdp_device.cpp
+@@ -23,6 +23,8 @@
+ #include "rdp_device.hpp"
+ #include "rdp_common.hpp"
+ #include <chrono>
++#include <algorithm>
++#include <string.h>
+ 
+ #ifdef __SSE2__
+ #include <emmintrin.h>
+@@ -77,6 +79,14 @@
+ 		bool allow_memory_host = true;
+ 		if (const char *env = getenv("PARALLEL_RDP_ALLOW_EXTERNAL_HOST"))
+ 			allow_memory_host = strtol(env, nullptr, 0) > 0;
++#if defined(CHIMERA_SINGLE_THREADED) && CHIMERA_SINGLE_THREADED
++		// Chimera: RDRAM is always copied to the device and back at the
++		// points this renderer chooses, never shared with it. A device that
++		// read the machine's memory directly would read it whenever it got
++		// round to the work, and miniBox's Vulkan bridge cannot share memory
++		// anyway; this way every computer runs the same machine.
++		allow_memory_host = false;
++#endif
+ 
+ 		if (allow_memory_host && device.get_device_features().supports_external_memory_host)
+ 		{
+@@ -118,6 +128,12 @@
+ 		LOGE("Failed to allocate RDRAM.\n");
+ 
+ 	info.size = hidden_rdram_size;
++#if defined(CHIMERA_SINGLE_THREADED) && CHIMERA_SINGLE_THREADED
++	// Chimera: TMEM and the hidden bits stay in the device's own memory and
++	// are copied through a staging buffer when a savestate is taken
++	// (chimera_read_tmem and the rest), so they can be copied.
++	info.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
++#endif
+ 	// Should be CachedHost, but seeing some insane bug on incoherent Arm systems for time being,
+ 	// so just forcing coherent memory here for now. Not sure what is going on.
+ 	info.domain = (flags & COMMAND_PROCESSOR_FLAG_HOST_VISIBLE_HIDDEN_RDRAM_BIT) != 0 ?
+@@ -147,6 +163,11 @@
+ 		if (single_threaded_processing)
+ 			LOGI("Will use single threaded command processing.\n");
+ 	}
++#if defined(CHIMERA_SINGLE_THREADED) && CHIMERA_SINGLE_THREADED
++	// Chimera: the commands are processed on the machine's own thread, so the
++	// order of everything the RDP does is the machine's and nothing else's.
++	single_threaded_processing = true;
++#endif
+ 
+ 	if (!single_threaded_processing)
+ 	{
+@@ -1036,6 +1057,67 @@
+ 	return device.map_host_buffer(*tmem, MEMORY_ACCESS_READ_BIT);
+ }
+ 
++// Chimera: through a staging buffer in cached memory, since reading the
++// device's own memory - or memory it can see but the CPU does not cache - is
++// slow on a real card.
++static void chimera_copy_from_device(Vulkan::Device &device, const Vulkan::Buffer &src, void *data, size_t size)
++{
++	BufferCreateInfo info = {};
++	info.size = size;
++	info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
++	info.domain = BufferDomain::CachedHost;
++	auto staging = device.create_buffer(info);
++	auto cmd = device.request_command_buffer();
++	cmd->barrier(VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, VK_ACCESS_2_MEMORY_WRITE_BIT,
++	             VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
++	cmd->copy_buffer(*staging, 0, src, 0, size);
++	cmd->barrier(VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
++	             VK_PIPELINE_STAGE_HOST_BIT, VK_ACCESS_2_HOST_READ_BIT);
++	Fence fence;
++	device.submit(cmd, &fence);
++	fence->wait();
++	memcpy(data, device.map_host_buffer(*staging, MEMORY_ACCESS_READ_BIT), size);
++	device.unmap_host_buffer(*staging, MEMORY_ACCESS_READ_BIT);
++}
++
++static void chimera_copy_to_device(Vulkan::Device &device, const Vulkan::Buffer &dst, const void *data, size_t size)
++{
++	BufferCreateInfo info = {};
++	info.size = size;
++	info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
++	info.domain = BufferDomain::CachedHost;
++	auto staging = device.create_buffer(info, data);
++	auto cmd = device.request_command_buffer();
++	cmd->barrier(VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
++	             VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
++	cmd->copy_buffer(dst, 0, *staging, 0, size);
++	cmd->barrier(VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
++	             VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT);
++	Fence fence;
++	device.submit(cmd, &fence);
++	fence->wait();
++}
++
++void CommandProcessor::chimera_read_tmem(void *data)
++{
++	chimera_copy_from_device(device, *tmem, data, tmem->get_create_info().size);
++}
++
++void CommandProcessor::chimera_write_tmem(const void *data)
++{
++	chimera_copy_to_device(device, *tmem, data, tmem->get_create_info().size);
++}
++
++void CommandProcessor::chimera_read_hidden_rdram(void *data, size_t size)
++{
++	chimera_copy_from_device(device, *hidden_rdram, data, std::min<size_t>(size, hidden_rdram->get_create_info().size));
++}
++
++void CommandProcessor::chimera_write_hidden_rdram(const void *data, size_t size)
++{
++	chimera_copy_to_device(device, *hidden_rdram, data, std::min<size_t>(size, hidden_rdram->get_create_info().size));
++}
++
+ void CommandProcessor::idle()
+ {
+ 	flush();

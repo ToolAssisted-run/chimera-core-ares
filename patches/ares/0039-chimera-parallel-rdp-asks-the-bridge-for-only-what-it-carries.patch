@@ -1,0 +1,31 @@
+--- a/ares/n64/vulkan/parallel-rdp/vulkan/context.cpp
++++ b/ares/n64/vulkan/parallel-rdp/vulkan/context.cpp
+@@ -1421,11 +1421,16 @@
+ 		ADD_CHAIN(ext.video_maintenance1_features, VIDEO_MAINTENANCE_1_FEATURES_KHR);
+ 	}
+ 
++#if !defined(CHIMERA_VK_BRIDGE)
++	// Chimera: miniBox's Vulkan bridge carries vkCmdPushDescriptorSetKHR but
++	// not the template form this renderer pushes with, so through the bridge
++	// descriptor sets are made the ordinary way. The picture is the same.
+ 	if (has_extension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME))
+ 	{
+ 		enabled_extensions.push_back(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
+ 		ext.supports_push_descriptor = true;
+ 	}
++#endif
+ 
+ 	if (has_extension(VK_EXT_IMAGE_COMPRESSION_CONTROL_EXTENSION_NAME))
+ 	{
+@@ -1532,6 +1537,11 @@
+ 
+ 	ext.vk12_features.bufferDeviceAddressCaptureReplay = VK_FALSE;
+ 	ext.vk12_features.bufferDeviceAddressMultiDevice = VK_FALSE;
++#if defined(CHIMERA_VK_BRIDGE)
++	// Chimera: a device address is a pointer into the driver, which miniBox's
++	// Vulkan bridge never hands a guest; this renderer does not need them.
++	ext.vk12_features.bufferDeviceAddress = VK_FALSE;
++#endif
+ 	ext.vk12_features.imagelessFramebuffer = VK_FALSE;
+ 
+ 	ext.vk13_features.descriptorBindingInlineUniformBlockUpdateAfterBind = VK_FALSE;

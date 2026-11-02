@@ -1,0 +1,14 @@
+--- a/ares/n64/vulkan/parallel-rdp/parallel-rdp/rdp_renderer.hpp
++++ b/ares/n64/vulkan/parallel-rdp/parallel-rdp/rdp_renderer.hpp
+@@ -103,6 +103,11 @@
+ 
+ 	void set_validation_interface(ValidationInterface *iface);
+ 
++	// Chimera: the count every primitive's dither noise is seeded from, which
++	// a renderer made again (after a savestate) must go on from.
++	uint32_t chimera_get_base_primitive_index() const { return base_primitive_index; }
++	void chimera_set_base_primitive_index(uint32_t index) { base_primitive_index = index; }
++
+ 	// If coherent is false, RDRAM is a buffer split into data in lower half and writemask state in upper half, each part being size large.
+ 	// offset must be 0 in this case.
+ 	void set_rdram(Vulkan::Buffer *buffer, uint8_t *host_rdram, size_t offset, size_t size, bool coherent);

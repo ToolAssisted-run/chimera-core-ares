@@ -31,32 +31,93 @@ because the difference matters.
 
 ## The three things that had to be solved
 
-### 1. The renderer
+### 1. The renderer (user-decided, 2026-11-02, chimera#446)
 
-ares draws the N64 through **paraLLEl-RDP**, which is a Vulkan compute
-implementation of the display processor. That is a non-starter here for two
-independent reasons: a waterbox has no graphics driver, and a movie whose
-picture depends on somebody's GPU is not a movie anybody can replay.
+The Nintendo 64's display processor (the RDP) is ares' own **paraLLEl-RDP**, a
+Vulkan compute implementation, on the frontend's Vulkan device through
+miniBox's Vulkan bridge. A Nintendo 64 project needs a graphics card with
+Vulkan 1.1; on a computer with none (a CI runner), lavapipe does it.
 
-Chimera's GPU bridge does not help either - it speaks OpenGL, and it makes a
-session non-deterministic by design (`docs/gpu-bridge.md`), which is exactly
-what a TAS core must not be.
+Until 2026-11-02 the core drew the Nintendo 64 with angrylion's software
+rasteriser, taken from the branch TASEmulators (BizHawk's organisation) keeps
+for BizHawk's own ares port. Two things ended that: the owner's rule that
+nothing comes from BizHawk, and Killer Instinct Gold (chimera#446), which
+stayed black because that rasteriser received nonsense command lists and
+stopped for good. The owner chose paraLLEl-RDP over angrylion's own upstream.
+Measured first, natively on lavapipe: Killer Instinct Gold shows its logo, its
+title and its first fighter at frames 600, 1200 and 2400. angrylion is gone,
+and with it the MAME licence that made the built core non-commercial.
 
-So the RDP is **angrylion's**, a software rasteriser descended from MESS, taken
-from the branch BizHawk maintains for exactly this purpose. It is the same
-choice BizHawk's Ares64 made, for the same reasons, and it is what makes this
-core's picture identical on every machine by construction.
+**A movie must replay the same on any card**, and a GPU renderer threatens that
+in three ways. Each is closed:
 
-The graft is small, because ares had most of the seam already: `#if
-defined(VULKAN)` guards nearly every call into its renderer. Four call sites,
-three files (`patches/ares/0004`).
+- **When the RDP's writes reach RDRAM.** paraLLEl-RDP normally works on its
+  own threads and shares RDRAM with the device, so what the CPU finds in RDRAM
+  would depend on how far the GPU had got. Here it processes commands on the
+  machine's thread (`ares/0035`, `ares/0038`), it never shares memory with the
+  device but copies RDRAM in and out at points it chooses (`ares/0035`; the
+  bridge cannot share memory anyway), and the machine waits for it at the end
+  of every frame (`machine.cpp`). Its one timer only matters while work is
+  still pending, which in this mode it never is.
+- **What it keeps on the device.** TMEM, the hidden ninth bits of RDRAM the RDP
+  writes, the count that seeds its dither noise, and the video interface's
+  last picture and frame counts (a field is woven with the one before it, and
+  the counts seed the VI's dither) live on the device, outside the machine.
+  They are read back before every savestate (`StateSaving`, `ares/0032`,
+  `ares/0036`, `ares/0037`, `ares/0041`, `ares/0042`), and every state command (the
+  combiner, the tiles, the images, the colours) and every VI register is kept
+  as last sent. After a load - which in the sandbox is a new Vulkan context -
+  the renderer is made again and given all of it before it draws (`ares/0032`).
+  ares' own states carry the same (`ares/0034`). The ninth bits the CPU reads
+  and writes stay the machine's own (`ares/0006`), as they were with angrylion.
+- **The card itself.** paraLLEl-RDP is written to be bit-exact against the
+  hardware's behaviour, in integer arithmetic, on any Vulkan 1.1 card; the
+  core asks the bridge only for what it carries (no push-descriptor templates,
+  no buffer addresses: `ares/0039`) and accepts memory that is not coherent,
+  which is all the bridge offers (`ares/0040`).
 
-**What it costs:** the MAME licence. angrylion's code may be redistributed but
-not sold, which makes the built package non-commercial - the same position the
-gpgx, opera and snes9x packages are already in, and declared the same way in
-`waterbox/package-licenses.json`. If that is ever unacceptable, the only other
-software RDP is another MAME descendant, so the answer would have to be writing
-one.
+**What was measured** (Killer Instinct Gold (U) (V1.2), lavapipe): the native
+reference and the sandbox give the same machine, sound and picture at frame
+1200; with a save and a load before every frame, natively and in the sandbox
+for 1200 frames each, every frame's digests (picture, sound, memory, state)
+equal the straight run's, and no bridge call was refused. A first try without
+the noise count differed from frame 145, in the dither of a few thousand bytes
+of the frame buffer; one without the video interface's last picture gave the
+64DD's interlaced IPL screen another picture (only) after every load.
+
+**On a real card.** The same Killer Instinct Gold project through Chimera's
+runner (`chimera-run --gpu`), 1801 frames, on lavapipe under Linux and on a
+GeForce GTX 1060 under Windows: the pictures at frames 600, 1200 and 1800, all
+of RDRAM at the end and the recorded input log are identical between the two;
+and on the 1060 a run keeping a state every frame (the greenzone) gives the
+same as one keeping none. Speed on the 1060, first 600 frames: about 100
+frames a second with no states, 42 with a state every frame - most of that
+difference is the greenzone storing the 5 to 6 MB read back from the card for
+every state (TMEM, the RDP's ninth bits, the last picture). The RDP's device is
+made when the machine is built, so a card it cannot use is refused when the
+project opens (`error.n64_needs_vulkan`), and what it keeps on the card is in
+the card's own memory, copied out through a cached buffer only for a state.
+
+Not looked into further: with the CPU recompiler, a run that takes one of
+ares' own states every frame (the test runners' `--digest-every 1`, which
+Chimera never does; its states are the sandbox's) parts between the native
+reference and the sandbox in memory after some hundreds of frames, picture and
+sound still equal. ares resets both recompilers whenever it takes a state, so
+such a run recompiles everything every frame; with the interpreter the two
+agree, and so do the test programs. It has nothing to do with the renderer.
+
+**What it costs.** A Nintendo 64 project needs a graphics card with Vulkan
+1.1. And a movie made on the core before 2026-11-02 (angrylion) is a movie of
+another machine: what the RDP wrote, and when it reached RDRAM, were
+angrylion's, so such a movie may not play back the same here. The project
+pins the package it was made with, so Chimera says when the core differs.
+
+**The picture.** A progressive picture comes out of paraLLEl-RDP at 240 lines
+(288 for PAL); each is shown twice, so the picture is 640x480 (576) as it was.
+Fast VI maps to its "Disable Video Interface Processing" and Bob Deinterlacing
+to weave turned off. The first picture after a load can differ from the
+straight run's in an interlaced game, where a field is woven with the one
+before and the renderer made again has none; the machine does not.
 
 ### 2. The recompilers
 
@@ -119,16 +180,16 @@ is the first eleven; the rest are named where the thing they do is explained.
 | --- | --- |
 | `ares/0001` | `System::run` calls `vulkan.load` outside the `#if defined(VULKAN)` guard, so a software build does not compile. |
 | `ares/0002` | the interpreters become a build option. |
-| `ares/0003` | the video interface stopped tracking its dither-filter bit (VI_CONTROL bit 16) when ares handed the VI to paraLLEl-RDP. angrylion needs it. |
-| `ares/0004` | the angrylion graft. |
+| `ares/0003` | the video interface stopped tracking its dither-filter bit (VI_CONTROL bit 16) when ares handed the VI to paraLLEl-RDP; a game reading VI_CONTROL back sees it. |
+| `ares/0004` | retired 2026-11-02: the angrylion graft, gone with angrylion. |
 | `ares/0005` | the RTC's clock becomes a seam. |
-| `ares/0006` | **RDRAM's hidden bits.** The ninth bit of each RDRAM byte is allocated by the Vulkan path and nowhere else, so in a software build every RDRAM write dereferenced a null pointer. The machine now owns it, which also puts it in savestates where it belongs. |
+| `ares/0006` | **RDRAM's hidden bits.** The ninth bit of each RDRAM byte was the Vulkan renderer's memory, borrowed by the CPU. The machine owns the CPU's view of it, which puts it in savestates and makes it depend on no device; the RDP keeps its own (see "The renderer"). |
 | `ares/0007` | `nall::Path::user()` dereferences `getpwuid()` without checking it. There is no passwd database in a sandbox. nall's own `inode.hpp` null-checks the identical call, so this is an oversight rather than a design. |
 | `ares/0008` | the analogue stick is the byte, not a deflection - see below. |
 | `ares/0009` | `nall/decode/mmi.hpp` has no include guard, so including mia and the PC Engine together defines it twice. Only a build with more than one machine in it ever sees this. |
 | `ares/0010` | **nothing depends on the host's entropy** - see below. |
 | `ares/0011` | **the picture is drawn on the machine's thread** - see below. |
-| `angrylion-rdp/0001-2` | the rasteriser includes the header it uses, and its output buffer becomes part of its interface rather than something callers declare `extern` for themselves. |
+| `ares/0032`-`0042` | paraLLEl-RDP as this core needs it - see "The renderer". |
 
 Two of the later ones are a pair and are easy to mix up. `ares/0024` **refuses**
 the machines this core does not offer: mia would otherwise build them a pak out
@@ -854,8 +915,8 @@ in the table, waiting only for the owner's IPL ROM and a disk:
 
 One real fix came out of it and stayed: `g_isN64` asked which ID this was, so it
 caught the Nintendo 64 and would have missed every other machine ares builds
-through `Nintendo64::load`. angrylion's output pointer then stays null and the
-first frame takes the process with it. It asks which MACHINE now.
+through `Nintendo64::load`. angrylion's output pointer then stayed null and the
+first frame took the process with it. It asks which MACHINE now.
 
 ## A cartridge's save data went out backwards and never came back in (2026-10-15)
 

@@ -1,0 +1,29 @@
+--- a/ares/n64/vulkan/parallel-rdp/parallel-rdp/worker_thread.hpp
++++ b/ares/n64/vulkan/parallel-rdp/parallel-rdp/worker_thread.hpp
+@@ -49,7 +49,9 @@
+ 		, handles(std::move(globals))
+ #endif
+ 	{
++#if !(defined(CHIMERA_SINGLE_THREADED) && CHIMERA_SINGLE_THREADED)
+ 		thr = std::thread(&WorkerThread::main_loop, this);
++#endif
+ 	}
+ 
+ 	~WorkerThread()
+@@ -74,6 +76,16 @@
+ 
+ 	void push(T &&t)
+ 	{
++#if defined(CHIMERA_SINGLE_THREADED) && CHIMERA_SINGLE_THREADED
++		// Chimera: the work is done where it is asked for, on the machine's
++		// own thread, and finished before push returns.
++		if (executor.is_sentinel(t))
++			return;
++		executor.perform_work(t);
++		std::lock_guard<std::mutex> done{to_main_mutex};
++		executor.notify_work_locked(t);
++		return;
++#endif
+ 		std::lock_guard<std::mutex> holder{to_thread_mutex};
+ 		work_queue.push(std::move(t));
+ 		to_thread_cond.notify_one();

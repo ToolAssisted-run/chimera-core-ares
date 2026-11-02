@@ -1113,10 +1113,16 @@ def main():
     ports = {f"port{i}" for i in range(1, 9)}
     has_ports = [w for m in loaded if m.get("ports")
                    for w in (m.get("when") or [m["id"].lower()])]
+    # The renderer is the Nintendo 64's (and the 64DD's, the same machine with
+    # a drive): paraLLEl-RDP on a Vulkan device (chimera#446).
+    rdp_machines = [w for m in loaded if m["id"] in ("N64", "N64DD")
+                      for w in (m.get("when") or [m["id"].lower()])]
     for s in cfg["settings"]:
         if s.get("fromAres"):
             continue
-        if s["name"] in n64_only:
+        if s["name"] == "renderer":
+            s["when"] = rdp_machines
+        elif s["name"] in n64_only:
             s["when"] = ["n64"]
         elif s["name"] == "region":
             s["when"] = pal_capable

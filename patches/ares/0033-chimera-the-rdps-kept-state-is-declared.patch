@@ -1,0 +1,41 @@
+--- a/ares/n64/vulkan/vulkan.hpp
++++ b/ares/n64/vulkan/vulkan.hpp
+@@ -13,6 +13,38 @@
+   auto endScanout() -> void;
+   auto crashed() -> const char*;
+ 
++  //Chimera. The RDP's own state, kept by the machine: what paraLLEl-RDP holds
++  //on the device (TMEM, and the ninth bits of RDRAM the RDP writes) is read
++  //back before every savestate, and every state command (the combiner, the
++  //tiles, the images, the colours) and every VI register is kept as last sent.
++  //A processor made again - after a load, which in Chimera's sandbox is a new
++  //Vulkan context, and after any load of ares' own states - is given all of it
++  //before it draws again, so it goes on exactly where the old one was.
++  auto idle() -> void;             //every frame's end: the RDP's work done and in RDRAM
++  auto stateSaving() -> void;      //before a state is taken
++  auto serialize(serializer&) -> void;
++  auto checkContext() -> void;
++  auto rebuild() -> void;
++  auto keep(u32 code, const u32* words) -> void;
++
++  struct Kept {
++    bool valid = false;            //tmem and hidden hold what a processor had
++    bool restorePending = false;   //an ares state was loaded
++    u64  stateSet = 0;             //which of state[] were sent, by opcode
++    u8   tileSet = 0, tileSizeSet = 0;
++    u16  viSet = 0;
++    u32  noiseBase = 0;            //paraLLEl-RDP's count of primitives, which seeds dither noise
++    u32  viCounters[3] = {};       //its video interface's frame counts
++    u32  viWidth = 0, viHeight = 0;
++    u8   viPicture[640 * 576 * 4] = {};  //the picture it last made
++    u32  state[64][2] = {};
++    u32  tile[8][2] = {};
++    u32  tileSize[8][2] = {};
++    u32  vi[16] = {};
++    u8   tmem[0x1000] = {};
++    u8   hidden[0x400000] = {};
++  } kept;
++
+   struct Implementation;
+   Implementation* implementation = nullptr;
+ 

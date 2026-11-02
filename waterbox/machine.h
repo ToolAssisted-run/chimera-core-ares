@@ -102,6 +102,10 @@ namespace machine
 	 * neither, or the machine has one form only. Builds no machine. */
 	const char *gameRegion(const char *machineId, const char *romFile);
 
+	/* Before a state is taken: what the machine keeps on a device (the
+	 * Nintendo 64's RDP with paraLLEl-RDP) is brought back into it. */
+	void stateSaving(void);
+
 	/* Runs exactly one frame. Input is whatever was last given to setButton and
 	 * setAxis, which are indexed by the machine's declared order - see
 	 * waterbox/machines.inc, which is generated from ares itself. */

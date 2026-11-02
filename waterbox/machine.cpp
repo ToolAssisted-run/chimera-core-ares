@@ -6,12 +6,14 @@
  * Platform plus the loading sequence ares' own desktop-ui performs, generalised
  * over every console in waterbox/machines.h.
  *
- * Two things are deliberately NOT ares'. The Nintendo 64's display processor is
- * angrylion's software rasteriser (patches/ares/0004), because ares' own is
- * paraLLEl-RDP on Vulkan and a movie cannot be replayed on somebody else's
- * graphics driver. And the bindings between this core's declared inputs and
- * ares' nodes are generated (waterbox/machines.inc), because the order of a
- * controller's buttons is what a movie is written in.
+ * The Nintendo 64's display processor is ares' own, paraLLEl-RDP, on the
+ * frontend's Vulkan device through miniBox's bridge (chimera#446): it works
+ * on the machine's thread, its writes land in RDRAM at points the machine
+ * decides, and what it keeps on the device is kept by the machine too
+ * (patches/ares/0032 and after), so a movie replays the same on any card.
+ * The bindings between this core's declared inputs and ares' nodes are
+ * generated (waterbox/machines.inc), because the order of a controller's
+ * buttons is what a movie is written in.
  */
 #include <algorithm>
 #include "machine.h"
@@ -19,8 +21,6 @@
 #include "machines.inc"
 
 #include <mia/mia.hpp>
-
-#include <angrylion.h>
 
 #include <string.h>
 #include <string>
@@ -281,14 +281,31 @@ namespace
 			}
 		}
 
-		/* Everything but the Nintendo 64 draws through ares' own screen node,
-		 * which hands over finished ARGB8888 rows. */
+		/* Every machine draws through ares' own screen node, which hands over
+		 * finished ARGB8888 rows - the Nintendo 64 too, from paraLLEl-RDP's
+		 * scanout. */
 		auto video(Node::Video::Screen, const u32 *data, u32 pitch, u32 width, u32 height) -> void override
 		{
 			if (!g_rendering || data == nullptr) return;
 			if (width > VideoWidthMax) width = VideoWidthMax;
 			if (height > VideoHeightMax) height = VideoHeightMax;
 			u32 stride = pitch / sizeof(u32);
+			/* paraLLEl-RDP hands over a progressive picture at its 240 lines
+			 * (288 for PAL): each line is shown twice, so a Nintendo 64's
+			 * picture is 640x480 (576) whatever its mode, as it has always been
+			 * here. */
+			if (g_isN64 && height > 1 && height <= 288 && height * 2 <= VideoHeightMax)
+			{
+				for (u32 y = 0; y < height; y++)
+				{
+					const u32 *row = data + (size_t)y * stride;
+					memcpy(g_video + (size_t)(2 * y) * width, row, width * sizeof(u32));
+					memcpy(g_video + (size_t)(2 * y + 1) * width, row, width * sizeof(u32));
+				}
+				g_videoWidth = (int)width;
+				g_videoHeight = (int)height * 2;
+				return;
+			}
 			for (u32 y = 0; y < height; y++)
 			{
 				memcpy(g_video + (size_t)y * width, data + (size_t)y * stride, width * sizeof(u32));
@@ -667,12 +684,10 @@ namespace machine
 
 		g_spec = machines::find(config.machine ? config.machine : "N64");
 		if (g_spec == nullptr) return fail("error.no_machine");
-		/* Every machine ares builds through Nintendo64::load has angrylion for
-		 * its rasteriser, and angrylion has to be told where to draw before the
-		 * first frame. Asking by ID caught the Nintendo 64 and missed the
-		 * Nintendo 64DD, which is the same machine with a drive under it: the
-		 * output pointer stayed null and the first frame took the process with
-		 * it. The question is which MACHINE this is, so ask that. */
+		/* Every machine ares builds through Nintendo64::load is a Nintendo 64:
+		 * the 64DD is the same machine with a drive under it. Asking by ID once
+		 * caught the one and missed the other. The question is which MACHINE
+		 * this is, so ask that. */
 		g_isN64 = g_spec->load == ares::Nintendo64::load;
 		g_mediumFile = config.romFile ? config.romFile : "";
 		g_pal = config.pal && g_spec->configPal != nullptr;
@@ -855,13 +870,7 @@ namespace machine
 
 		if (g_isN64)
 		{
-			/* The picture is the rasteriser's, written straight into the buffer
-			 * the frontend reads. */
-			angrylion::OutFrameBuffer = g_video;
-			angrylion::OutHeight = g_pal ? 576 : 480;
-			Nintendo64::FastVI = config.fastVI;
 			Nintendo64::cpu.bootProbe = config.bootProbe;
-			Nintendo64::BobDeinterlace = config.bobDeinterlace;
 			Nintendo64::rtcEpoch = config.initTimeUnix;
 			g_videoWidth = 640;
 			g_videoHeight = g_pal ? 576 : 480;
@@ -883,6 +892,18 @@ namespace machine
 		 * they generate is guest memory, so a savestate carries it and a
 		 * machine put back to a frame runs on exactly as it did. */
 		if (g_isN64) g_spec->option("Recompiler", config.interpreter ? "false" : "true");
+		/* paraLLEl-RDP draws, on a Vulkan device, and the picture comes through
+		 * ares' screen node as every other machine's does. */
+		if (g_isN64)
+		{
+			g_spec->option("Enable GPU acceleration", "true");
+			/* The two picture settings, as paraLLEl-RDP has them: fastVI leaves
+			 * out the video interface's filters, bobDeinterlace shows each
+			 * field of an interlaced picture doubled rather than woven with the
+			 * one before. Neither changes the machine, only its picture. */
+			g_spec->option("Disable Video Interface Processing", config.fastVI ? "true" : "false");
+			g_spec->option("Weave Deinterlacing", config.bobDeinterlace ? "false" : "true");
+		}
 
 		const char *name = g_pal ? g_spec->configPal : g_spec->configNtsc;
 		if (name == nullptr) name = g_spec->configNtsc ? g_spec->configNtsc : g_spec->configPal;
@@ -924,6 +945,15 @@ namespace machine
 
 		FenvGuard guard(machineFenv());
 		g_root->power();
+		/* The Nintendo 64's RDP device, made now rather than at the first
+		 * frame (where ares makes it): a computer whose card cannot draw it -
+		 * no Vulkan 1.1, or no 8- and 16-bit storage buffers - is told so here
+		 * instead of being shown a black screen. */
+		if (g_isN64)
+		{
+			Nintendo64::vulkan.load({});
+			if (!Nintendo64::vulkan.implementation) return fail("error.n64_needs_vulkan");
+		}
 		bindInputs();
 		publishDomains();
 		publishBuses();
@@ -972,18 +1002,18 @@ namespace machine
 		/* an export's copy, read by now (see inFileOrder) */
 		if (!g_saveExport.empty()) std::vector<uint8_t>().swap(g_saveExport);
 		FenvGuard guard(machineFenv());
-		if (g_isN64) angrylion::OutFrameBuffer = g_rendering ? g_video : nullptr;
-
 		g_inputWasRead = false;
 		g_audioSamples = 0;
 
 		g_root->run();
+		/* The RDP's work done and in RDRAM at every frame's end, so that what
+		 * the CPU finds there never depends on whether a state was taken. */
+		if (g_isN64) Nintendo64::vulkan.idle();
+	}
 
-		if (g_isN64)
-		{
-			g_videoWidth = 640;
-			g_videoHeight = (int)angrylion::OutHeight;
-		}
+	void stateSaving(void)
+	{
+		if (g_isN64) Nintendo64::vulkan.stateSaving();
 	}
 
 	const uint32_t *video(void) { return g_video; }

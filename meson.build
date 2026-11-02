@@ -8,7 +8,6 @@ project('chimera-core-ares', 'c', 'cpp',
 fs = import('fs')
 
 ares_dir = meson.current_source_dir() / 'extern/ares'
-angrylion_dir = meson.current_source_dir() / 'extern/angrylion-rdp/mylittle-nocomment'
 
 if not fs.is_dir(ares_dir / 'ares')
   error('extern/ares is empty - run: git submodule update --init --recursive')
@@ -109,12 +108,29 @@ core_sources = [
   ares_dir / 'libco/libco.c',
   ares_dir / 'thirdparty/sljit/sljit_src/sljitLir.c',
   ares_dir / 'thirdparty/qon/qon.cpp',
-  # The software rasteriser, in paraLLEl-RDP's place.
-  angrylion_dir / 'angrylion.cpp',
-  angrylion_dir / 'n64video.cpp',
   # The machine as this core drives it.
   files('waterbox/machine.cpp'),
 ]
+
+# The Nintendo 64's RDP is ares' own: paraLLEl-RDP, on a Vulkan device
+# (chimera#446, owner 2026-11-02). Its sources are listed as ares' CMake lists
+# them.
+prdp_dir = ares_dir / 'ares/n64/vulkan/parallel-rdp'
+core_sources += ares_dir / 'ares/n64/vulkan/vulkan.cpp'
+foreach f : ['command_ring', 'rdp_device', 'rdp_dump_write', 'rdp_renderer', 'video_interface']
+  core_sources += prdp_dir / 'parallel-rdp' / (f + '.cpp')
+endforeach
+foreach f : ['buffer', 'buffer_pool', 'command_buffer', 'command_pool', 'context', 'cookie',
+             'descriptor_set', 'device', 'event_manager', 'fence', 'fence_manager', 'image',
+             'indirect_layout', 'memory_allocator', 'pipeline_event', 'query_pool', 'render_pass',
+             'sampler', 'semaphore', 'semaphore_manager', 'shader', 'texture/texture_format']
+  core_sources += prdp_dir / 'vulkan' / (f + '.cpp')
+endforeach
+foreach f : ['arena_allocator', 'logging', 'thread_id', 'aligned_alloc', 'timer',
+             'timeline_trace_file', 'thread_name', 'environment']
+  core_sources += prdp_dir / 'util' / (f + '.cpp')
+endforeach
+core_sources += prdp_dir / 'volk/volk.c'
 
 foreach s : ares_systems
   core_sources += ares_dir / 'ares' / s / (s + '.cpp')
@@ -167,7 +183,11 @@ core_inc = include_directories(
   'extern/ares/thirdparty/ymfm/src',
   'extern/ares/thirdparty/qon',
   'extern/ares/thirdparty/sljit/sljit_src',
-  'extern/angrylion-rdp/mylittle-nocomment',
+  'extern/ares/ares/n64/vulkan/parallel-rdp/parallel-rdp',
+  'extern/ares/ares/n64/vulkan/parallel-rdp/volk',
+  'extern/ares/ares/n64/vulkan/parallel-rdp/vulkan',
+  'extern/ares/ares/n64/vulkan/parallel-rdp/vulkan-headers/include',
+  'extern/ares/ares/n64/vulkan/parallel-rdp/util',
   'waterbox',
 )
 
@@ -177,14 +197,13 @@ core_inc = include_directories(
 gen_inc = include_directories('gen')
 
 # These MUST agree between the two flavours or they are not the same emulator:
-#   ANGRYLION           - without it ares' RDP decodes commands and draws nothing
-#   VULKAN (absent)     - paraLLEl-RDP is not built at all
+#   VULKAN              - the Nintendo 64's RDP is paraLLEl-RDP, on a Vulkan device
 #   WANT_*_INTERPRETER  - which of two CPU implementations is compiled
 #   MIA_LIBRARY         - mia without its GUI
 core_defines = [
   '-DNDEBUG',
   '-DMIA_LIBRARY',
-  '-DANGRYLION',
+  '-DVULKAN',
   # ares builds each machine one of two ways. A tool-assisted run wants the one
   # that models the hardware rather than the one that is quick about it.
   '-DPROFILE_ACCURACY',

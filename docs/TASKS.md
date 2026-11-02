@@ -56,6 +56,19 @@ Updated as the work lands. `[x]` means committed and gated.
       the MVS is the machine worth finishing.
 - [x] ~~Arcade~~ - dropped (user, 2026-09-11)
 
+## Nintendo 64 renderer (paraLLEl-RDP, 2026-11-02)
+- [x] **paraLLEl-RDP on the frontend's Vulkan device** in place of angrylion
+      (chimera#446): deterministic, kept across savestates, the same on
+      lavapipe and a GTX 1060 (docs/PLAN.md, "The renderer").
+- [ ] **Speed with a state every frame** - 42 frames a second against 100
+      without, on the 1060 (Killer Instinct Gold's first 600 frames). Every
+      state reads back TMEM, the RDP's ninth bits (4 MB) and the last picture;
+      reading only the ninth bits under the frame buffers drawn since the last
+      state would cut most of it.
+- [ ] **ares' own states every frame with the recompiler** - the native
+      reference and the sandbox part in memory (picture and sound equal);
+      ares resets its recompilers at every state. Test runners only.
+
 ## Ruffle
 - [x] A getenv per GL call, and a greenzone capturing what it could not afford
       (chimera e00b19c): 112 ms a frame to 48 on New Star Soccer

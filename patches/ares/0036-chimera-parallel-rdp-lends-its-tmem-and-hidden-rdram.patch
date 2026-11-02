@@ -1,0 +1,23 @@
+--- a/ares/n64/vulkan/parallel-rdp/parallel-rdp/rdp_device.hpp
++++ b/ares/n64/vulkan/parallel-rdp/parallel-rdp/rdp_device.hpp
+@@ -146,6 +146,20 @@
+ 	size_t get_hidden_rdram_size() const;
+ 	void *get_tmem();
+ 
++	// Chimera: the RDP's own memory - TMEM, and the hidden ninth bits of
++	// RDRAM - read and written whole, for a savestate and for a processor made
++	// again after one (a new Vulkan context). Call idle() first.
++	void chimera_read_tmem(void *data);
++	void chimera_write_tmem(const void *data);
++	void chimera_read_hidden_rdram(void *data, size_t size);
++	void chimera_write_hidden_rdram(const void *data, size_t size);
++	uint32_t chimera_noise_base() const { return renderer.chimera_get_base_primitive_index(); }
++	void chimera_set_noise_base(uint32_t index) { renderer.chimera_set_base_primitive_index(index); }
++	void chimera_read_vi_history(uint32_t counters[3], uint8_t *pixels, size_t max_bytes, unsigned &width, unsigned &height)
++	{ vi.chimera_read_history(counters, pixels, max_bytes, width, height); }
++	void chimera_write_vi_history(const uint32_t counters[3], const uint8_t *pixels, unsigned width, unsigned height)
++	{ vi.chimera_write_history(counters, pixels, width, height); }
++
+ 	// Sets VI register
+ 	void set_vi_register(VIRegister reg, uint32_t value);
+ 

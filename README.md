@@ -54,10 +54,12 @@ Adding a machine is a row in `waterbox/machines.h` and a regenerate; making one
 
 What the machines have in common:
 
-- **Everything drawn on the CPU.** ares renders the N64 through paraLLEl-RDP on
-  Vulkan; this core uses **angrylion's software rasteriser** instead, so the
-  picture is decided entirely by code Chimera compiles and is identical on every
-  machine. No GPU, no driver, no graphics context in a savestate.
+- **The Nintendo 64 is drawn on the graphics card.** Its display processor is
+  ares' own **paraLLEl-RDP** on a Vulkan device (a card with Vulkan 1.1), the
+  frontend's, through miniBox's Vulkan bridge. It works on the machine's
+  thread, its writes reach RDRAM at points the machine decides, and what it
+  keeps on the card is kept in the machine and in every savestate, so a movie
+  replays the same on any card. Every other machine is drawn on the CPU.
 - **Recompilers by default** for the N64's CPU and RSP, about three times as
   fast as the interpreters: the code they generate lives in the sandbox, so a
   savestate carries it and a movie replays. The setting CPU (n64Cpu) chooses the
@@ -158,7 +160,7 @@ and left out, so regenerate only with every BIOS there.
 
 The changes this core needs live in `patches/`, one directory per submodule,
 applied to the pristine pins by `waterbox/apply-patches.sh` (idempotent, and run
-automatically at configure time). There are twenty-nine, all small; six of them are
+automatically at configure time). There are forty-one, all small; six of them are
 plain bugs in ares that only show up in a build like this one - without Vulkan,
 with more than one machine, or inside a sandbox - and are worth offering
 upstream. `docs/PLAN.md` explains every one.
@@ -167,20 +169,15 @@ upstream. `docs/PLAN.md` explains every one.
 
 All emulation comes from **ares**, by Near, Themaister and contributors, ISC
 licensed, vendored unmodified as the submodule [`extern/ares`](extern/ares).
-The Reality Display Processor is **angrylion's**, descended from MESS, vendored
-as [`extern/angrylion-rdp`](extern/angrylion-rdp) from the branch
-[TASEmulators maintains](https://github.com/TASEmulators/angrylion-rdp) for
-BizHawk's own ares port. The integration layer is this repository's own work
-under the **MIT License**.
-
-**Built artifacts are non-commercial.** angrylion's RDP carries the MAME
-licence, which permits redistribution but forbids sale and commercial use, and
-the built core inherits that - the same position as the gpgx, opera and snes9x
-packages. See [`LICENSE`](LICENSE) and
+The Reality Display Processor is ares' **paraLLEl-RDP**, by Themaister, MIT
+licensed, vendored inside ares. The integration layer is this repository's
+own work under the **MIT License**. Until 2026-11-02 the core drew the
+Nintendo 64 with angrylion's software rasteriser, under the MAME licence; with
+it gone, nothing in the built core forbids commercial use. See
+[`LICENSE`](LICENSE) and
 [`waterbox/package-licenses.json`](waterbox/package-licenses.json).
 
 The prior art this port draws on: **BizHawk's Ares64**
 (TASEmulators/BizHawk `waterbox/ares64`), which established that ares' N64 fits
-in a waterbox at all and that angrylion is the way to draw it. This is a
-re-implementation against a 2026 ares rather than a port of that code;
-`docs/PLAN.md` says where the two diverge.
+in a waterbox at all. This is a re-implementation against a 2026 ares rather
+than a port of that code; `docs/PLAN.md` says where the two diverge.

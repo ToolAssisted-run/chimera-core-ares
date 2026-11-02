@@ -72,7 +72,10 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends meson ninja-build build-essential python3
+          # libvulkan1 and lavapipe (mesa-vulkan-drivers): the Nintendo 64's
+          # RDP is paraLLEl-RDP on a Vulkan device, and a runner has no GPU
+          sudo apt-get install -y --no-install-recommends meson ninja-build build-essential python3 \
+            libvulkan1 mesa-vulkan-drivers
 
       - name: Check out miniBox
         working-directory: chimera-checkout
@@ -146,7 +149,8 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             meson ninja-build build-essential cmake pkg-config python3 \
             ffmpeg \
-            libgl1-mesa-dev libx11-dev libxext-dev libasound2-dev
+            libgl1-mesa-dev libx11-dev libxext-dev libasound2-dev \
+            libvulkan1 mesa-vulkan-drivers
 
       - name: Cache Qt
         uses: actions/cache@v4

@@ -11,12 +11,25 @@ if meson.is_cross_build()
   mbuild = meson.get_external_property('minibox_build')
   sr = meson.get_external_property('guest_sysroot')
 
+  # paraLLEl-RDP draws through miniBox's Vulkan bridge: its guest half is the
+  # vk* commands, a wrapper each that hands the call to the frontend, generated
+  # from miniBox's shared list so an opcode means here what it means there.
+  vk_bridge = custom_target('vk-bridge',
+    output: ['vk-bridge-guest.c', 'vk-bridge-ops.h', 'vk-bridge-host.inc'],
+    command: [find_program('python3'), mb / 'source/vk/gen-vk-bridge.py',
+      mb / 'extern/vulkan-headers/registry/vk.xml',
+      mb / 'source/vk/vk-entry-points.txt', '@OUTDIR@'])
+  guest_libs = [static_library('vk-bridge-guest', [files(mb / 'source/vk/vk-guest.c'), vk_bridge[0], vk_bridge[1]],
+    c_args: ['-I' + mb / 'source/vk', '-I' + mb / 'extern/vulkan-headers/include', '-I' + meson.current_build_dir()])]
+  guest_args = core_args + ['-DCHIMERA_VK_BRIDGE']
+
   executable('core',
     core_sources + files('waterbox.cpp', 'guest-syscalls.cpp'),
     name_suffix: 'wbx',
     include_directories: [core_inc, gen_inc],
-    c_args: core_args,
-    cpp_args: core_args,
+    c_args: guest_args,
+    cpp_args: guest_args,
+    link_with: guest_libs,
     link_args: [
       '-static', '-no-pie',
       '-Wl,--eh-frame-hdr', '-Wl,-O2', '-Wl,--no-relax', '-Wl,-z,stack-size=8388608',
@@ -78,12 +91,26 @@ else
   endif
   if mbdir != ''
     mbhost = mbdir / 'build/meson-linux/source/host'
-    executable('run-wbx', files('run-wbx.cpp'),
+    # The Vulkan bridge's host half, the frontend's own file: it links
+    # against nothing and finds the computer's Vulkan loader when asked.
+    vk_bridge_host = custom_target('vk-bridge-host',
+      output: ['vk-bridge-host.inc', 'vk-bridge-ops.h', 'vk-bridge-guest.c'],
+      command: [find_program('python3'), mbdir / 'source/vk/gen-vk-bridge.py',
+        mbdir / 'extern/vulkan-headers/registry/vk.xml',
+        mbdir / 'source/vk/vk-entry-points.txt', '@OUTDIR@'])
+    rw_sources = [files('run-wbx.cpp', mbdir / 'source/vk/vk-host.c'), vk_bridge_host[0], vk_bridge_host[1]]
+    rw_args = core_args + ['-I' + mbdir / 'source/host', '-DCHIMERA_VK_BRIDGE']
+    rw_c_args = ['-DCHIMERA_VK_BRIDGE', '-I' + mbdir / 'source/vk', '-I' + mbdir / 'extern/vulkan-headers/include',
+      '-I' + meson.current_build_dir()]
+    rw_deps = [meson.get_compiler('c').find_library('dl')]
+    executable('run-wbx', rw_sources,
       # -I rather than include_directories(): meson refuses to make an absolute
       # path to a directory inside the source tree, and in CI the Chimera
       # checkout (and so miniBox) sits inside this repository's workspace.
       include_directories: [core_inc],
-      cpp_args: core_args + ['-I' + mbdir / 'source/host'],
+      c_args: rw_c_args,
+      cpp_args: rw_args,
+      dependencies: rw_deps,
       link_args: [mbhost / 'libminiboxhost.so'],
       build_rpath: mbhost,
       install: false)

@@ -44,10 +44,8 @@ submodule `<chimera>/extern/chimera-common-minibox`.
 
 ## Get the sources
 
-This repository, with its two submodules: `extern/ares` (upstream ares) and
-`extern/angrylion-rdp` (the software rasteriser for the Nintendo 64, from
-the `ares` branch of TASEmulators/angrylion-rdp). The workflow uses
-`actions/checkout@v6` with `submodules: true`, which is:
+This repository, with its submodule `extern/ares` (upstream ares). The
+workflow uses `actions/checkout@v6` with `submodules: true`, which is:
 
     git clone https://github.com/ToolAssisted-run/chimera-core-ares.git
     cd chimera-core-ares
@@ -95,8 +93,8 @@ machine they simply stay where they are.
 
 ## Build the core
 
-**Patches.** `patches/` holds one directory per submodule: `patches/ares/`
-(25 patches) and `patches/angrylion-rdp/` (2). There is no separate step:
+**Patches.** `patches/ares/` holds the patch series (41 patches). There is
+no separate step:
 `meson.build` runs `waterbox/apply-patches.sh` every time it configures.
 The script takes each patch file by itself:
 
@@ -109,9 +107,8 @@ The script takes each patch file by itself:
 It stops with an error only when a submodule is not checked out. A warning
 therefore does not stop the build: treat one as an error.
 
-Once the patches are applied, `git status` shows `extern/ares` and
-`extern/angrylion-rdp` as modified. That is the patch set; it is not
-committed.
+Once the patches are applied, `git status` shows `extern/ares` as modified.
+That is the patch set; it is not committed.
 
 **The native reference and the sandbox driver.**
 
@@ -141,9 +138,14 @@ This builds three programs in `build/meson-native/waterbox`:
 libstdc++. The result is `build/meson-guest/waterbox/core.wbx`.
 
 Both flavours are built with the same defines (`core_defines` in
-`meson.build`): the interpreters and not the recompilers, angrylion's
-software rasteriser and no Vulkan, one thread, a pinned power-on seed. They
-must agree or the two are not the same emulator.
+`meson.build`): paraLLEl-RDP for the Nintendo 64 (`VULKAN`), one thread, a
+pinned power-on seed. They must agree or the two are not the same emulator.
+The guest also gets `CHIMERA_VK_BRIDGE`: its Vulkan commands are miniBox's
+bridge, where the native reference opens the computer's Vulkan loader.
+
+**Vulkan.** The Nintendo 64's tests draw on a Vulkan device, natively and
+through the bridge (run-wbx carries the bridge's host half). On a computer
+with no GPU, lavapipe does it: `libvulkan1` and `mesa-vulkan-drivers`.
 
 ## Build the package
 

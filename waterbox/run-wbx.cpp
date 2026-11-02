@@ -82,6 +82,12 @@ static ptrfn_i g_GetMemoryDomainName, g_GetMemoryDomainPtr;
 static i64fn_i g_GetMemoryDomainSize;
 static voidfn_i g_SetRenderingEnabled;
 static int g_rerecord;
+
+/* before every state, as the frontend does: what the machine keeps on a
+ * device is brought back into it */
+typedef void (MB_GUEST_ABI *voidfn)(void);
+static voidfn g_StateSaving;
+static void state_saving(void) { if (g_StateSaving) g_StateSaving(); }
 static membuf g_state;
 
 static uintptr_t proc(mb_host *h, const char *n)
@@ -92,6 +98,69 @@ static uintptr_t proc(mb_host *h, const char *n)
 	if (!r.data) { fprintf(stderr, "missing required export %s\n", n); exit(2); }
 	return r.data;
 }
+
+/* The Vulkan bridge's host half (miniBox source/vk/vk-host.c), offered as the
+ * frontend offers it: paraLLEl-RDP draws the Nintendo 64 through it. A load is
+ * a new context there, so every load says so. CHIMERA_GPU=0 offers nothing. */
+#ifdef CHIMERA_VK_BRIDGE
+extern "C" {
+int chimera_vk_host_init(char *err, int errlen);
+uintptr_t chimera_vk_host_dispatch(uintptr_t op, uintptr_t a, uintptr_t b, uintptr_t c, uintptr_t d, uintptr_t e);
+void chimera_vk_host_state_loaded(void);
+void chimera_vk_host_shutdown(void);
+const char *chimera_vk_host_description(void);
+unsigned long chimera_vk_host_refused(long *last_op);
+}
+static int g_vulkan;
+
+static void vk_state_loaded(void)
+{
+	if (g_vulkan) chimera_vk_host_state_loaded();
+}
+
+static void vk_offer(void)
+{
+	const char *want = getenv("CHIMERA_GPU");
+	if (want && !strcmp(want, "0")) return;
+	mb_return r;
+	wbx_get_proc_addr(g_host, "SetVulkanBridge", &r);
+	if (r.error_message[0] || !r.data) return;
+	typedef void (MB_GUEST_ABI *setfn_v)(uint64_t);
+	setfn_v set_vulkan = (setfn_v)r.data;
+	char err[256] = "";
+	if (chimera_vk_host_init(err, (int)sizeof err) != 0)
+	{
+		fprintf(stderr, "vulkan bridge: %s\n", err);
+		return;
+	}
+	wbx_get_callback_addr(g_host, (mb_external_callback)chimera_vk_host_dispatch, 2, &r);
+	if (!r.data)
+	{
+		fprintf(stderr, "vulkan bridge: could not register the callback\n");
+		return;
+	}
+	set_vulkan((uint64_t)r.data);
+	g_vulkan = 1;
+}
+
+/* A refused command is one sent with an object the host does not know - of a
+ * device a load destroyed, as a rule. The gate fails on it. */
+static void vk_report(void)
+{
+	long last = 0;
+	if (!g_vulkan) return;
+	const char *card = chimera_vk_host_description();
+	if (card && card[0]) fprintf(stderr, "vulkan bridge: %s\n", card);
+	const unsigned long n = chimera_vk_host_refused(&last);
+	if (n) fprintf(stderr, "vulkan bridge: %lu calls were refused (last opcode %ld)\n", n, last);
+	chimera_vk_host_shutdown();
+	fflush(stderr);
+}
+#else
+static void vk_state_loaded(void) { }
+static void vk_offer(void) { }
+static void vk_report(void) { }
+#endif
 
 static int core_init(void) { return 1; }  /* Init ran before Seal */
 static int core_button_count(void) { return machines::buttonCount(); }
@@ -149,6 +218,7 @@ static void core_snapshot(int save)
 	if (save)
 	{
 		g_rewind.len = 0;
+		state_saving();
 		wbx_save_state(g_host, mem_write, (uintptr_t)&g_rewind, &r);
 		if (r.error_message[0]) { fprintf(stderr, "save_state: %s\n", r.error_message); exit(1); }
 		return;
@@ -156,6 +226,7 @@ static void core_snapshot(int save)
 	g_rewind.pos = 0;
 	wbx_load_state(g_host, mem_read, (uintptr_t)&g_rewind, &r);
 	if (r.error_message[0]) { fprintf(stderr, "load_state: %s\n", r.error_message); exit(1); }
+	vk_state_loaded();
 
 	/* The strongest thing a savestate can be asked: put one back and take
 	 * another, and the two must be the same bytes. A state carries the dirty
@@ -164,6 +235,7 @@ static void core_snapshot(int save)
 	 * load, rather than as a desync some frames later. */
 	static membuf again;
 	again.len = 0;
+	state_saving();
 	wbx_save_state(g_host, mem_write, (uintptr_t)&again, &r);
 	if (r.error_message[0]) { fprintf(stderr, "save_state: %s\n", r.error_message); exit(1); }
 	if (again.len != g_rewind.len || memcmp(again.b, g_rewind.b, again.len) != 0)
@@ -193,6 +265,7 @@ static int core_state_file(const char *path, int save)
 	if (save)
 	{
 		membuf out = { 0 };
+		state_saving();
 		wbx_save_state(g_host, mem_write, (uintptr_t)&out, &r);
 		if (r.error_message[0]) { fprintf(stderr, "save_state: %s\n", r.error_message); return 0; }
 		FILE *f = fopen(path, "wb");
@@ -217,6 +290,7 @@ static int core_state_file(const char *path, int save)
 	wbx_load_state(g_host, mem_read, (uintptr_t)&in, &r);
 	free(in.b);
 	if (r.error_message[0]) { fprintf(stderr, "load_state: %s\n", r.error_message); return 0; }
+	vk_state_loaded();
 	return 1;
 }
 
@@ -225,11 +299,13 @@ static void core_pre_frame(void)
 	if (!g_rerecord) return;
 	mb_return r;
 	g_state.len = 0;
+	state_saving();
 	wbx_save_state(g_host, mem_write, (uintptr_t)&g_state, &r);
 	if (r.error_message[0]) { fprintf(stderr, "save_state: %s\n", r.error_message); exit(1); }
 	g_state.pos = 0;
 	wbx_load_state(g_host, mem_read, (uintptr_t)&g_state, &r);
 	if (r.error_message[0]) { fprintf(stderr, "load_state: %s\n", r.error_message); exit(1); }
+	vk_state_loaded();
 }
 
 int main(int argc, char **argv)
@@ -321,6 +397,14 @@ int main(int argc, char **argv)
 	g_GetSaveDataFileSize = (i64fn_i)proc(g_host, "GetSaveDataFileSize");
 	g_GetSaveDataFileBuffer = (ptrfn_i)proc(g_host, "GetSaveDataFileBuffer");
 
+	/* the GPU, before Init: Init is where the RDP makes its device */
+	vk_offer();
+	{
+		mb_return sr;
+		wbx_get_proc_addr(g_host, "StateSaving", &sr);
+		g_StateSaving = (!sr.error_message[0] && sr.data) ? (voidfn)sr.data : NULL;
+	}
+
 	/* Init runs before Seal - the loaded machine is the sealed baseline. */
 	if (g_Init() != 1)
 	{
@@ -343,6 +427,7 @@ int main(int argc, char **argv)
 		core_save_data, core_bus_read, core_domain_hidden,
 	};
 	int ret = gate_run(&core, &opts);
+	vk_report();
 
 	wbx_deactivate_host(g_host, &r);
 	wbx_destroy_host(g_host, &r);

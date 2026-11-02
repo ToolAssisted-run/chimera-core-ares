@@ -5,15 +5,17 @@ This repository builds the ares multi-system emulator as a core for Chimera
 speedruns. It produces one file, `ares.chimeraCore`: the emulator as a
 sandboxed guest (`core.wbx`) plus the declarations Chimera reads. One
 package holds every machine (thirty); the `machine` setting picks one.
-Upstream ares and angrylion's rasteriser are submodules; everything else
-here is the machine layer, the generators, the build and the gates.
+Upstream ares is a submodule; everything else here is the machine layer, the
+generators, the build and the gates. The Nintendo 64 is drawn by ares' own
+paraLLEl-RDP on a Vulkan device (the frontend's, through miniBox's Vulkan
+bridge), so its tests need Vulkan: lavapipe (mesa-vulkan-drivers) is enough.
 
 `<chimera>` is a Chimera checkout and `<miniBox>` is its submodule
 `<chimera>/extern/chimera-common-minibox`.
 
 ## Layout
 
-- `extern/ares/`, `extern/angrylion-rdp/` - upstream, pinned submodules.
+- `extern/ares/` - upstream, a pinned submodule.
 - `patches/<submodule>/` - the patch series, one directory per submodule.
 - `meson.build`, `waterbox/meson.build`, `gen/` - both builds. A cross
   build is the guest; anything else is the native reference.
@@ -102,11 +104,11 @@ contract tests, which CI also runs on the package.
 
 ## Rules of this repository
 
-- **Upstream is not edited in place.** A change to `extern/ares` or
-  `extern/angrylion-rdp` is a numbered patch in `patches/<submodule>/`.
-  `meson.build` runs `waterbox/apply-patches.sh` on every configure. Never
-  commit inside a submodule. `git status` shows both modified once the
-  patches are applied; that is expected.
+- **Upstream is not edited in place.** A change to `extern/ares` is a
+  numbered patch in `patches/ares/`. `meson.build` runs
+  `waterbox/apply-patches.sh` on every configure. Never commit inside a
+  submodule. `git status` shows it modified once the patches are applied;
+  that is expected.
 - **A patch warning is an error.** The script applies each patch that
   applies, skips each that is already there, and only WARNS about one that
   is neither. The build then goes on without it. Read Chimera's

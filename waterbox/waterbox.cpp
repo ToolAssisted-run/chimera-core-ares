@@ -92,6 +92,39 @@ extern "C"
 
 ECL_EXPORT const char *GetLoadError(void) { return g_loadError; }
 
+#if defined(CHIMERA_VK_BRIDGE)
+/* The Vulkan bridge, offered before Init when the project asks for the GPU:
+ * the Nintendo 64's RDP (paraLLEl-RDP) draws on the frontend's Vulkan device
+ * through it. Every other machine ignores it. */
+typedef uint64_t (*chimera_vk_bridge_fn)(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
+extern "C" bool chimera_vk_install(chimera_vk_bridge_fn bridge);
+static bool g_vulkanBridge = false;
+static chimera_vk_bridge_fn g_vulkanHost = nullptr;
+
+/* After a load the host has a new context, and every object the renderer
+ * held is gone. The renderer lets go of them all the same, to free its own
+ * memory; while it does, the bridge is quiet - nothing crosses, and every
+ * command answers success - so the host is not asked about objects it no
+ * longer has (vulkan.cpp, Vulkan::unload). */
+static bool g_vulkanQuiet = false;
+extern "C" void chimera_vk_quiet(bool on) { g_vulkanQuiet = on; }
+static uint64_t vulkanBridge(uint64_t op, uint64_t a, uint64_t b, uint64_t c, uint64_t d, uint64_t e)
+{
+	if (g_vulkanQuiet && op >= 100) return 0;
+	return g_vulkanHost(op, a, b, c, d, e);
+}
+
+ECL_EXPORT void SetVulkanBridge(uint64_t addr)
+{
+	g_vulkanHost = reinterpret_cast<chimera_vk_bridge_fn>(addr);
+	g_vulkanBridge = g_vulkanHost != nullptr && chimera_vk_install(vulkanBridge);
+}
+#endif
+
+/* Before the frontend takes a state: what the machine keeps on a device is
+ * brought back into it (machine.h). */
+ECL_EXPORT void StateSaving(void) { machine::stateSaving(); }
+
 /* For the New Project window: the region the game is made for, as ares' own
  * media reader says, on a machine that has an NTSC and a PAL form. The region
  * setting is NTSC at first, and a European game on an NTSC console stays
@@ -159,6 +192,16 @@ ECL_EXPORT int Init(void)
 
 	machine::Config config = {};
 	config.machine = machineId();
+#if defined(CHIMERA_VK_BRIDGE)
+	/* A Nintendo 64 is drawn by paraLLEl-RDP on the frontend's Vulkan device:
+	 * without one there would be no RDP at all, and the game would run as no
+	 * Nintendo 64 does. Said here, rather than as a black screen. */
+	if ((!strcmp(config.machine, "N64") || !strcmp(config.machine, "N64DD")) && !g_vulkanBridge)
+	{
+		snprintf(g_loadError, sizeof g_loadError, "error.n64_needs_vulkan");
+		return 0;
+	}
+#endif
 	config.romFile = rom;
 	config.subRomFile = subRom;
 	config.subRomFile2 = subRom2;
