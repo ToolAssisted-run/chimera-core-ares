@@ -1361,6 +1361,24 @@ moving content and **changes nothing this core hands over**; it is declared
 because ares declares it, and it is worth knowing it is inert here.
 
 
+## The region is suggested from the game (2026-11-02, chimera#447)
+
+The region setting starts at NTSC, and a European game on an NTSC console can
+stay black: Rogue Squadron (Europe) (Rev A) did, at frames 700, 1350 and 1500,
+and on a PAL console shows its language screen. So the package declares
+`"suggestSettings": true`, and `SuggestSettings` (waterbox.cpp) reads the game
+with ares' own media reader, the same reading the machine is built from, and
+suggests the region it names: `pal` for a game made for PAL consoles, `ntsc`
+for one made for NTSC consoles, nothing for a game made for both (mia's
+"NTSC,PAL,MPAL" for a Nintendo 64 cartridge whose country is 0, and the lists
+it gives a Mega Drive cartridge that names several) or for a machine with one
+form only. New Project puts the value in and says where it came from
+(`suggest.region`). It is a suggestion: the person can still choose.
+
+The frontend gate asks it of the test cartridge three ways: as it is (made for
+every region: nothing suggested), with its country letter made "E" (NTSC) and
+made "P" (PAL). With PAL not read, two of the three failed.
+
 ## The Neo Geo booted into its controller test
 
 Reported as a DIP switch, and it was not one - but the reporter was right that

@@ -95,6 +95,13 @@ namespace machine
 	void shutdown(void);
 	const char *error(void);
 
+	/* The region the game in romFile is made for, as ares' own media reader
+	 * says - "pal" or "ntsc" - on a machine that has both forms: what the New
+	 * Project window suggests, so that a European game does not get an NTSC
+	 * console by default (chimera#447). Null when the game says both or
+	 * neither, or the machine has one form only. Builds no machine. */
+	const char *gameRegion(const char *machineId, const char *romFile);
+
 	/* Runs exactly one frame. Input is whatever was last given to setButton and
 	 * setAxis, which are indexed by the machine's declared order - see
 	 * waterbox/machines.inc, which is generated from ares itself. */

@@ -137,6 +137,39 @@ echo
 one "GB libbet"       gb  GB  libbet.gb          120
 one "GBA arm tests"   gba GBA gba-arm.gba        120
 one "N64 helloworld"  n64 N64 helloworld-cpu.n64 120
+# The region a game is made for, which the core suggests in New Project
+# (chimera#447: a European game on the NTSC console the setting starts at
+# stayed black). The test cartridge's country is 0, which ares reads as made
+# for every region, so nothing is suggested; with its country letter made "E"
+# (North America) it is an NTSC game, and "P" (Europe) a PAL one. Nothing is
+# booted: the core is only asked.
+suggest() {
+	leg="$1"; letter="$2"; want="$3"
+	run="$chimera/build/meson-linux/chimera-run"
+	[ -x "$run" ] || { say_skip "$leg (no chimera-run at $run)"; return; }
+	w="$work/suggest-${want:-none}"
+	rm -rf "$w"; mkdir -p "$w"
+	python3 - "$content/helloworld-cpu.n64" "$w/helloworld-cpu.n64" "$letter" <<'PY'
+import sys
+game = bytearray(open(sys.argv[1], "rb").read())
+if sys.argv[3]:
+    game[0x3e] = ord(sys.argv[3])
+open(sys.argv[2], "wb").write(game)
+PY
+	if ! python3 "$here/tests/make-project.py" "$package" n64 "$w/helloworld-cpu.n64" "$w/p.chimeraProject" 1 >"$w/mk.err" 2>&1; then
+		say_fail "$leg" "the project could not be written: $(tail -1 "$w/mk.err")"; return
+	fi
+	got="$("$run" --project "$w/p.chimeraProject" "$package" --files "$w" --suggest 2>&1 | tail -1)"
+	case "$want:$got" in
+		:*'"values":{}'*) say_pass "$leg" ;;
+		?*:*"\"region\":\"$want\""*) say_pass "$leg" ;;
+		*) say_fail "$leg" "the core suggested: $got" ;;
+	esac
+}
+suggest "N64 region suggested from the game: none for every region" "" ""
+suggest "N64 region suggested from the game: NTSC" E ntsc
+suggest "N64 region suggested from the game: PAL" P pal
+
 # The PlayStation is deliberately absent. The core will boot one with nothing in
 # its drive - that is the gate's PS1 leg - but a project cannot be made that way:
 # file_slots.json declares the cartridge slot min:1, and it is one slot shared by

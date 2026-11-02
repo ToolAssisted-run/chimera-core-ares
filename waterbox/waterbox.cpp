@@ -45,28 +45,24 @@ namespace
 	}
 }
 
-extern "C"
+/* The game's mounted name, or null for a project with no game. The name
+ * comes from the project's slot map; "rom" is the fallback for a host that
+ * mounts one file and no map.
+ *
+ * A machine that boots with nothing in its drive - a PlayStation reaching its
+ * BIOS shell, an MSX reaching its own BASIC - is started with no medium at
+ * all. Rather than ask which machines those are, look.
+ *
+ * The test is EMPTY, not absent. Chimera mounts the rom slot whatever the
+ * project holds, so a project with no game in it still has a file of that
+ * name and it is zero bytes long; asking only whether it opens finds a medium
+ * that is not there, and the machine then fails to load a game nobody chose.
+ * run-wbx mounts real files only, so both runners agree on this reading and
+ * only this one. */
+static const char *mountedRom(void)
 {
-
-ECL_EXPORT const char *GetLoadError(void) { return g_loadError; }
-
-ECL_EXPORT int Init(void)
-{
-	/* The rom's name comes from the project's slot map; "rom" is the fallback
-	 * for a host that mounts one file and no map. */
 	static char romName[256];
 	if (!wbx_slot_first("rom", romName, (int)sizeof romName)) snprintf(romName, sizeof romName, "rom");
-
-	/* A machine that boots with nothing in its drive - a PlayStation reaching
-	 * its BIOS shell, an MSX reaching its own BASIC - is started with no medium
-	 * at all. Rather than ask which machines those are, look.
-	 *
-	 * The test is EMPTY, not absent. Chimera mounts the rom slot whatever the
-	 * project holds, so a project with no game in it still has a file of that
-	 * name and it is zero bytes long; asking only whether it opens finds a
-	 * medium that is not there, and the machine then fails to load a game
-	 * nobody chose. run-wbx mounts real files only, so both runners agree on
-	 * this reading and only this one. */
 	const char *rom = romName;
 	if (FILE *probe = fopen(romName, "rb"))
 	{
@@ -74,6 +70,48 @@ ECL_EXPORT int Init(void)
 		fclose(probe);
 	}
 	else rom = nullptr;
+	return rom;
+}
+
+/* Which machine the project chose, by its id in waterbox/machines.h. The
+ * setting is lower case because that is what an enum setting looks like in a
+ * project; the machine ids are upper. */
+static const char *machineId(void)
+{
+	static char machineName[32];
+	if (wbx_setting_str("machine", machineName, (int)sizeof machineName) < 0)
+	{
+		snprintf(machineName, sizeof machineName, "n64");
+	}
+	for (char *c = machineName; *c; c++) if (*c >= 'a' && *c <= 'z') *c -= 32;
+	return machineName;
+}
+
+extern "C"
+{
+
+ECL_EXPORT const char *GetLoadError(void) { return g_loadError; }
+
+/* For the New Project window: the region the game is made for, as ares' own
+ * media reader says, on a machine that has an NTSC and a PAL form. The region
+ * setting is NTSC at first, and a European game on an NTSC console stays
+ * black or shows the wrong picture (chimera#447). Nothing is built. */
+static char g_suggestion[256];
+ECL_EXPORT const char *SuggestSettings(void)
+{
+	const char *rom = mountedRom();
+	const char *region = rom != nullptr ? machine::gameRegion(machineId(), rom) : nullptr;
+	if (region != nullptr)
+		snprintf(g_suggestion, sizeof g_suggestion, "{\"values\":{\"region\":\"%s\"},\"note\":\"suggest.region\\u001f%s\"}",
+			region, strcmp(region, "pal") == 0 ? "PAL" : "NTSC");
+	else
+		snprintf(g_suggestion, sizeof g_suggestion, "{\"values\":{},\"note\":\"\"}");
+	return g_suggestion;
+}
+
+ECL_EXPORT int Init(void)
+{
+	const char *rom = mountedRom();
 
 	/* A slot on the CARTRIDGE, for the machines whose cartridges have one -
 	 * a Satellaview pack, a Sufami Turbo minicart, a Game Boy cartridge in a
@@ -119,17 +157,8 @@ ECL_EXPORT int Init(void)
 		}
 	}
 
-	static char machineName[32];
-	if (wbx_setting_str("machine", machineName, (int)sizeof machineName) < 0)
-	{
-		snprintf(machineName, sizeof machineName, "n64");
-	}
-	/* The setting is lower case because that is what an enum setting looks like
-	 * in a project; the machine ids are upper. */
-	for (char *c = machineName; *c; c++) if (*c >= 'a' && *c <= 'z') *c -= 32;
-
 	machine::Config config = {};
-	config.machine = machineName;
+	config.machine = machineId();
 	config.romFile = rom;
 	config.subRomFile = subRom;
 	config.subRomFile2 = subRom2;

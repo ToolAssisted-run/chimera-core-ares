@@ -584,6 +584,25 @@ namespace machine
 {
 	const char *error(void) { return g_error; }
 
+	const char *gameRegion(const char *machineId, const char *romFile)
+	{
+		const machines::Spec *spec = machines::find(machineId ? machineId : "N64");
+		if (spec == nullptr || spec->configPal == nullptr || spec->miaMedium == nullptr || romFile == nullptr || !*romFile)
+			return nullptr;
+		auto medium = mia::Medium::create(spec->miaMedium);
+		if (!medium || medium->load(romFile) != successful) return nullptr;
+		/* "NTSC", "PAL", or a list such as "NTSC-J, NTSC-U, PAL" for a game
+		 * made for several, which suggests nothing */
+		bool ntsc = false, pal = false;
+		const string regions = medium->pak->attribute("region");
+		for (auto &region : nall::split_and_strip(regions, ","))
+		{
+			if (region.beginsWith("NTSC")) ntsc = true;
+			else if (region.beginsWith("PAL")) pal = true;
+		}
+		return pal == ntsc ? nullptr : pal ? "pal" : "ntsc";
+	}
+
 	/* Takes the machine apart in the order ares' own frontend does
 	 * (desktop-ui Emulator::unload: root->unload(), then the root dropped),
 	 * with every node this file still holds let go first. Left to the static
