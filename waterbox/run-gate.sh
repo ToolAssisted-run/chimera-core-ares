@@ -895,8 +895,9 @@ else
 	else
 		# what the machine hands over that an HLE boot cannot have: the cycle
 		# counter and the two free-running clocks, the boot ROM's scratch space
-		# in RSP instruction memory, the registers its checksum loop left
-		# behind, and a serial transfer caught halfway.
+		# in RSP instruction memory (all but its first eight words, imem0 to
+		# imem7, which bootHLE writes and which must match), the registers its
+		# checksum loop left behind, and a serial transfer caught halfway.
 		expected="r1 r2 r3 r12 r13 r14 r15 r25 lo hi c9 imem"
 		unexpected=""
 		for field in $(diff "$work/real.sorted" "$work/hle.sorted" \

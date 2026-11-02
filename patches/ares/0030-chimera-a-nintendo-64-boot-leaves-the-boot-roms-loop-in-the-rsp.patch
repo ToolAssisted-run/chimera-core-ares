@@ -1,0 +1,45 @@
+--- a/ares/n64/pif/hle.cpp
++++ b/ares/n64/pif/hle.cpp
+@@ -394,8 +394,8 @@
+ //reproduce, and this does not pretend to:
+ //
+ //  - the cycle counter, because the boot it skips takes five million cycles;
+-//  - the RSP instruction memory, which the boot ROM uses as scratch space and
+-//    IPL3 never reads;
++//  - the RSP instruction memory past its first eight words, which the boot ROM
++//    uses as scratch space and no boot code reads;
+ //  - the registers the boot ROM's checksum loop happened to leave behind (v0,
+ //    v1, t4-t7, t9, lo and hi), which are scratch and not part of what it hands
+ //    to IPL3;
+@@ -425,6 +425,20 @@
+     rsp.dmem.write<Word>(address, boot.read<Word>(address));
+   }
+ 
++  //The first eight words the boot ROM leaves in the RSP's instruction memory,
++  //which it runs from: a loop that waits for the PIF and then reads the CIC's
++  //seed. A cartridge with a CIC-NUS-6105 chip uses that loop after the boot,
++  //and Banjo-Tooie, for one, stops on a scene with no characters without it
++  //(chimera#434). These 32 bytes are Nintendo's code, and the only part of the
++  //boot ROM this core carries (user-decided, 2026-11-02). They are the words
++  //mupen64plus's boot writes, and they were measured: a real NTSC boot leaves
++  //exactly these for every cartridge tried, and run-gate.sh compares them.
++  static constexpr u32 bootRomLoop[8] = {
++    0x3c0d'bfc0, 0x8da8'07fc, 0x25ad'07c0, 0x3108'0080,
++    0x5500'fffc, 0x3c0d'bfc0, 0x8da8'0024, 0x3c0b'b000,
++  };
++  for(u32 i : range(8)) rsp.imem.write<Word>(i * 4, bootRomLoop[i]);
++
+   //The PIF's boot handshake, run to the point the processor would have reached
+   //it. mainHLE() bills the PIF thread for the time it takes; that time did not
+   //pass, so the clock is put back - a thread that starts ahead of the others
+@@ -462,6 +476,10 @@
+   r[20].u64 = ntsc ? 1 : 0;                       //s4: osTvType
+   r[22].u64 = cic.seed;                           //s6: the CIC's seed
+   r[23].u64 = ntsc ? 1 : 7;                       //s7: osVersion
++  //t8: 2 with a CIC-NUS-6105 chip (and its PAL twin, the 7105), else 0.
++  //Measured: Banjo-Tooie and Ocarina of Time have the chip, Killer Instinct
++  //Gold and Rogue Squadron do not.
++  if(cic.model == "CIC-NUS-6105" || cic.model == "CIC-NUS-7105") r[24].u64 = 2;
+   r[29].u64 = s32(0xa400'1ff0);                   //sp
+   r[31].u64 = s32(ntsc ? 0xa400'1550 : 0xa400'1554);  //ra: back into the boot ROM
+ 

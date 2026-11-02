@@ -267,6 +267,23 @@ registers its checksum loop left behind, and a serial transfer caught halfway. A
 new difference appearing is the leg's whole reason to exist. It skips where there
 is no ROM to compare against, which is everywhere but a developer's machine.
 
+**The boot ROM's loop in the RSP (user-decided, 2026-11-02, chimera#434).** The
+boot ROM runs from the RSP's instruction memory and leaves its code there. IPL3
+never reads it, except on a cartridge with a CIC-NUS-6105 chip, which runs the
+first eight words again after the boot: a loop that waits for the PIF and reads
+the CIC's seed. Without them Banjo-Tooie stopped on a scene with no characters.
+`patches/ares/0030` writes those eight words (32 bytes of Nintendo's code, the
+same words mupen64plus's boot writes) at the start of instruction memory. The
+owner decided to carry them; they are the only part of the boot ROM this core
+does. Measured: a real NTSC boot leaves exactly these words for Banjo-Tooie,
+Killer Instinct Gold and Ocarina of Time, and `patches/ares/0031` makes
+`--boot-probe` print them one by one, so the gate's comparison checks them.
+The same comparison, run on these games, found one more difference
+the helloworld cartridge the gate boots cannot show: with a 6105 the real
+boot leaves register t8 at 2, and the HLE boot left 0. It is set now, and the
+three games' boots differ from a real one only in the expected scratch. No
+PAL boot ROM was measured; the same words and t8 are written for PAL.
+
 **What this costs.** A run recorded here is a run of a machine that started at
 IPL3, about ninety frames earlier than one that started at power. It is not
 interchangeable with a run recorded against a real boot ROM, and no movie made on

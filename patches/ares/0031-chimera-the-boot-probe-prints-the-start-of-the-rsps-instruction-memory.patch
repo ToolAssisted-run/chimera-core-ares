@@ -1,0 +1,16 @@
+--- a/ares/n64/cpu/cpu.cpp
++++ b/ares/n64/cpu/cpu.cpp
+@@ -176,8 +176,12 @@
+       for(u32 i : range(0x1000)) { h ^= rsp.dmem.read<Byte>(i); h *= 0x100000001b3ull; }
+       print("BOOTPROBE dmem ", hex(h, 16L), "\n");
+       h = 0xcbf29ce484222325ull;
+-      for(u32 i : range(0x1000)) { h ^= rsp.imem.read<Byte>(i); h *= 0x100000001b3ull; }
++      //The first eight words of instruction memory one by one, because the boot
++      //leaves code there that a cartridge runs (PIF::bootHLE); the rest of it as
++      //one hash, because it is the boot ROM's scratch.
++      for(u32 i = 0x20; i < 0x1000; i++) { h ^= rsp.imem.read<Byte>(i); h *= 0x100000001b3ull; }
+       print("BOOTPROBE imem ", hex(h, 16L), "\n");
++      for(u32 i : range(8)) print("BOOTPROBE imem", i, " ", hex(rsp.imem.read<Word>(i * 4), 8L), "\n");
+       h = 0xcbf29ce484222325ull;
+       for(u32 i : range(0x40)) { h ^= pif.ram.read<Byte>(i); h *= 0x100000001b3ull; }
+       print("BOOTPROBE pifram ", hex(h, 16L), "\n");
