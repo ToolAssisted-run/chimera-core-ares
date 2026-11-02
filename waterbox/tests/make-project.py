@@ -114,7 +114,6 @@ def main():
     project = {
         "id": ("ares" + setting).ljust(16, "0")[:16],
         "title": machine["label"] + " through Chimera",
-        "description": "written by waterbox/run-frontend-gate.sh",
         "core": {
             "name": cfg.get("coreName", "ares"),
             "version": cfg["version"],
@@ -137,8 +136,12 @@ def main():
             "VsyncDenominator": "1",
         },
     }
-    with open(out, "w") as f:
-        json.dump(project, f, indent="\t")
+    # a project is a zip (Chimera's since 2026-11-02): project.json, its
+    # "inputs" the columns only, and the entries, a line each, in input.input
+    entries = project["inputs"].pop("entries", [])
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("project.json", json.dumps(project, indent="\t"))
+        z.writestr("input.input", "".join(e + "\n" for e in entries))
     return 0
 
 
