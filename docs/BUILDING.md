@@ -140,6 +140,10 @@ libstdc++. The result is `build/meson-guest/waterbox/core.wbx`.
 Both flavours are built with the same defines (`core_defines` in
 `meson.build`): paraLLEl-RDP for the Nintendo 64 (`VULKAN`), one thread, a
 pinned power-on seed. They must agree or the two are not the same emulator.
+angrylion's rasteriser, the Software renderer, is in both as well: its core
+(`extern/angrylion-rdp-plus/src/core/n64video.c`, a second submodule, which
+`git submodule update --init` fetches with ares) and this repository's glue
+(`waterbox/software-rdp.cpp`, `waterbox/angrylion-host.c`).
 The guest also gets `CHIMERA_VK_BRIDGE`: its Vulkan commands are miniBox's
 bridge, where the native reference opens the computer's Vulkan loader.
 

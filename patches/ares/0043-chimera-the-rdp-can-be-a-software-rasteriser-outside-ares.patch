@@ -1,0 +1,60 @@
+diff --git a/ares/n64/n64.hpp b/ares/n64/n64.hpp
+--- a/ares/n64/n64.hpp
++++ b/ares/n64/n64.hpp
+@@ -40,6 +40,16 @@
+ #endif
+ 
+ namespace ares::Nintendo64 {
++  //Chimera: a renderer outside ares (angrylion's software rasteriser) takes
++  //the RDP's commands and the VI's picture when these are set. Unset, ares
++  //draws as it always has.
++  struct SoftwareRDP {
++    void (*render)() = nullptr;   //run the commands from DPC_CURRENT to DPC_END
++    void (*frame)() = nullptr;    //the VI has reached the start of a frame
++    bool (*refresh)() = nullptr;  //fill vi.screen; false: ares fills it
++  };
++  extern SoftwareRDP softwareRDP;
++
+   auto enumerate() -> std::vector<string>;
+   auto load(Node::System& node, string name) -> bool;
+   auto option(string name, string value) -> bool;
+diff --git a/ares/n64/rdp/render.cpp b/ares/n64/rdp/render.cpp
+--- a/ares/n64/rdp/render.cpp
++++ b/ares/n64/rdp/render.cpp
+@@ -45,6 +45,8 @@
+ };
+ 
+ auto RDP::render() -> void {
++  if(softwareRDP.render) return softwareRDP.render();
++
+   #if defined(VULKAN)
+   if(vulkan.enable && vulkan.render()) {
+     const char *msg = vulkan.crashed();
+diff --git a/ares/n64/vi/vi.cpp b/ares/n64/vi/vi.cpp
+--- a/ares/n64/vi/vi.cpp
++++ b/ares/n64/vi/vi.cpp
+@@ -3,6 +3,7 @@
+ namespace ares::Nintendo64 {
+ 
+ VI vi;
++SoftwareRDP softwareRDP;
+ #include "io.cpp"
+ #include "debugger.cpp"
+ #include "serialization.cpp"
+@@ -92,6 +93,7 @@
+           vulkan.frame();
+         }
+         #endif
++        if(softwareRDP.frame) softwareRDP.frame();
+         refreshed = true;
+         screen->frame();
+         ri.checkRefresh();
+@@ -136,6 +138,8 @@
+ }
+ 
+ auto VI::refresh() -> void {
++  if(softwareRDP.refresh && softwareRDP.refresh()) return;
++
+   #if defined(VULKAN)
+   if(vulkan.enable && gpuOutputValid) {
+     const u8* rgba = nullptr;

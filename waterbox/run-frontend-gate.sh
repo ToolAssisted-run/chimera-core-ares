@@ -137,6 +137,11 @@ echo
 one "GB libbet"       gb  GB  libbet.gb          120
 one "GBA arm tests"   gba GBA gba-arm.gba        120
 one "N64 helloworld"  n64 N64 helloworld-cpu.n64 120
+# The Software renderer (chimera#481): Chimera offers such a project no Vulkan
+# bridge, and the core must open it without one.
+export ARES_PROJECT_SETTINGS='{"renderer":"software"}'
+one "N64 helloworld, Software renderer" n64 N64 helloworld-cpu.n64 120
+unset ARES_PROJECT_SETTINGS
 # The region a game is made for, which the core suggests in New Project
 # (chimera#447: a European game on the NTSC console the setting starts at
 # stayed black). The test cartridge's country is 0, which ares reads as made

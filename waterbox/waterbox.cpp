@@ -192,11 +192,17 @@ ECL_EXPORT int Init(void)
 
 	machine::Config config = {};
 	config.machine = machineId();
+	{
+		/* "vulkan-hw" (the default) or "software": paraLLEl-RDP on the
+		 * frontend's Vulkan device, or angrylion's rasteriser (chimera#481) */
+		char renderer[16];
+		config.softwareRDP = wbx_setting_str("renderer", renderer, (int)sizeof renderer) >= 0 && !strcmp(renderer, "software");
+	}
 #if defined(CHIMERA_VK_BRIDGE)
-	/* A Nintendo 64 is drawn by paraLLEl-RDP on the frontend's Vulkan device:
+	/* A Nintendo 64 drawn by paraLLEl-RDP needs the frontend's Vulkan device:
 	 * without one there would be no RDP at all, and the game would run as no
 	 * Nintendo 64 does. Said here, rather than as a black screen. */
-	if ((!strcmp(config.machine, "N64") || !strcmp(config.machine, "N64DD")) && !g_vulkanBridge)
+	if ((!strcmp(config.machine, "N64") || !strcmp(config.machine, "N64DD")) && !config.softwareRDP && !g_vulkanBridge)
 	{
 		snprintf(g_loadError, sizeof g_loadError, "error.n64_needs_vulkan");
 		return 0;

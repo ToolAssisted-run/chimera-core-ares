@@ -110,6 +110,9 @@ def main():
         name = decl["name"]
         settings[name] = setting if name == cfg.get("machineSetting") else decl.get("default")
     settings = {k: v for k, v in settings.items() if v is not None}
+    # A test may set some to other values, as a JSON object in
+    # ARES_PROJECT_SETTINGS (the Software renderer's, {"renderer":"software"}).
+    settings.update(json.loads(os.environ.get("ARES_PROJECT_SETTINGS") or "{}"))
 
     project = {
         "id": ("ares" + setting).ljust(16, "0")[:16],

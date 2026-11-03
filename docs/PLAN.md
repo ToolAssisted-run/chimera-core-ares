@@ -106,8 +106,8 @@ sound still equal. ares resets both recompilers whenever it takes a state, so
 such a run recompiles everything every frame; with the interpreter the two
 agree, and so do the test programs. It has nothing to do with the renderer.
 
-**What it costs.** A Nintendo 64 project needs a graphics card with Vulkan
-1.1. And a movie made on the core before 2026-11-02 (angrylion) is a movie of
+**What it costs.** A Nintendo 64 project drawn this way needs a graphics card
+with Vulkan 1.1 (Software, below, needs none). And a movie made on the core before 2026-11-02 (angrylion) is a movie of
 another machine: what the RDP wrote, and when it reached RDRAM, were
 angrylion's, so such a movie may not play back the same here. The project
 pins the package it was made with, so Chimera says when the core differs.
@@ -118,6 +118,58 @@ Fast VI maps to its "Disable Video Interface Processing" and Bob Deinterlacing
 to weave turned off. The first picture after a load can differ from the
 straight run's in an interlaced game, where a field is woven with the one
 before and the renderer made again has none; the machine does not.
+
+#### Software, beside it (user-decided, 2026-11-03, chimera#481)
+
+A user found the Software renderer faster on their computer: Pokemon Snap ran
+at 40 to 50 frames a second with it and 35 to 40 with Vulkan. The owner chose
+to offer it again, from **angrylion's own upstream** (angrylion RDP Plus,
+`ata4/angrylion-rdp-plus` at 9c8b9ed, the submodule
+`extern/angrylion-rdp-plus`) and not from TASEmulators' copy, and accepted
+what that costs: the MAME licence, so the built core may be redistributed but
+not sold or used commercially again. The Renderer setting offers `software`
+beside `vulkan-hw`; `vulkan-hw` stays the default, so no project changes.
+
+How it is put in:
+
+- `ares/0043` gives ares three hooks, `Nintendo64::softwareRDP`: the RDP's
+  command list, the VI reaching the start of a frame, and the picture. Unset,
+  ares draws as before. `waterbox/software-rdp.cpp` sets them when the project
+  asks for Software, and ares' own Vulkan path is then switched off.
+- angrylion runs a command list when the CPU writes DPC_END, on the machine's
+  thread, with one worker (its thread pool is replaced by
+  `waterbox/angrylion-host.c`), and writes RDRAM as it draws. ares keeps RDRAM
+  as angrylion reads it (host-order 32-bit words) but keeps the RSP's data
+  memory big-endian, so a list sent from DMEM is read from a copy turned the
+  right way round. SYNC_FULL calls ares' own `syncFull`.
+- The VI's registers are copied for angrylion at the start of each frame, the
+  current line from the VI's fields rather than through the register read,
+  which makes the CPU catch up. The picture is 640 wide and 240 (288) lines
+  progressive, shown twice each as paraLLEl-RDP's is, or 480 (576) interlaced.
+  Fast VI is angrylion's unfiltered mode, stretched to 640; Bob Deinterlacing
+  doubles the newest field, which `angrylion-rdp-plus/0001` lets it ask for.
+- Everything angrylion keeps between calls is its own static memory, which is
+  guest memory, so the sandbox's savestate carries it whole. ares' serializer
+  (`captureState`, the native runner's `--rewind-at`) does not; Chimera never
+  uses it.
+- Init refuses a Nintendo 64 with no Vulkan bridge only when the renderer is
+  Vulkan, and Chimera offers no bridge to a project that asks for Software.
+
+Measured: Killer Instinct Gold (U) (V1.2) shows its logo, its title and Tusk
+at frames 600, 1200 and 2400 with Software; it stayed black with TASEmulators'
+copy (chimera#446), so that was the copy, not angrylion. At frame 1200 the
+native reference, the sandbox offered no bridge, and the sandbox saving and
+loading before every frame give the same digests. Against Vulkan on lavapipe
+at frame 1200 the memory, sound and lag counts are equal and only the picture
+differs; a movie is still not promised to play the same with the other
+renderer, because the two reach RDRAM at different moments. helloworld-rdp at
+frame 130 leaves the same RDRAM as TASEmulators' copy did. Natively, 1200
+frames of Killer Instinct Gold take 19.8 s with Software and 27.0 s with
+Vulkan on lavapipe, which is a CPU too; that says nothing about a real card.
+
+Found on the way, not fixed here: with Vulkan, helloworld-rdp draws only its
+yellow background at frame 130 and none of its five lines of text, and RDRAM
+differs from angrylion's; the build of 2026-11-02 does the same.
 
 ### 2. The recompilers
 
@@ -190,6 +242,8 @@ is the first eleven; the rest are named where the thing they do is explained.
 | `ares/0010` | **nothing depends on the host's entropy** - see below. |
 | `ares/0011` | **the picture is drawn on the machine's thread** - see below. |
 | `ares/0032`-`0042` | paraLLEl-RDP as this core needs it - see "The renderer". |
+| `ares/0043` | hooks for a renderer outside ares, which the Software renderer (angrylion) uses - see "Software, beside it". |
+| `angrylion-rdp-plus/0001` | angrylion says which field of an interlaced picture is newest, for Bob Deinterlacing. |
 
 Two of the later ones are a pair and are easy to mix up. `ares/0024` **refuses**
 the machines this core does not offer: mia would otherwise build them a pak out

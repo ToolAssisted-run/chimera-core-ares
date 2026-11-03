@@ -54,12 +54,15 @@ Adding a machine is a row in `waterbox/machines.h` and a regenerate; making one
 
 What the machines have in common:
 
-- **The Nintendo 64 is drawn on the graphics card.** Its display processor is
-  ares' own **paraLLEl-RDP** on a Vulkan device (a card with Vulkan 1.1), the
-  frontend's, through miniBox's Vulkan bridge. It works on the machine's
-  thread, its writes reach RDRAM at points the machine decides, and what it
-  keeps on the card is kept in the machine and in every savestate, so a movie
-  replays the same on any card. Every other machine is drawn on the CPU.
+- **The Nintendo 64 is drawn on the graphics card, or in software.** By
+  default its display processor is ares' own **paraLLEl-RDP** on a Vulkan
+  device (a card with Vulkan 1.1), the frontend's, through miniBox's Vulkan
+  bridge. It works on the machine's thread, its writes reach RDRAM at points
+  the machine decides, and what it keeps on the card is kept in the machine
+  and in every savestate, so a movie replays the same on any card. The
+  Renderer setting's Software choice draws with **angrylion's rasteriser** on
+  the CPU instead, with no graphics card needed (chimera#481). Every other
+  machine is drawn on the CPU.
 - **Recompilers by default** for the N64's CPU and RSP, about three times as
   fast as the interpreters: the code they generate lives in the sandbox, so a
   savestate carries it and a movie replays. The setting CPU (n64Cpu) chooses the
@@ -170,10 +173,12 @@ upstream. `docs/PLAN.md` explains every one.
 All emulation comes from **ares**, by Near, Themaister and contributors, ISC
 licensed, vendored unmodified as the submodule [`extern/ares`](extern/ares).
 The Reality Display Processor is ares' **paraLLEl-RDP**, by Themaister, MIT
-licensed, vendored inside ares. The integration layer is this repository's
-own work under the **MIT License**. Until 2026-11-02 the core drew the
-Nintendo 64 with angrylion's software rasteriser, under the MAME licence; with
-it gone, nothing in the built core forbids commercial use. See
+licensed, vendored inside ares, or for the Software renderer **angrylion RDP
+Plus** (angrylion, ata4 and contributors), the submodule
+[`extern/angrylion-rdp-plus`](extern/angrylion-rdp-plus), under the **MAME
+licence**: the built core may be redistributed but not sold or used
+commercially. The integration layer is this repository's own work under the
+**MIT License**. See
 [`LICENSE`](LICENSE) and
 [`waterbox/package-licenses.json`](waterbox/package-licenses.json).
 

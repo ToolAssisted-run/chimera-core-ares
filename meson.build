@@ -12,6 +12,10 @@ ares_dir = meson.current_source_dir() / 'extern/ares'
 if not fs.is_dir(ares_dir / 'ares')
   error('extern/ares is empty - run: git submodule update --init --recursive')
 endif
+angrylion_dir = meson.current_source_dir() / 'extern/angrylion-rdp-plus/src/core'
+if not fs.is_file(angrylion_dir / 'n64video.c')
+  error('extern/angrylion-rdp-plus is empty - run: git submodule update --init --recursive')
+endif
 
 # ---------------------------------------------------------------------------
 # The patch series, applied to the pinned submodules before anything compiles.
@@ -132,6 +136,12 @@ foreach f : ['arena_allocator', 'logging', 'thread_id', 'aligned_alloc', 'timer'
 endforeach
 core_sources += prdp_dir / 'volk/volk.c'
 
+# Or angrylion's rasteriser, in software, when a project asks for it
+# (chimera#481, owner 2026-11-03), from its own upstream. n64video.c includes
+# the rest of it; its worker pool is replaced by waterbox/angrylion-host.c.
+core_sources += angrylion_dir / 'n64video.c'
+core_sources += files('waterbox/angrylion-host.c', 'waterbox/software-rdp.cpp')
+
 foreach s : ares_systems
   core_sources += ares_dir / 'ares' / s / (s + '.cpp')
 endforeach
@@ -188,6 +198,7 @@ core_inc = include_directories(
   'extern/ares/ares/n64/vulkan/parallel-rdp/vulkan',
   'extern/ares/ares/n64/vulkan/parallel-rdp/vulkan-headers/include',
   'extern/ares/ares/n64/vulkan/parallel-rdp/util',
+  'extern/angrylion-rdp-plus/src/core',
   'waterbox',
 )
 

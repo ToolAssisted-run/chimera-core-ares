@@ -19,6 +19,7 @@
 #include "machine.h"
 #include "machines.h"
 #include "machines.inc"
+#include "software-rdp.h"
 
 #include <mia/mia.hpp>
 
@@ -80,6 +81,8 @@ namespace
 	const machines::Spec *g_spec = nullptr;
 	const machines::MachineInputs *g_inputs = nullptr;
 	bool g_isN64 = false;
+	/* the Nintendo 64 drawn by angrylion, in software (software-rdp.cpp) */
+	bool g_softwareRDP = false;
 	/* The medium's file name as the project gave it, for the name a written
 	 * 64DD disk is exported under. */
 	std::string g_mediumFile;
@@ -644,6 +647,7 @@ namespace machine
 			g_root->unload();
 			g_root.reset();
 		}
+		softwareRdp::stop();
 		g_cartridgePak.reset();
 		g_subs.clear();
 		g_firmwarePak.reset();
@@ -892,9 +896,12 @@ namespace machine
 		 * they generate is guest memory, so a savestate carries it and a
 		 * machine put back to a frame runs on exactly as it did. */
 		if (g_isN64) g_spec->option("Recompiler", config.interpreter ? "false" : "true");
-		/* paraLLEl-RDP draws, on a Vulkan device, and the picture comes through
-		 * ares' screen node as every other machine's does. */
-		if (g_isN64)
+		/* paraLLEl-RDP draws, on a Vulkan device, or angrylion in software
+		 * (chimera#481), and the picture comes through ares' screen node as
+		 * every other machine's does. */
+		g_softwareRDP = g_isN64 && config.softwareRDP;
+		if (g_softwareRDP) g_spec->option("Enable GPU acceleration", "false");
+		else if (g_isN64)
 		{
 			g_spec->option("Enable GPU acceleration", "true");
 			/* The two picture settings, as paraLLEl-RDP has them: fastVI leaves
@@ -948,8 +955,9 @@ namespace machine
 		/* The Nintendo 64's RDP device, made now rather than at the first
 		 * frame (where ares makes it): a computer whose card cannot draw it -
 		 * no Vulkan 1.1, or no 8- and 16-bit storage buffers - is told so here
-		 * instead of being shown a black screen. */
-		if (g_isN64)
+		 * instead of being shown a black screen. Software has no device. */
+		if (g_softwareRDP) softwareRdp::start(config.fastVI, config.bobDeinterlace);
+		else if (g_isN64)
 		{
 			Nintendo64::vulkan.load({});
 			if (!Nintendo64::vulkan.implementation) return fail("error.n64_needs_vulkan");
@@ -1008,12 +1016,12 @@ namespace machine
 		g_root->run();
 		/* The RDP's work done and in RDRAM at every frame's end, so that what
 		 * the CPU finds there never depends on whether a state was taken. */
-		if (g_isN64) Nintendo64::vulkan.idle();
+		if (g_isN64 && !g_softwareRDP) Nintendo64::vulkan.idle();
 	}
 
 	void stateSaving(void)
 	{
-		if (g_isN64) Nintendo64::vulkan.stateSaving();
+		if (g_isN64 && !g_softwareRDP) Nintendo64::vulkan.stateSaving();
 	}
 
 	const uint32_t *video(void) { return g_video; }

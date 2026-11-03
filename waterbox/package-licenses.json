@@ -1,8 +1,8 @@
 {
   "package": "ares",
-  "effectiveTerms": "ISC, with MIT and Apache-2.0 components",
-  "commercialUse": "allowed",
-  "note": "ares is ISC. The Nintendo 64's display processor is ares' own paraLLEl-RDP (MIT), loaded through volk (MIT) against the Vulkan headers (Apache-2.0), all vendored inside ares. Until 2026-11-02 the core drew the Nintendo 64 with angrylion's software RDP, under the MAME licence, which forbade commercial use; that is gone, and with it the restriction.",
+  "effectiveTerms": "MAME licence (non-commercial) over ISC, with MIT and Apache-2.0 components",
+  "commercialUse": "prohibited",
+  "note": "ares is ISC. The Nintendo 64's display processor is ares' own paraLLEl-RDP (MIT), loaded through volk (MIT) against the Vulkan headers (Apache-2.0), all vendored inside ares, or, when a project chooses the Software renderer, angrylion's rasteriser, which descends from MESS and carries the MAME licence: redistribution is permitted, sale and commercial use are not. Both are in the one built core, so it is distributable under those terms and no others - the same shape as the gpgx, opera and snes9x packages. The core drew with angrylion until 2026-11-02 too (from TASEmulators' copy then); since 2026-11-03 it is angrylion's own upstream, beside paraLLEl-RDP rather than instead of it (chimera#481).",
   "components": [
     {
       "name": "chimera-core-ares (the integration)",
@@ -26,6 +26,14 @@
       "commit": "{submodule:extern/ares}",
       "file": "extern/ares/ares/n64/vulkan/parallel-rdp/LICENSE",
       "note": "The Nintendo 64's display processor, on the frontend's Vulkan device through miniBox's bridge; vendored inside ares (ares/n64/vulkan/parallel-rdp), with Granite's Vulkan backend."
+    },
+    {
+      "name": "angrylion RDP Plus",
+      "license": "MAME licence (non-commercial)",
+      "url": "https://github.com/ata4/angrylion-rdp-plus",
+      "commit": "{submodule:extern/angrylion-rdp-plus}",
+      "file": "extern/angrylion-rdp-plus/MAME License.txt",
+      "note": "The Nintendo 64's display processor rasterised in software, for a project whose renderer is Software (chimera#481). Its core only (src/core), with one patch (patches/angrylion-rdp-plus); the source of every component of the built core is public at the URLs in this file."
     },
     {
       "name": "volk",

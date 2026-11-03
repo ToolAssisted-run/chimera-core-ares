@@ -466,6 +466,41 @@ else
      interpreter $interpreted"
 fi
 
+# The Software renderer (chimera#481): angrylion's rasteriser draws in
+# paraLLEl-RDP's place when the project's renderer setting is "software".
+# Chimera offers no Vulkan bridge to such a project, so the sandbox here is
+# offered none either (CHIMERA_GPU=0): Software must start without one.
+export CHIMERA_GPU=0
+extra_settings=',"renderer":"software"'
+compare  "N64 helloworld-rdp, Software" N64 helloworld-rdp.n64 --frames 130 --software-rdp
+rerecord "N64 helloworld-rdp, Software" N64 helloworld-rdp.n64 --frames 130 --software-rdp
+rewind   "N64 helloworld-rdp, Software" N64 helloworld-rdp.n64 100 --frames 130 --software-rdp
+# And it draws: at frame 130 the test shows five lines of text, four on
+# coloured bars, over the yellow it clears the screen to. A renderer that
+# took the commands and drew nothing leaves only the yellow (0 such pixels;
+# angrylion draws 10466).
+setup_work N64 helloworld-rdp.n64
+"$runwbx" "$wbx" "$work/w" --machine N64 --quiet --frames 131 --dump-frame 130 --dump-to "$work/software.ppm" > /dev/null 2>&1 || true
+drawn="$(python3 - "$work/software.ppm" 2> /dev/null <<'PYEOF'
+import sys
+px = open(sys.argv[1], 'rb').read().split(b'\n', 3)[3]
+n = 0
+for i in range(0, len(px) - 2, 3):
+    r, g, b = px[i], px[i + 1], px[i + 2]
+    if r > 200 and g > 200 and b < 80: continue    # the yellow background
+    if r < 16 and g < 16 and b < 16: continue      # the border
+    n += 1
+print(n)
+PYEOF
+)"
+if [ "${drawn:-0}" -ge 5000 ]; then
+	say_pass "N64 helloworld-rdp, Software: the text and its bars are drawn ($drawn pixels)"
+else
+	say_fail "N64 helloworld-rdp, Software: the text and its bars are drawn" "${drawn:-no picture} pixels besides the yellow and the border (want 5000 or more)"
+fi
+unset CHIMERA_GPU
+extra_settings=""
+
 # The save data slot takes the files Export Save Data writes, and the files ares
 # writes: save.ram, save.eeprom and save.flash. It took .fla but not .flash, so
 # a Flash save exported here, or saved by ares itself, could not be put back

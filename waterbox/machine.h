@@ -79,6 +79,11 @@ namespace machine
 		 * pad's "Controller Pak" or "Rumble Pak". */
 		const char *portAccessory[8];
 
+		/* Nintendo 64: angrylion's rasteriser draws, in software, instead of
+		 * paraLLEl-RDP on a Vulkan device (setting renderer "software",
+		 * chimera#481). The two are two machines for a movie: they write
+		 * RDRAM at different moments. */
+		bool softwareRDP;
 		/* Picture only - neither changes the emulated machine. Nintendo 64. */
 		bool fastVI;
 		bool bobDeinterlace;

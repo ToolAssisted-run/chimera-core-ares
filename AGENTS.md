@@ -9,6 +9,9 @@ Upstream ares is a submodule; everything else here is the machine layer, the
 generators, the build and the gates. The Nintendo 64 is drawn by ares' own
 paraLLEl-RDP on a Vulkan device (the frontend's, through miniBox's Vulkan
 bridge), so its tests need Vulkan: lavapipe (mesa-vulkan-drivers) is enough.
+A project whose renderer is "software" is drawn by angrylion's rasteriser
+instead (extern/angrylion-rdp-plus, waterbox/software-rdp.cpp, chimera#481):
+no Vulkan, and its state is guest memory like the rest of the machine.
 
 `<chimera>` is a Chimera checkout and `<miniBox>` is its submodule
 `<chimera>/extern/chimera-common-minibox`.

@@ -1,0 +1,25 @@
+diff --git a/src/core/n64video.h b/src/core/n64video.h
+--- a/src/core/n64video.h
++++ b/src/core/n64video.h
+@@ -115,3 +115,6 @@
+ void n64video_update_screen(struct n64video_frame_buffer* fb);
+ void n64video_process_list(void);
+ void n64video_close(void);
++
++// Chimera: whether the newest lines of an interlaced picture are its odd ones
++bool n64video_lower_field(void);
+diff --git a/src/core/n64video/vi.c b/src/core/n64video/vi.c
+--- a/src/core/n64video/vi.c
++++ b/src/core/n64video/vi.c
+@@ -748,6 +748,11 @@
+     }
+ }
+ 
++bool n64video_lower_field(void)
++{
++    return lowerfield;
++}
++
+ static void vi_close(void)
+ {
+ }
