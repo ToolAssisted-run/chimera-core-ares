@@ -8,7 +8,7 @@
 #
 # It is separate from run-gate.sh because it needs things the core's own build
 # does not: a built Chimera with its window (tools/ci-chimera.sh builds it), the
-# ffmpeg Chimera records with (tools/fetch-ffmpeg.sh puts one in build/dll) and
+# ffmpeg Chimera records with (tools/build-ffmpeg.sh puts one in build/dll) and
 # ffprobe. By hand it SKIPS rather than fails when one is missing, and says
 # which.
 #
@@ -52,7 +52,7 @@ for need in "$native:the reference runner (ninja -C build/meson-native)" \
 done
 [ -x "$chimera_exe" ] || nothing "no Chimera window at $chimera_exe (set CHIMERA_ROOT; Chimera's tools/ci-chimera.sh builds it)"
 command -v ffprobe >/dev/null 2>&1 || nothing "no ffprobe"
-[ -x "$chimera/build/dll/ffmpeg" ] || nothing "no ffmpeg in $chimera/build/dll (Chimera's tools/fetch-ffmpeg.sh linux <chimera>/build/dll)"
+[ -x "$chimera/build/dll/ffmpeg" ] || nothing "no ffmpeg in $chimera/build/dll (Chimera's tools/build-ffmpeg.sh linux <chimera>/build/dll)"
 
 # The window with the cores installed in the checkout, and its settings, cache
 # and recovery files the run's own: nothing is carried over from a Chimera

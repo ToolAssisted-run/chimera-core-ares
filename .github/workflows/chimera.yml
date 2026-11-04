@@ -147,7 +147,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            meson ninja-build build-essential cmake pkg-config python3 \
+            meson ninja-build build-essential cmake nasm pkg-config python3 \
             ffmpeg \
             libgl1-mesa-dev libx11-dev libxext-dev libasound2-dev \
             libvulkan1 mesa-vulkan-drivers
@@ -161,13 +161,20 @@ jobs:
       - name: Build Chimera (the engine, chimera-run and the window)
         run: chimera-checkout/tools/ci-chimera.sh "$HOME/qt"
 
-      - name: Fetch the ffmpeg Chimera records with
+      - name: Cache the ffmpeg Chimera records with
+        uses: actions/cache@v4
+        with:
+          # Chimera's tools/build-ffmpeg.sh keeps what it built under a name made from its own hash
+          path: chimera-checkout/build/deps/ffmpeg-linux-*
+          key: chimera-ffmpeg-linux-${{ hashFiles('chimera-checkout/tools/build-ffmpeg.sh') }}
+
+      - name: Build the ffmpeg Chimera records with
         # The frontend gate has Chimera record a video and reads it back. The
         # meson install does not put an ffmpeg in build/dll - a bundle build
         # does - and without one the gate skipped everything and the job was
-        # green all the same.
+        # green all the same. Chimera builds its own since chimera#492.
         working-directory: chimera-checkout
-        run: bash tools/fetch-ffmpeg.sh linux "$PWD/build/dll"
+        run: bash tools/build-ffmpeg.sh linux "$PWD/build/dll"
 
       - name: Build the native reference
         run: |
