@@ -449,6 +449,36 @@ compare "N64 helloworld-rdp" N64 helloworld-rdp.n64 --frames 130
 compare "N64 input-cpu"      N64 input-cpu.n64      --frames 200
 compare "N64 input, A held and the stick over" N64 input-cpu.n64 --frames 200 --hold "P1 Gamepad A" --stick 100 -60
 
+# What helloworld-rdp shows at frame 130: five lines of text, four on coloured
+# bars, over the yellow it clears the screen to. drawn_pixels counts what is
+# neither that yellow nor the border; a renderer that drew no letter leaves 0
+# (angrylion draws 10466).
+drawn_pixels() {
+	python3 - "$1" 2> /dev/null <<'PYEOF'
+import sys
+px = open(sys.argv[1], 'rb').read().split(b'\n', 3)[3]
+n = 0
+for i in range(0, len(px) - 2, 3):
+    r, g, b = px[i], px[i + 1], px[i + 2]
+    if r > 200 and g > 200 and b < 80: continue    # the yellow background
+    if r < 16 and g < 16 and b < 16: continue      # the border
+    n += 1
+print(n)
+PYEOF
+}
+
+# And Vulkan draws them. The letters take their alpha from the LOD fraction in
+# one-cycle mode, which paraLLEl-RDP never worked out there (patch 0044): every
+# run agreed with every other, the leg above passed, and none drew a letter.
+setup_work N64 helloworld-rdp.n64
+"$runwbx" "$wbx" "$work/w" --machine N64 --quiet --frames 131 --dump-frame 130 --dump-to "$work/vulkan.ppm" > /dev/null 2>&1 || true
+drawn="$(drawn_pixels "$work/vulkan.ppm")"
+if [ "${drawn:-0}" -ge 5000 ]; then
+	say_pass "N64 helloworld-rdp, Vulkan: the text and its bars are drawn ($drawn pixels)"
+else
+	say_fail "N64 helloworld-rdp, Vulkan: the text and its bars are drawn" "${drawn:-no picture} pixels besides the yellow and the border (want 5000 or more)"
+fi
+
 # The Nintendo 64 runs on ares' recompilers by default and on its interpreters
 # when the project's n64Cpu setting says so (chimera#315); the legs above are the
 # recompiler's. The interpreter must still be the same machine in both flavours,
@@ -475,28 +505,20 @@ extra_settings=',"renderer":"software"'
 compare  "N64 helloworld-rdp, Software" N64 helloworld-rdp.n64 --frames 130 --software-rdp
 rerecord "N64 helloworld-rdp, Software" N64 helloworld-rdp.n64 --frames 130 --software-rdp
 rewind   "N64 helloworld-rdp, Software" N64 helloworld-rdp.n64 100 --frames 130 --software-rdp
-# And it draws: at frame 130 the test shows five lines of text, four on
-# coloured bars, over the yellow it clears the screen to. A renderer that
-# took the commands and drew nothing leaves only the yellow (0 such pixels;
-# angrylion draws 10466).
+# And it draws (drawn_pixels, above).
 setup_work N64 helloworld-rdp.n64
 "$runwbx" "$wbx" "$work/w" --machine N64 --quiet --frames 131 --dump-frame 130 --dump-to "$work/software.ppm" > /dev/null 2>&1 || true
-drawn="$(python3 - "$work/software.ppm" 2> /dev/null <<'PYEOF'
-import sys
-px = open(sys.argv[1], 'rb').read().split(b'\n', 3)[3]
-n = 0
-for i in range(0, len(px) - 2, 3):
-    r, g, b = px[i], px[i + 1], px[i + 2]
-    if r > 200 and g > 200 and b < 80: continue    # the yellow background
-    if r < 16 and g < 16 and b < 16: continue      # the border
-    n += 1
-print(n)
-PYEOF
-)"
+drawn="$(drawn_pixels "$work/software.ppm")"
 if [ "${drawn:-0}" -ge 5000 ]; then
 	say_pass "N64 helloworld-rdp, Software: the text and its bars are drawn ($drawn pixels)"
 else
 	say_fail "N64 helloworld-rdp, Software: the text and its bars are drawn" "${drawn:-no picture} pixels besides the yellow and the border (want 5000 or more)"
+fi
+# The two renderers are meant to draw the same RDP: here, pixel for pixel.
+if [ -s "$work/vulkan.ppm" ] && cmp -s "$work/vulkan.ppm" "$work/software.ppm"; then
+	say_pass "N64 helloworld-rdp: Vulkan and Software draw the same picture"
+else
+	say_fail "N64 helloworld-rdp: Vulkan and Software draw the same picture" "$(cmp "$work/vulkan.ppm" "$work/software.ppm" 2>&1 | head -1)"
 fi
 unset CHIMERA_GPU
 extra_settings=""

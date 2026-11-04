@@ -93,7 +93,7 @@ machine they simply stay where they are.
 
 ## Build the core
 
-**Patches.** `patches/ares/` holds the patch series (41 patches). There is
+**Patches.** `patches/ares/` holds the patch series (43 patches). There is
 no separate step:
 `meson.build` runs `waterbox/apply-patches.sh` every time it configures.
 The script takes each patch file by itself:

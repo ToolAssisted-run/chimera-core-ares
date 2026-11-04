@@ -74,7 +74,9 @@ in three ways. Each is closed:
   hardware's behaviour, in integer arithmetic, on any Vulkan 1.1 card; the
   core asks the bridge only for what it carries (no push-descriptor templates,
   no buffer addresses: `ares/0039`) and accepts memory that is not coherent,
-  which is all the bridge offers (`ares/0040`).
+  which is all the bridge offers (`ares/0040`). One place where it was not
+  exact read a value it never set, which a card is free to fill with anything
+  (`ares/0044`, below).
 
 **What was measured** (Killer Instinct Gold (U) (V1.2), lavapipe): the native
 reference and the sandbox give the same machine, sound and picture at frame
@@ -167,9 +169,30 @@ frame 130 leaves the same RDRAM as TASEmulators' copy did. Natively, 1200
 frames of Killer Instinct Gold take 19.8 s with Software and 27.0 s with
 Vulkan on lavapipe, which is a CPU too; that says nothing about a real card.
 
-Found on the way, not fixed here: with Vulkan, helloworld-rdp draws only its
-yellow background at frame 130 and none of its five lines of text, and RDRAM
-differs from angrylion's; the build of 2026-11-02 does the same.
+#### The LOD fraction in one-cycle mode (2026-11-04)
+
+With Vulkan, helloworld-rdp drew only its yellow background at frame 130 and
+none of its five lines of text, from the first build with paraLLEl-RDP
+(2026-11-02). Every run agreed with every other, so the tests that compare
+runs passed. The letters are drawn in one-cycle mode, and their alpha is the
+texel's alpha times the LOD fraction. The hardware works that fraction out
+whenever the combiner in use takes it, and so does angrylion (`lodfracused`,
+rdp.c). paraLLEl-RDP did so only in two-cycle mode: in one-cycle mode its
+shader read a variable it never set. On lavapipe that was 0, so no letter had
+any alpha; another card may put anything there, so the picture and RDRAM
+could differ from card to card. `ares/0044` works the fraction out in
+one-cycle mode as angrylion does. Upstream paraLLEl-RDP has the same code
+(2024-11-09).
+
+Measured: helloworld-rdp at frame 130 now gives the same picture as Software,
+pixel for pixel, and the same RDRAM; with RDRAM shared with the device instead
+of copied it was just as wrong, so the copying was not the cause. The 16-bit
+build of the same test draws in copy mode, was right before and is unchanged.
+Killer Instinct Gold, Super Mario 64, Ocarina of Time, Banjo-Tooie, Pokemon
+Stadium and Rogue Squadron give the same picture and memory digests at frame
+1200 with and without the fix: none of them used the broken case by then. The
+test script now checks that Vulkan draws the text, and that Vulkan and
+Software draw the same picture.
 
 ### 2. The recompilers
 
@@ -243,6 +266,7 @@ is the first eleven; the rest are named where the thing they do is explained.
 | `ares/0011` | **the picture is drawn on the machine's thread** - see below. |
 | `ares/0032`-`0042` | paraLLEl-RDP as this core needs it - see "The renderer". |
 | `ares/0043` | hooks for a renderer outside ares, which the Software renderer (angrylion) uses - see "Software, beside it". |
+| `ares/0044` | paraLLEl-RDP works out the LOD fraction in one-cycle mode, as the hardware and angrylion do - see "The LOD fraction in one-cycle mode". |
 | `angrylion-rdp-plus/0001` | angrylion says which field of an interlaced picture is newest, for Bob Deinterlacing. |
 
 Two of the later ones are a pair and are easy to mix up. `ares/0024` **refuses**
