@@ -41,6 +41,9 @@ ninja -C "$mbuild"
 # the guest, via the meson cross build
 [ -f "$root/build/meson-guest/build.ninja" ] || MINIBOX_DIR="$mb" sh "$here/setup-guest.sh" -m "$mb"
 ninja -C "$root/build/meson-guest"
+# where the code reads its thread pointer, listed in the image: an Intel Mac
+# rewrites those reads as the core loads (miniBox's wbx-tp-rewrite.py)
+python3 "$mb/source/guest/wbx-tp-rewrite.py" "$root/build/meson-guest/waterbox/core.wbx"
 sh "$mb/source/guest/check-wbx.sh" "$root/build/meson-guest/waterbox/core.wbx"
 
 staging="$out/package-staging"
