@@ -186,11 +186,10 @@ modified), so a hand build normally says `-dirty`. `versionDate` is the
 commit's date in UTC, never the build's. A hand-built package is for
 testing: Chimera's publish step refuses a version with `+local` or `-dirty`.
 
-CI publishes what passed both jobs: a rolling `dev` release on every green
-push to `main`, and a dated `nightly-YYYY-MM-DD` release from the scheduled
-run (cron `0 4 * * *`), only when `main` moved since the last one. Nothing
-is published from a pull request. The asset is named
-`ares-<version>.chimeraCore`.
+CI publishes what passed both jobs: a dated `nightly-YYYY-MM-DD` release from
+the scheduled run (cron `0 4 * * *`) or a run started by hand, only when
+`main` moved since the last one. Nothing is published from a push or a pull
+request. The asset is named `ares-<version>-x86_64.chimeraCore`.
 
 ## Install it into Chimera
 
