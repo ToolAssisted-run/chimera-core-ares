@@ -627,6 +627,11 @@ else
 fi
 compare "GB libbet"          GB  libbet.gb          --frames 200
 compare "GB libbet, Start held" GB libbet.gb        --frames 200 --hold Start
+# The Game Boy Color boot ROM is the one file a Color machine must have,
+# and it runs a plain Game Boy cartridge in compatibility mode: libbet is
+# that cartridge, so the leg boots the ROM under test and then the game.
+compare "GBC libbet"          GBC libbet.gb          --frames 200
+compare "GBC libbet, Start held" GBC libbet.gb        --frames 200 --hold Start
 compare "GBA arm tests"      GBA gba-arm.gba        --frames 200
 compare "GBA arm tests, A held" GBA gba-arm.gba     --frames 200 --hold A
 # The PlayStation with nothing in its drive: the BIOS boots, draws its logo and
@@ -647,12 +652,14 @@ echo
 echo "== a memory tool is offered each memory once =="
 memories "N64 helloworld-cpu" N64 helloworld-cpu.n64 RDRAM --frames 30
 memories "GB libbet"          GB  libbet.gb          ""    --frames 30
+memories "GBC libbet"         GBC libbet.gb          ""    --frames 30
 
 echo
 echo "== the machine survives being saved and reloaded =="
 rerecord "N64 helloworld-cpu" N64 helloworld-cpu.n64 --frames 130
 rerecord "N64 input, A held"  N64 input-cpu.n64      --frames 200 --hold "P1 Gamepad A"
 rerecord "GB libbet"          GB  libbet.gb          --frames 200
+rerecord "GBC libbet"         GBC libbet.gb          --frames 200
 rerecord "GBA arm tests"      GBA gba-arm.gba        --frames 200
 rerecord "PS1 BIOS shell"     PS1 -                  --frames 400
 rerecord "MSX BASIC"          MSX -                  --frames 400
@@ -662,6 +669,7 @@ echo "== a machine told the same thing twice does not notice =="
 input_discipline "N64 helloworld-cpu" N64 helloworld-cpu.n64 --frames 130
 input_discipline "N64 input, A held"  N64 input-cpu.n64      --frames 200 --hold "P1 Gamepad A"
 input_discipline "GB libbet"          GB  libbet.gb          --frames 200
+input_discipline "GBC libbet"         GBC libbet.gb          --frames 200
 input_discipline "GBA arm tests"      GBA gba-arm.gba        --frames 200
 input_discipline "PS1 BIOS shell"     PS1 -                  --frames 400
 input_discipline "MSX BASIC"          MSX -                  --frames 400

@@ -18,7 +18,7 @@
  
 --- a/mia/system/game-boy-color.cpp
 +++ b/mia/system/game-boy-color.cpp
-@@ -5,9 +5,14 @@
+@@ -5,9 +5,27 @@
  };
  
  auto GameBoyColor::load(string location) -> LoadResult {
@@ -26,6 +26,19 @@
 +  //user supplies it and Chimera pins it by hash. See waterbox/machines.h.
 +  auto boot = Pak::read(location);
 +  if(boot.empty()) return romNotFound;
++
++  //A dump of the CGB boot ROM is 0x900 bytes: 0x100 bytes of code, then the
++  //0x100-byte cartridge header, which is not the boot ROM's, then 0x700 more.
++  //The machine maps 0x0000-0x00ff and 0x0200-0x08ff onto a 0x800-byte buffer
++  //(ares/gb/cartridge/memory.cpp), so a standard dump is mounted with the
++  //header's bytes left out. A file already trimmed is used as it is.
++  if(boot.size() == 0x900) {
++    std::vector<u8> trimmed;
++    trimmed.reserve(0x800);
++    trimmed.insert(trimmed.end(), boot.begin(), boot.begin() + 0x100);
++    trimmed.insert(trimmed.end(), boot.begin() + 0x200, boot.end());
++    boot = trimmed;
++  }
 +
    this->location = locate();
    pak = std::make_shared<vfs::directory>();
