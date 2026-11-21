@@ -1702,3 +1702,15 @@ another name never fired, so those controls shipped unbound on the keyboard.
 Checked on a virtual display: with 1, Return, left Shift and Up held, Chimera reports
 Number1, Enter, Shift and Up. Left and right names stay beside the merged one,
 for a setup with the merging off.
+
+## 2026-11-20: a Game Boy Color boot ROM is a file anyone has
+
+The Color's boot ROM could not be used with a real dump. `gbcBoot` was generated from ares' own copy, `mia/Firmware/Game Boy Color/boot.cgb-0.rom`, which is 2048 bytes with the 256-byte cartridge-header gap removed - the layout ares maps: `0x0000-0x00ff` and `0x0200-0x08ff` read into one 0x800-byte buffer (`ares/gb/cartridge/memory.cpp`). Every dump a person owns is 0x900 bytes; Rev 1 hashes `1293D68B...` and CGB-0 `DF5A0D2D...`. Chimera matches firmware by hash, so the declaration asked for a file nobody could supply. The Game Boy's entry was fine only because its ROM has no gap: the standard `dmg_boot.bin` hash equals ares' `boot.dmg-1.rom`.
+
+Patch 0020 now trims a 0x900 dump to 0x800 before the system picks it up - drop bytes `0x0100-0x01ff` - and mounts a file that is already trimmed as it is. The declaration is generated from a real Rev 1 dump, so it pins 2304 bytes and `1293D68B...`; `tests/firmware/gbcBoot.known` lists CGB-0, which becomes the entry's `sha1s`. A Chimera build with the change (chimera-csx ee0f01a8, not yet released) accepts any hash in that list, and an older build ignores the key and still matches `sha1`, so the package stays readable by it. Trimming Rev 1 reproduces ares' own `boot.cgb-1.rom` byte for byte (`24DC297F...`) and CGB-0 reproduces `boot.cgb-0.rom` (`6F4115B7...`), which is what says the trim is the right one rather than merely a different one.
+
+The gate had no Color leg, which is why none of this showed: `gbBoot` unlocked the Game Boy legs and `gbcBoot` was never booted. Five legs now run - compare with and without Start held, the memory tool, the savestate round trip, and input discipline - on the free `libbet.gb`, a Game Boy cartridge on a Color in compatibility mode, so they need no commercial content and skip without `tests/firmware/gbcBoot`.
+
+Measured: the core gate is 45 passed, 0 failed with real dumps in `tests/firmware/` (`gbBoot` and `gbcBoot`). The five Game Boy Color legs pass - compare with and without Start held, the memory tool, the savestate round trip and input discipline - and the Game Boy legs pass unchanged, so the trim did not disturb the machine that has no gap. The trim itself is checked against ares' own files rather than by eye: trimming the Rev 1 dump gives `24DC297F...` and trimming CGB-0 gives `6F4115B7...`, exactly ares' `boot.cgb-1.rom` and `boot.cgb-0.rom`, which are the layouts `ares/gb/cartridge/memory.cpp` maps. The declaration now says 2304 bytes, `1293D68B...`, with `DF5A0D2D...` in `sha1s`.
+
+Not proved here: the frontend gate, which needs Chimera's Qt window and was not built on this machine - the package through the window is CI's; and CGB-0 as the supplied file, since only Rev 1 was booted (the trim is the same code, and CGB-0's trimmed hash is the one ares itself carries).
