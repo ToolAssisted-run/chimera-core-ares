@@ -267,6 +267,7 @@ after the firmware id the package declares:
 | File in `tests/firmware/` | What it unlocks |
 | --- | --- |
 | `gbBoot` | the Game Boy legs on `libbet.gb`, and `GB buttons` |
+| `gbcBoot` | the Game Boy Color legs on `libbet.gb` (a Game Boy cartridge on a Color) |
 | `gbaBios` | the Game Boy Advance legs on `gba-arm.gba`, and `GBA passes jsmolka's ARM test suite` |
 | `ps1Bios` | the PlayStation legs (the BIOS shell; no content needed) |
 | `msxBios` | the MSX legs (its own BASIC; no content needed) |
@@ -276,6 +277,14 @@ after the firmware id the package declares:
 
 A BIOS with variants is `tests/firmware/<id>.<value>`, for example
 `megaCdBios.usa` (`docs/PLAN.md`, "A BIOS that is not one file").
+
+A file dumped several ways is declared once: `tests/firmware/<id>` is the
+dump the package pins, and an optional `tests/firmware/<id>.known` beside
+it lists the other dumps of the same file, one a line, as
+`<sha1> # what it is`. They become the entry's `sha1s`, and Chimera
+accepts any of them; a frontend older than that key ignores it and still
+matches `sha1`. The Game Boy Color's boot ROM is dumped with and without
+the 256-byte cartridge header in the middle, so both copies are listed.
 
 **With content of your own** in `tests/local/<MACHINE>/` (gitignored), one
 directory per machine id, legs of the same kinds run for: `NGPC`, `PCE`,
@@ -322,6 +331,7 @@ opened in Chimera's window and recorded for 120 frames:
 | --- | --- |
 | `N64 helloworld` | nothing |
 | `GB libbet` | `tests/firmware/gbBoot` |
+| `GBC libbet` | `tests/firmware/gbcBoot` |
 | `GBA arm tests` | `tests/firmware/gbaBios` |
 | `PS1 BIOS shell` | always skipped: a project must name a file |
 

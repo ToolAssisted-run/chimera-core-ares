@@ -577,16 +577,35 @@ def render_firmware(machines, already=None):
                     return True
                 return False
             blob = open(path, "rb").read()
+            sha1 = hashlib.sha1(blob).hexdigest().upper()
             entry = {
                 "id": fwid,
                 "display": text("firmware." + re.sub(r"[^a-z0-9]+", "_", fwid.lower()).strip("_"), display),
                 "description": text("firmware." + re.sub(r"[^a-z0-9]+", "_", fwid.lower()).strip("_") + ".about",
                                     description),
                 "size": len(blob),
-                "sha1": hashlib.sha1(blob).hexdigest().upper(),
-                "name": entry_name,
-                "requiredWhen": {"all": [base, extra]} if extra else base,
+                "sha1": sha1,
             }
+            # Other dumps of the same file, from <path>.known: one a line,
+            # "<sha1> # what it is". One ROM is dumped several ways - a Game Boy
+            # Color boot ROM's 256-byte header gap is filled by some dumpers and
+            # left out by others - so the files hash differently while being the
+            # same ROM. Chimera accepts any of them; a frontend older than that
+            # key ignores it and still matches "sha1".
+            others = []
+            sidecar = path + ".known"
+            if os.path.exists(sidecar):
+                for line in open(sidecar, encoding="utf-8"):
+                    token = line.split("#", 1)[0].split()
+                    if not token or len(token[0]) != 40:
+                        continue
+                    other = token[0].upper()
+                    if other != sha1 and other not in others:
+                        others.append(other)
+            if others:
+                entry["sha1s"] = others
+            entry["name"] = entry_name
+            entry["requiredWhen"] = {"all": [base, extra]} if extra else base
             out.append(entry)
             return True
 
