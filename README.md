@@ -12,8 +12,11 @@ Status: **thirty machines declared.** Which are proven by the gate, which
 against a real game and which are only declared is in `docs/PLAN.md`, "What is
 proven and what is only declared". It
 carries no firmware but ares' own: twenty of the thirty ask the user for a
-console BIOS, and ten need nothing but a cartridge. It
-runs on Windows as well as Linux, but only with **miniBox ab677a2 or newer**:
+console BIOS, and ten need nothing but a cartridge. Four machines are declared
+and still load projects that already name them, but New Project offers none of
+them. The package marks the Atari 2600, the PC Engine CD, MSX2 and the Neo Geo
+AES `hidden` (`docs/TASKS.md`). The core runs on Windows as well as Linux, but
+only with **miniBox ab677a2 or newer**:
 libco takes its coroutine stacks from `mmap(MAP_STACK)` rather than from malloc
 so that the sandbox knows what they are, and an older miniBox either kills this
 core on its first frame or quietly loses what those stacks write. `docs/PLAN.md`

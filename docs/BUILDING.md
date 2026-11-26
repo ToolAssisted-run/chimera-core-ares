@@ -389,6 +389,12 @@ Ten machines declare no firmware: Nintendo 64, Famicom / NES, Mega Drive /
 Genesis, Master System, Game Gear, SG-1000, Atari 2600, MyVision, PC Engine
 / TurboGrafx-16 and SuperGrafx.
 
+Four machines are declared and still run projects that name them, but
+`gen-config.py` marks them `hidden`: the Atari 2600, the PC Engine CD, MSX2 and
+the Neo Geo AES. New Project does not offer any of them. Their machine values
+stay legal, so opening and saving an existing project keeps its machine.
+`docs/TASKS.md` has the compatibility counts behind the decision.
+
 **The game**, in the slots `waterbox/file_slots.json` declares:
 
 | Slot | Files | Notes |

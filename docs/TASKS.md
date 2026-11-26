@@ -55,6 +55,32 @@ Updated as the work lands. `[x]` means committed and gated.
       This is what the Neo Geo's DIP switches are FOR - an AES has none - so
       the MVS is the machine worth finishing.
 - [x] ~~Arcade~~ - dropped (user, 2026-09-11)
+- [x] **Atari 2600** - hidden from New Project (user, 2026-11-25), not removed.
+      Of the 588 titles in ares' own compatibility list, 30 never reach the end
+      of a game (Nothing, Starts or In-Game) and 532 were never verified, so
+      `gen-config.py` marks the machine `hidden`: New Project leaves it out,
+      while its machine-setting value stays legal and `ares/a26` stays in the
+      guest, so an existing project that names it still runs.
+- [x] **PC Engine CD / TurboDuo** - hidden from New Project (user, 2026-11-25),
+      not removed. Of the 476 titles in ares' own compatibility list, 60 never
+      reach the end of a game (45 In-Game, 8 of them unverified, 12 Starts and 3
+      Nothing), 373 were never verified and 54 link a GitHub issue. Its
+      machine-setting value and the System Card firmware stay declared, so an
+      existing project that names it still runs.
+- [x] **MSX2** - hidden from New Project (user, 2026-11-26), not removed. Of the
+      157 titles in ares' own compatibility list, 137 never reach the end of a
+      game (113 Nothing, 89 of them with no note, 22 In-Game and 2 Starts); only
+      5 link a GitHub issue. Its machine-setting value, the `msx2Main` and
+      `msx2Sub` firmware and ares' MSX sources stay declared, so an existing
+      project that names it still runs.
+- [x] **Neo Geo AES** - hidden from New Project (user, 2026-11-26), not removed.
+      Of the 137 romsets in ares' own compatibility list, 59 never reach the end
+      of a game (all In-Game; 49 report missing sound effects, 6 scrolling
+      issues, 3 graphics, 2 flicker, 1 hang and 1 slow intro). 77 are Completable
+      Unverified and only 1 is verified complete; 1 links a GitHub issue. Its
+      machine-setting value and `ngBios` firmware stay declared, so an existing
+      project that names it still runs. The Neo Geo Pocket and Pocket Color are
+      separate machines and stay offered.
 
 ## Nintendo 64 renderer (paraLLEl-RDP, 2026-11-02)
 - [x] **paraLLEl-RDP on the frontend's Vulkan device** in place of angrylion

@@ -23,6 +23,11 @@ two Neo Geo Pockets. The 32X wants three BIOS files. And five load a disc: the
 PlayStation, the Mega CD, the Mega CD 32X, the PC Engine CD - whose BIOS is
 itself a cartridge - and the PC Engine and SuperGrafx beside them.
 
+Four of them, the **Atari 2600**, the **PC Engine CD**, **MSX2** and the
+**Neo Geo AES**, are declared and still load projects that name them, but are
+marked `hidden` in the package so New Project does not offer any of them;
+`docs/TASKS.md` gives the compatibility counts behind that.
+
 Four are validated by the gate on content anybody may have, and ten more by the
 same three legs on commercial content only this developer has; fifteen have run
 a real game here off the record. The rest are declared, built and enumerated but

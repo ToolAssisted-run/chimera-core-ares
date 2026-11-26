@@ -96,6 +96,17 @@ def wire_safe(name):
 # of them an ares::Core::Tape node; the ids are this core's, from machines.h.
 TAPE_MACHINES = {"ZXS", "MSX", "MSX2"}
 
+# Machines the package still declares and runs, but does not offer for a NEW
+# project. "hidden" tells the frontend's New Project wizard to leave one out of
+# its picker; the machine stays in machines[] and in the machine setting's
+# values, so a project that already names it keeps loading.
+#
+# The Atari 2600, the PC Engine CD, MSX2 and the Neo Geo AES are here
+# (docs/TASKS.md, 2026-11-25 and 2026-11-26). ares' compatibility lists give
+# them 30/588, 60/476, 137/157 and 59/137 titles that never reach the end of a
+# game. All four are hidden rather than removed, so existing projects still run.
+HIDDEN_MACHINES = {"A26", "PCECD", "MSX2", "NG"}
+
 
 # A keyboard is read the way it is printed. ares lists a ZX Spectrum's keys in
 # the order of its matrix - CAPS SHIFT, A, Q, 1, 0, P, ENTER, SPACE, then Z, S,
@@ -834,6 +845,10 @@ def render_machines(machines):
         entry = {
             "id": m["id"],
             "label": m["label"],
+        }
+        if m["id"] in HIDDEN_MACHINES:
+            entry["hidden"] = True
+        entry.update({
             "when": [m["id"].lower()],
             "input": {
                 "name": f"{m['label']} Controller",
@@ -843,7 +858,7 @@ def render_machines(machines):
             "virtualWidth": m["virtualWidth"],
             "virtualHeight": m["virtualHeight"],
             "extensions": {"." + e: m["id"] for e in m["extensions"].split()},
-        }
+        })
         headers = button_headers_for(m["id"], [n for n, _ in buttons], entry["input"]["mnemonics"])
         if headers:
             entry["input"]["headers"] = headers
